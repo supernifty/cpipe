@@ -4,9 +4,13 @@ This directory contains BED files that define the target region for each
 flagship. The files were received from Harriet Dashnow on 14 Jan 2014.
 
 Harriet's files were in slightly different format to that required, so
-they have been processed by the script in scripts/reformat_bed_files.sh
-to rename chromosomes and also to rename the files to a more friendly
-(shorter) name. Additionally, they have been sorted using IGVTools
+they have been processed by the script in scripts/reformat_bed_files.sh.
+
+ - to rename chromosomes to 'chr' format
+ - rename the actual files to more friendly names
+ - sort the files using IGVTools
+ - merge overlapping regions so there is only 1 unique
+   region covering each part of the genome
 
 Author: Simon Sadedin, simon.sadedin@mcri.edu.au
 
