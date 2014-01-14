@@ -1,0 +1,23 @@
+====================== Melbourne Genomics Variant Calling Pipeline =======================
+
+Directory structure under here:
+
+ - pipeline : the source code for running the pipeline
+              this is a checkout (clone) of the git repository 
+
+ - batches  
+     <batch id> : directories numbered by batch id containing source data
+           - data     : source data (FastQ)
+           - design   : symbolic link to the design directory relevant to this batch
+           - analysis : the outputs and working files from execution of the pipeline
+
+ - designs
+     
+    <design id / name> : BED files and other information associated with a design
+                         Each sequencing run will have used a specific design file
+
+ - hg19
+
+   All the HG19 reference files for alignment and downstream processing.
+   These are downloaded from GATK resource bundle for compatibility with GATK.
+
