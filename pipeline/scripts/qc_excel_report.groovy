@@ -51,6 +51,8 @@ covs = samples.collectEntries { sample ->
 
 // Read the Picard deduplication metrics
 metrics = samples.collectEntries { sample ->
+        if(!files[sample].metrics)
+                err "Unable to find Picard metrics file in provided inputs: $args"
         lines = new File(files[sample].metrics).readLines()
         int index = lines.findIndexOf { it.startsWith("LIBRARY") }
         if(index < 0)
