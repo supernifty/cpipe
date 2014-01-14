@@ -64,6 +64,7 @@ class Block {
     String chr
     int start
     int end
+    String gene
     DescriptiveStatistics stats = new DescriptiveStatistics()
 
 }
@@ -103,48 +104,90 @@ new ExcelBuilder().build {
     // Per sample summary
     for(sample in samples) {
         sheet(sample) {
-                bold { row {
-                    cells('blockid','gene','min','median','chr','start','end','length')
-                }}
 
-                // Example row:
-                // chr1   247463621   247464578   1   0   1   1
-                // chr1    247463621   247464578   2   0   2   1
-                // chr1    247463621   247464578   3   0   3   1
                 Block block = null
                 int threshold =15
+                int lineCount = 0
+                int blockCount = 0
+                int totalBP = 0
+                Set allGenes = new HashSet()
+
+                def blocks = []
 
                 def write = {
-                    block.with {
-                        row { cells(chr, start, end, stats.min, stats.max, stats.mean, stats.getPercentile(50)) }
-                    }
+                    blockCount++
+                    blocks.add(block)
+                    // println "Writing block ${block.hashCode()} for $gene from $start - $end"
+                    block = null
                 }
                 
                 println "Low cov file for $sample = ${files[sample].lowcov}"
+
                 new File(files[sample].lowcov).eachLine { line ->
+                    ++lineCount
                     (chr,start,end,gene,offset,cov) = line.split('\t')
                     cov = cov.toFloat()
                     int pos = start.toInteger() + offset.toInteger()
                     String region = "$chr:$start"
+                    ++totalBP
+                    allGenes.add(gene)
 
-                    if(block && block.region != region) {
+                    if(block && block.region != region) 
                         write()
-                    }
 
                     if(cov < threshold) {
-                        if(block)
-                           block.stats.addValue(cov.toInteger())
-                        else
-                           block = new Block(region:region, start:pos)
+                        if(!block)  {
+                           block = new Block(chr:chr, region:region, gene:gene, start:pos)
+                        }
+                        block.stats.addValue(cov.toInteger())
                         block.end = pos
                     }
                     else {
-                        if(block) {
+                        if(block) 
                             write()
-                            block = null
-                        }
+                    }
+
+                    if(lineCount % 10000 == 0) {
+                        println(new Date().toString() + "\t" + lineCount + " ($blockCount low coverage blocks observed)")
                     }
                 }
-        }
+
+                row {
+                    cell('Total low regions').bold()
+                    cell(blocks.size())
+                }
+                row {
+                    cell('Total low bp').bold()
+                    cell(blocks.sum { it.end-it.start})
+                }
+                row {
+                    cell('Percent low bp').bold()
+                    cell(blocks.sum { it.end-it.start} / (float)totalBP)
+                }
+                row {
+                    cell('Genes containing low bp').bold()
+                    cell(blocks*.gene.unique().size())
+                }
+                row {
+                    cell('Percent Genes containing low bp').bold()
+                    cell(blocks*.gene.unique().size() / (float)allGenes.size())
+                }
+
+                row {
+                }
+
+                bold { row {
+                    cells('gene','chr','start','end','min','max','median','length')
+                }}
+
+                def lowBed = new File("${sample}.low.bed").newWriter()
+                blocks.each { b ->
+                    b.with {
+                        row { cells(gene, chr, start, end, stats.min, stats.max, stats.getPercentile(50), end-start) }
+                        lowBed.println([chr,start,end,stats.getPercentile(50)+'-'+gene].join("\t"))
+                    }
+                }
+                lowBed.close()
+        }.autoSize()
     }
 }.save("qc.xlsx")
