@@ -104,16 +104,6 @@ commands {
         }
 }
 
-notifications {
-  gtalk {
-    to="ssadedin@gmail.com"
-    username="simonzmail@gmail.com"
-    password="okeydoke"
-    events="STAGE_COMPLETED,FINISHED"
-    interval="60000"
-  }
-}
-
 reports {
     // Customise the report format to include the date
     index {
