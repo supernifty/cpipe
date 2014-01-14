@@ -1,0 +1,12 @@
+============== BED Files Defining Flagship Target Regions ==========
+
+This directory contains BED files that define the target region for each
+flagship. The files were received from Harriet Dashnow on 14 Jan 2014.
+
+Harriet's files were in slightly different format to that required, so
+they have been processed by the script in scripts/reformat_bed_files.sh
+to rename chromosomes and also to rename the files to a more friendly
+(shorter) name. Additionally, they have been sorted using IGVTools
+
+Author: Simon Sadedin, simon.sadedin@mcri.edu.au
+
