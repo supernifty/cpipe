@@ -64,3 +64,4 @@ PLATFORM="illumina"
 // the directory of this file!
 EXOME_TARGET="../design/target_region.bed"
 
+ANNOVAR="$TOOLS/annovar/2013aug23"
