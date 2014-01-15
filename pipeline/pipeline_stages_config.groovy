@@ -233,7 +233,7 @@ sort_vcf = {
 }
 
 @transform("xlsx")
-vcf_to_excel = {
+vcf_to_excel_vep = {
     exec """
         JAVA_OPTS="-Xmx4g -Djava.awt.headless=true" groovy 
             -cp $GROOVY_NGS/groovy-ngs-utils.jar:$EXCEL/excel.jar 
@@ -241,8 +241,23 @@ vcf_to_excel = {
                 -i $input.vcf
                 -o $output.xlsx
                 -t ${new File("..").absoluteFile.name}
-                -s '${samples.keySet().join(",")}'
     """
+}
+
+@transform("xlsx")
+vcf_to_excel = {
+    doc "Convert a VCF output file to Excel format, merging information from Annovar"
+
+    from("*.exome_summary.csv", "*.vcf") {
+        exec """
+            JAVA_OPTS="-Xmx10g -Djava.awt.headless=true" groovy 
+                -cp $SCRIPTS/excel.jar $BASE/pipeline/scripts/vcf_to_excel.annovar.groovy 
+                -s '${samples.keySet().join(",")}'
+                -i $inputs.csv 
+                -o $output.xlsx
+                $input.vcf
+        """
+    }
 }
 
 plot_coverage = {
@@ -321,7 +336,7 @@ annovar_summarize_refgene = {
 
                 $ANNOVAR/summarize_annovar.pl 
                     --genetype refgene 
-                    --verdbsnp 132  
+                    --verdbsnp 138  
                     --outfile ${input.av}.refgene 
                     --buildver hg19  $input.av $ANNOVAR/humandb/
         """
