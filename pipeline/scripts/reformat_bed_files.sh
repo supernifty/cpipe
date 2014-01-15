@@ -9,7 +9,6 @@ echo "Renaming chrMT to chrM ..."
 for i in *.bed; do sed -i.bak 's/^chrMT/chrM/' $i; done
 
 echo "Sorting ..."
-
 mkdir sorted
 for i in *.bed; do 
     ../../tools/IGVTools/2.3.6/igvtools.lowmem sort $i sorted/$i
@@ -19,4 +18,15 @@ mkdir -p unsorted
 mv *.bed unsorted
 mv sorted/*.bed .
 rmdir sorted
+
+echo "Flattening ..."
+mkdir -p flattened
+for i in *.bed; do
+    bedtools merge -nms -i $i | sed 's/;.*$//' > flattened/$i
+done
+rm -rf unflattened
+mkdir -p unflattened
+mv *.bed unflattened
+mv flattened/*.bed .
+rmdir flattened
 
