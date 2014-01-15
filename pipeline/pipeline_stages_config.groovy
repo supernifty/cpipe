@@ -315,15 +315,15 @@ qc_excel_report = {
 
 
 annovar_summarize_refgene = {
-    transform("av.refgene.exome_summary.csv","av.refgene.exonic_variant_function","av.refgene.genome_summary.csv") {
+    transform("vcf") to(["av","av.refgene.exome_summary.csv","av.refgene.exonic_variant_function","av.refgene.genome_summary.csv"]) {
         exec """
                 $ANNOVAR/convert2annovar.pl $input -format vcf4 > $output.av
 
                 $ANNOVAR/summarize_annovar.pl 
                     --genetype refgene 
-                    --verdbsnp 132  
-                    --outfile ${input.av}.refgene 
-                    --buildver hg19  $input.av $ANNOVAR/humandb/
+                    --verdbsnp 138  
+                    --outfile ${output.av}.refgene 
+                    --buildver hg19  $output.av $ANNOVAR/../humandb/
         """
     }
 }
