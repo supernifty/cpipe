@@ -45,6 +45,8 @@ align_bwa = {
     // meta data file. For now these are faked
     produce(info.sample + ".bam") {
         exec """
+                set -o pipefail
+
                 $BWA mem -M -t $threads -k $seed_length 
                          -R "@RG\\tID:1\\tPL:illumina\\tPU:1\\tLB:1\\tSM:${info.sample}"  
                          $REF $input1.gz $input2.gz | 
@@ -95,14 +97,14 @@ realignIntervals = {
     // Hard-coded to take 2 known indels files right now
     output.dir="align"
     exec """
-        java -Xmx4g -jar $GATK/GenomeAnalysisTK.jar -T RealignerTargetCreator -R $REF -I $input.bam --known $GOLD_STANDARD_INDELS -log $LOG -o $output.intervals
+        java -Xmx4g -jar $GATK/GenomeAnalysisTK.jar -T RealignerTargetCreator -R $REF -I $input.bam --known $GOLD_STANDARD_INDELS -o $output.intervals
     """
 }
 
 realign = {
     output.dir="align"
     exec """
-        java -Xmx5g -jar $GATK/GenomeAnalysisTK.jar -T IndelRealigner -R $REF -I $input.bam -targetIntervals $input.intervals -log $LOG -o $output.bam
+        java -Xmx5g -jar $GATK/GenomeAnalysisTK.jar -T IndelRealigner -R $REF -I $input.bam -targetIntervals $input.intervals -o $output.bam
     ""","local_realign"
 }
 
@@ -132,7 +134,7 @@ recal_count = {
              --disable_indel_quals
              -l INFO 
              -cov ReadGroupCovariate -cov QualityScoreCovariate -cov CycleCovariate -cov ContextCovariate 
-             -log $LOG -o $output.counts
+             -o $output.counts
     """, "recalibrate_bam"
 }
 
@@ -146,7 +148,6 @@ recal = {
                -BQSR $input.counts 
                -R $REF 
                -l INFO 
-               -log $LOG 
                -o $output.bam
         """, "recalibrate_bam"
 }
@@ -174,7 +175,6 @@ call_variants = {
                    -l INFO 
                    -A AlleleBalance -A DepthOfCoverage -A FisherStrand 
                    -glm BOTH
-                   -log $LOG 
                    -metrics $output.metrics
                    -o $output.vcf
             ""","gatk_call_variants"
@@ -191,7 +191,6 @@ filter_variants = {
              --filterExpression 'QD < 2.0 || MQ < 20.0 || FS > 60.0 || HaplotypeScore > 13.0 || MQRankSum < -12.5 || ReadPosRankSum < -8.0' 
              --filterName 'GATK_MINIMAL_FILTER'
              --variant $input.vcf 
-             -log $LOG 
              -o $output.vcf
     """
 }
@@ -301,34 +300,16 @@ find_low_coverage_blocks = {
     }
 }
 
-summarize_low_coverage_blocks = {
-       transform("txt") to("tsv") {
-
-            R {"""
-                blocks = read.table(file='${input.txt}',
-                   col.names=c('chr','start','end','info','offset','cov','block')) #,'block_length'))
-                blocks$pos = blocks$start+blocks$offset
-
-                #stats = aggregate(list(max_length=blocks$block_length), by=list(block=blocks$block,gene_exon=blocks$info), max)
-                stats = aggregate(list(median_cov=blocks$cov), by=list(block=blocks$block), median)
-                stats = merge(stats,aggregate(list(min_cov=blocks$cov), by=list(block=blocks$block), min))
-                stats = merge(stats, aggregate(list(chr=blocks$chr), by=list(block=blocks$block), function(x) x[[1]]))
-                stats = merge(stats, aggregate(list(block_start=blocks$pos), by=list(block=blocks$block), min))
-                stats = merge(stats, aggregate(list(block_end=blocks$pos), by=list(block=blocks$block), max))
-                stats$block_length = stats$block_end - stats$block_start
-                attach(stats)
-                write.table(x=data.frame(block=block,
-                                         gene=gene_exon,
-                                         min_cov=min_cov,
-                                         median_cov=median_cov,
-                                         chr=chr,
-                                         start=block_start,
-                                         end=block_end+1,
-                                         length=max_length),
-                                         file='$output.tsv', row.names=F, col.names=F, quote=F, sep="\\t")
-            """}
+qc_excel_report = {
+    from(flagship+".bed.cov.txt") {
+        exec """
+            JAVA_OPTS=-Xmx4g groovy -cp $EXCEL/excel.jar $BASE/pipeline/scripts/qc_excel_report.groovy 
+                -s ${samples.keySet().join(",")} 
+                $inputs.sample_cumulative_coverage_proportions  
+                $inputs.sample_interval_statistics 
+                $inputs.metrics 
+                $inputs.txt
+        """
     }
 }
-
-
 
