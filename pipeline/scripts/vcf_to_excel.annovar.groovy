@@ -23,7 +23,6 @@ cli.with {
   s 'comma separated list of samples to include', args:1
   i 'VCF file to convert to Excel format', args:1
   a 'Annovar file containing annotations', args:1
-  t 'Name for main spreadsheet tab (should reflect batch, sample group, etc)', args:1
   o 'Name of output file', args:1
   x 'Comma separated list of functional types to exclude', args:1
 }
@@ -50,8 +49,6 @@ if(!opts.o)
     err "Please provide -o option to specify output file name"
 if(!opts.a)
     err "Please provide -a option to specify Annovar annotation file"
-if(!opts.t)
-    err "Please provide -t option to specify title for spreadsheet"
 
 exclude_types = opts.x ? opts.x.split(",") : []
 
