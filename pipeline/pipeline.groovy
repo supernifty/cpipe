@@ -47,21 +47,39 @@ inputs "samples.txt" : """
 // Load the samples (todo: replace with something more robust)
 // The sample data will come from a real meta data file that is yet to be
 // specified.
-samples = new File(args[0]).readLines().collectEntries { [ it.split("\t")[0], it.split("\t")[1].split(",") ] } 
 
-// TODO: need to decide how this is specified
-flagship = "EPIL"
+lines = new File(args[0]).readLines().grep { !it.trim().startsWith('#') }
+
+// Parse lines into a map keyed by sample name with submap having keys "sample", "target" and "files" as values
+sample_info = lines.collect { it.split("\t") }.collectEntries { [ it[0], [ sample: it[0], files : it[2].split(","), target: it[1] ]] } 
+
+targets = sample_info*.value*.target as Set
+
+/*
+samples = lines.collectEntries { [ it.split("\t")[0], it.split("\t")[2].split(",") ] } 
+
+// Load the target region for each sample (ie: which flagship it is being sequenced for)
+sample_targets = lines.collectEntries { [ it.split("\t")[0], it.split("\t")[1] ] }
+
+// Map targets to samples (reverse of above)
+target_samples = (sample_targets.values() as Set).collectEntries { target -> [target, sample_targets.grep { it.value == target }.collect { it.key }] }
+
+// Map targets to files
+target_files = target_samples.collectEntries { e -> [e.key, e.value.collect { samples[it]}.flatten()] }
+*/
 
 run {
-    // Align the input files for each sample separately in parallel
-    samples * [
-       set_sample_info +
-            "%.gz" * [ fastqc ] +
-           align_bwa +
-           index_bam +
-           dedup + index_bam + 
-           realignIntervals + realign + index_bam +
-           recal_count + recal + index_bam +
-               [ call_variants, calc_coverage_stats, gatk_depth_of_coverage ]
-    ] + merge_vcf + annovar_summarize_refgene + vcf_to_excel + qc_excel_report
+    targets * [
+        set_target_info +
+        sample_info.keySet() * [
+               set_sample_info +
+                    "%.gz" * [ fastqc ] + 
+                   align_bwa +
+                   index_bam +
+                   dedup + index_bam + 
+                   realignIntervals + realign + index_bam +
+                   recal_count + recal + index_bam +
+                       [ call_variants, calc_coverage_stats, gatk_depth_of_coverage ]
+        ] + merge_vcf + annovar_summarize_refgene + vcf_to_excel + qc_excel_report
+   ]
 }

@@ -13,12 +13,27 @@
 // 
 ////////////////////////////////////////////////////////
 
-set_sample_info = {
-    doc "Load user provided information about the sequencing run"
+set_target_info = {
 
-    branch.info = [
-        sample : branch.name
-    ]
+    doc "Validate and set information about the target region to be processed"
+
+    branch.target_name = branch.name
+    branch.target_bed_file = "../design/${target_name}.bed"
+
+    if(!new File(target_bed_file).exists())
+        fail("Target bed file $target_bed_file could not be located for processing sample $branch.name")
+
+}
+
+set_sample_info = {
+
+    doc "Validate and set information about the sample to be processed"
+
+    branch.sample = branch.name
+
+    println "Processing input files ${sample_info[sample].files} for target region ${target_bed_file}"
+
+    forward sample_info[sample].files
 }
 
 fastqc = {
@@ -43,12 +58,12 @@ align_bwa = {
 
     // TODO: replace with real platform unit, ID and lane value based on real 
     // meta data file. For now these are faked
-    produce(info.sample + ".bam") {
+    produce(sample + ".bam") {
         exec """
                 set -o pipefail
 
                 $BWA mem -M -t $threads -k $seed_length 
-                         -R "@RG\\tID:1\\tPL:illumina\\tPU:1\\tLB:1\\tSM:${info.sample}"  
+                         -R "@RG\\tID:1\\tPL:illumina\\tPU:1\\tLB:1\\tSM:${sample}"  
                          $REF $input1.gz $input2.gz | 
                          samtools view -F 0x100 -bSu - | samtools sort - $output.prefix
         ""","bwamem"
@@ -58,12 +73,13 @@ align_bwa = {
 merge_vcf = {
     doc "Merge multiple VCF files into one file"
     output.dir="variants"
-    filter("merge") {
+    produce(target_name + ".merge.vcf") {
         msg "Merging vcf files: " + inputs.vcf
         exec """
                 java -Xmx3g -jar $GATK/GenomeAnalysisTK.jar
                 -T CombineVariants
                 -R $HGFA
+                -L $target_bed_file
                 ${inputs.vcf.withFlag("--variant")}
                 --out $output.vcf
              """
@@ -213,7 +229,7 @@ annotate = {
 calc_coverage_stats = {
     doc "Calculate coverage across a target region"
     output.dir="qc"
-    from(flagship + ".bed") {
+    from(target_bed_file) {
         transform("bam") to(file(input.bed).name+".cov.txt") {
             exec """
               coverageBed -d  -abam $input.bam -b $input.bed > $output.txt
@@ -248,14 +264,15 @@ vcf_to_excel_vep = {
 vcf_to_excel = {
     doc "Convert a VCF output file to Excel format, merging information from Annovar"
 
-    from("*.exome_summary.csv", "*.vcf") {
+    from("*.exome_summary.csv", "*.vcf") produce(target_name + ".xlsx") {
         exec """
-            JAVA_OPTS="-Xmx10g -Djava.awt.headless=true" groovy 
-                -cp $SCRIPTS/excel.jar $BASE/pipeline/scripts/vcf_to_excel.annovar.groovy 
+            JAVA_OPTS="-Xmx2g -Djava.awt.headless=true" groovy 
+                -cp $EXCEL/excel.jar $BASE/pipeline/scripts/vcf_to_excel.annovar.groovy 
                 -s '${samples.keySet().join(",")}'
-                -i $inputs.csv 
+                -a $input.csv 
+                -i $input.vcf
+                -x "synonymous SNV"
                 -o $output.xlsx
-                $input.vcf
         """
     }
 }
@@ -285,9 +302,13 @@ plot_coverage = {
 
 gatk_depth_of_coverage = {
 
-    requires target_bed_file : "BED file specifying target region to report coverage levels for"
+    // requires target_bed_file : "BED file specifying target region to report coverage levels for"
+ 
+    println "Target bed file = $target_bed_file"
 
-    transform(".bam") to(".cov.sample_cumulative_coverage_counts") {
+    var target_name : "all"
+
+    transform(".bam") to(target_name + ".cov.sample_cumulative_coverage_counts") {
         exec """
             java -Xmx2g -jar $GATK/GenomeAnalysisTK.jar 
                -R $REF
@@ -316,7 +337,7 @@ find_low_coverage_blocks = {
 }
 
 qc_excel_report = {
-    from(flagship+".bed.cov.txt") {
+    from(target_name+".bed.cov.txt") {
         exec """
             JAVA_OPTS=-Xmx4g groovy -cp $EXCEL/excel.jar $BASE/pipeline/scripts/qc_excel_report.groovy 
                 -s ${samples.keySet().join(",")} 
