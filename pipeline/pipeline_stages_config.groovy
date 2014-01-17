@@ -19,10 +19,12 @@ set_target_info = {
 
     branch.target_name = branch.name
     branch.target_bed_file = "../design/${target_name}.bed"
+    branch.target_samples = sample_info.grep { it.value.target == target_name }*.value*.sample
 
     if(!new File(target_bed_file).exists())
         fail("Target bed file $target_bed_file could not be located for processing sample $branch.name")
 
+    println "Target $target_name is processing samples $target_samples"
 }
 
 set_sample_info = {
@@ -192,15 +194,15 @@ call_variants = {
 
 @filter("filter")
 filter_variants = {
-    // Very minimal hard filters based on GATK recommendations. VQSR is preferable if possible.
+    doc "Select only variants in the genomic regions defined for the $target_name target"
     output.dir="variants"
     exec """
-        java -Xmx4g -jar $GATK/GenomeAnalysisTK.jar -T VariantFiltration 
-             -R $REF 
-             --filterExpression 'QD < 2.0 || MQ < 20.0 || FS > 60.0 || HaplotypeScore > 13.0 || MQRankSum < -12.5 || ReadPosRankSum < -8.0' 
-             --filterName 'GATK_MINIMAL_FILTER'
+        java -Xmx2g -jar $GATK/GenomeAnalysisTK.jar 
+             -R $REF
+             -T SelectVariants 
              --variant $input.vcf 
-             -o $output.vcf
+             -L $target_bed_file
+             -o $output.vcf 
     """
 }
 
@@ -247,7 +249,7 @@ vcf_to_excel_vep = {
     exec """
         JAVA_OPTS="-Xmx4g -Djava.awt.headless=true" groovy 
             -cp $GROOVY_NGS/groovy-ngs-utils.jar:$EXCEL/excel.jar 
-            $BASE/pipeline/scripts/vcf_to_excel.groovy 
+            $BASE/pipeline/scripts/vcf_to_excel_vep.groovy 
                 -i $input.vcf
                 -o $output.xlsx
                 -t ${new File("..").absoluteFile.name}
@@ -262,7 +264,7 @@ vcf_to_excel = {
         exec """
             JAVA_OPTS="-Xmx2g -Djava.awt.headless=true" groovy 
                 -cp $EXCEL/excel.jar $BASE/pipeline/scripts/vcf_to_excel.annovar.groovy 
-                -s '${samples.keySet().join(",")}'
+                -s '${target_samples.join(",")}'
                 -a $input.csv 
                 -i $input.vcf
                 -x "synonymous SNV"

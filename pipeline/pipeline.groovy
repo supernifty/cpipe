@@ -67,6 +67,6 @@ run {
                    realignIntervals + realign + index_bam +
                    recal_count + recal + index_bam +
                        [ call_variants, calc_coverage_stats, gatk_depth_of_coverage ]
-        ] + merge_vcf + annovar_summarize_refgene + vcf_to_excel + qc_excel_report
+        ] + merge_vcf + filter_variants + annovar_summarize_refgene + vcf_to_excel + qc_excel_report
    ]
 }
