@@ -31,9 +31,14 @@ set_sample_info = {
 
     branch.sample = branch.name
 
-    println "Processing input files ${sample_info[sample].files} for target region ${target_bed_file}"
-
-    forward sample_info[sample].files
+    if(sample_info[sample].target != target_name) {
+        succeed "No files to process for sample $sample, target $target_name"
+    }
+    else {
+        def files = sample_info[sample].files
+        println "Processing input files ${files} for target region ${target_bed_file}"
+        forward files
+    }
 }
 
 fastqc = {
@@ -95,18 +100,6 @@ index_bam = {
         exec "samtools index $input.bam"
     }
     forward input
-}
-
-flagstat = {
-    exec "samtools flagstat $input.bam > $output"
-}
-
-igvcount = {
-    exec "igvtools count $input.bam $output hg19"
-}
-
-indexVCF = {
-    exec "./vcftools_prepare.sh $input.vcf"
 }
 
 realignIntervals = {
@@ -250,6 +243,7 @@ sort_vcf = {
 
 @transform("xlsx")
 vcf_to_excel_vep = {
+    doc "Convert a VCF output file to Excel format, including annotations from VEP"
     exec """
         JAVA_OPTS="-Xmx4g -Djava.awt.headless=true" groovy 
             -cp $GROOVY_NGS/groovy-ngs-utils.jar:$EXCEL/excel.jar 
@@ -281,11 +275,10 @@ plot_coverage = {
     doc "Create plots showing coverage distributions for alignment"
     from("cov.txt") {
         transform("cum.png") {
-            sample_name = agrf_illumina_parse_info(input).sample
             msg "Plotting coverage for sample $sample_name"
             R {"""
                 sample = '$input.txt'
-                name = '$sample_name'
+                name = '$sample'
                 samplecov = read.table(file=pipe(paste("awk '{ print $NF }' ",sample, sep='')))
                 tf = table(factor(samplecov$V1, levels=0:max(samplecov)))
                 cs = cumsum(tf)
@@ -302,13 +295,11 @@ plot_coverage = {
 
 gatk_depth_of_coverage = {
 
-    // requires target_bed_file : "BED file specifying target region to report coverage levels for"
- 
-    println "Target bed file = $target_bed_file"
+    output.dir = "qc"
 
-    var target_name : "all"
+    //var target_name : "all"
 
-    transform(".bam") to(target_name + ".cov.sample_cumulative_coverage_counts") {
+    transform(".bam") to("."+target_name + ".cov.sample_cumulative_coverage_counts") {
         exec """
             java -Xmx2g -jar $GATK/GenomeAnalysisTK.jar 
                -R $REF
@@ -321,22 +312,12 @@ gatk_depth_of_coverage = {
     }
 }
 
-find_low_coverage_blocks = {
-
-    // TODO: establish coverage threshold to report on
-    var coverage_threshold : 15
-
-    requires target_bed_file : "BED file specifying target region to report low coverage regions for"
-
-    transform("txt") to("blocks.txt") {
-        exec """
-            python $BASE/pipeline/scripts/low_coverage_blocks.py $input.txt $output1.txt $coverage_threshold
-        """
-
-    }
-}
-
 qc_excel_report = {
+
+    doc "Create an excel file containing a summary of QC data for all the samples for a given target region"
+
+    def samples = sample_info.grep { it.value.target == target_name }.collect { it.value.sample }
+
     from(target_name+".bed.cov.txt") {
         exec """
             JAVA_OPTS=-Xmx4g groovy -cp $EXCEL/excel.jar $BASE/pipeline/scripts/qc_excel_report.groovy 
@@ -351,6 +332,8 @@ qc_excel_report = {
 
 
 annovar_summarize_refgene = {
+    doc "Annotate variants using Annovar"
+    output.dir="variants"
     transform("vcf") to(["av","av.refgene.exome_summary.csv","av.refgene.exonic_variant_function","av.refgene.genome_summary.csv"]) {
         exec """
                 $ANNOVAR/convert2annovar.pl $input -format vcf4 > $output.av
@@ -363,7 +346,3 @@ annovar_summarize_refgene = {
         """
     }
 }
-
-
-
-
