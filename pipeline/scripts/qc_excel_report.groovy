@@ -95,6 +95,67 @@ class Block {
 
 }
 
+// Calculate the contiguous blocks of low coverage from the coverage file
+Map sampleBlocks = [:]
+Map sampleStats = [:]
+Set allGenes = new HashSet()
+
+for(sample in samples) {
+    Block block = null
+    int threshold =15
+    int lineCount = 0
+    int blockCount = 0
+    int totalBP = 0
+    def coverageStats = new DescriptiveStatistics()
+
+    def blocks = []
+
+    def write = {
+        blockCount++
+        blocks.add(block)
+        // println "Writing block ${block.hashCode()} for $gene from $start - $end"
+        block = null
+    }
+
+    if(!files[sample].coverage)
+            err "Unable to find coverage file (*.cov.txt) for sample $sample"
+
+    println "Low cov file for $sample = ${files[sample].coverage}"
+
+    new File(files[sample].coverage).eachLine { line ->
+        ++lineCount
+        (chr,start,end,gene,offset,cov) = line.split('\t')
+        cov = cov.toFloat()
+        coverageStats.addValue(cov.toInteger())
+        int pos = start.toInteger() + offset.toInteger()
+        String region = "$chr:$start"
+        ++totalBP
+        allGenes.add(gene)
+
+        if(block && block.region != region) 
+            write()
+
+        if(cov < threshold) {
+            if(!block)  {
+               block = new Block(chr:chr, region:region, gene:gene, start:pos)
+            }
+            block.stats.addValue(cov.toInteger())
+            block.end = pos
+        }
+        else {
+            if(block) 
+                write()
+        }
+
+        if(lineCount % 10000 == 0) {
+            println(new Date().toString() + "\t" + lineCount + " ($blockCount low coverage blocks observed)")
+        }
+    }
+    sampleBlocks[sample] = blocks
+    sampleStats[sample] = coverageStats
+}
+
+
 new ExcelBuilder().build {
 
     // Summary for all samples in the batch
@@ -117,7 +178,13 @@ new ExcelBuilder().build {
                 }
             }
         }
+        row {
+            cell("Mean Coverage").bold()
+            for(s in samples) { cell(sampleStats[s].mean) }
         
+            cell("Median Coverage").bold()
+            for(s in samples) { cell(sampleStats[s].getPercentile(50)) }
+        }
 
         for(depth in [1,10,20,50]) {
             row { center {
@@ -130,93 +197,43 @@ new ExcelBuilder().build {
     // Per sample summary
     for(sample in samples) {
         sheet(sample) {
+            def blocks = sampleBlocks[sample]
+            row {
+                cell('Total low regions').bold()
+                cell(blocks.size())
+            }
+            row {
+                cell('Total low bp').bold()
+                cell(blocks.sum { it.end-it.start})
+            }
+            row {
+                cell('Percent low bp').bold()
+                cell(blocks.sum { it.end-it.start} / (float)sampleStats[sample].getN())
+            }
+            row {
+                cell('Genes containing low bp').bold()
+                cell(blocks*.gene.unique().size())
+            }
+            row {
+                cell('Percent Genes containing low bp').bold()
+                cell(blocks*.gene.unique().size() / (float)allGenes.size())
+            }
 
-                Block block = null
-                int threshold =15
-                int lineCount = 0
-                int blockCount = 0
-                int totalBP = 0
-                Set allGenes = new HashSet()
+            row {
+            }
 
-                def blocks = []
+            bold { row {
+                cells('gene','chr','start','end','min','max','median','length')
+            }}
 
-                def write = {
-                    blockCount++
-                    blocks.add(block)
-                    // println "Writing block ${block.hashCode()} for $gene from $start - $end"
-                    block = null
+            def lowBed = new File("${sample}.low.bed").newWriter()
+            blocks.each { b ->
+                b.with {
+                    row { cells(gene, chr, start, end, stats.min, stats.max, stats.getPercentile(50), end-start) }
+                    lowBed.println([chr,start,end,stats.getPercentile(50)+'-'+gene].join("\t"))
                 }
-
-                if(!files[sample].coverage)
-                        err "Unable to find coverage file (*.cov.txt) for sample $sample"
-
-                println "Low cov file for $sample = ${files[sample].coverage}"
-
-                new File(files[sample].coverage).eachLine { line ->
-                    ++lineCount
-                    (chr,start,end,gene,offset,cov) = line.split('\t')
-                    cov = cov.toFloat()
-                    int pos = start.toInteger() + offset.toInteger()
-                    String region = "$chr:$start"
-                    ++totalBP
-                    allGenes.add(gene)
-
-                    if(block && block.region != region) 
-                        write()
-
-                    if(cov < threshold) {
-                        if(!block)  {
-                           block = new Block(chr:chr, region:region, gene:gene, start:pos)
-                        }
-                        block.stats.addValue(cov.toInteger())
-                        block.end = pos
-                    }
-                    else {
-                        if(block) 
-                            write()
-                    }
-
-                    if(lineCount % 10000 == 0) {
-                        println(new Date().toString() + "\t" + lineCount + " ($blockCount low coverage blocks observed)")
-                    }
-                }
-
-                row {
-                    cell('Total low regions').bold()
-                    cell(blocks.size())
-                }
-                row {
-                    cell('Total low bp').bold()
-                    cell(blocks.sum { it.end-it.start})
-                }
-                row {
-                    cell('Percent low bp').bold()
-                    cell(blocks.sum { it.end-it.start} / (float)totalBP)
-                }
-                row {
-                    cell('Genes containing low bp').bold()
-                    cell(blocks*.gene.unique().size())
-                }
-                row {
-                    cell('Percent Genes containing low bp').bold()
-                    cell(blocks*.gene.unique().size() / (float)allGenes.size())
-                }
-
-                row {
-                }
-
-                bold { row {
-                    cells('gene','chr','start','end','min','max','median','length')
-                }}
-
-                def lowBed = new File("${sample}.low.bed").newWriter()
-                blocks.each { b ->
-                    b.with {
-                        row { cells(gene, chr, start, end, stats.min, stats.max, stats.getPercentile(50), end-start) }
-                        lowBed.println([chr,start,end,stats.getPercentile(50)+'-'+gene].join("\t"))
-                    }
-                }
-                lowBed.close()
+            }
+            lowBed.close()
         }.autoSize()
     }
 }.save(opts.o)
