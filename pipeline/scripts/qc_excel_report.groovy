@@ -1,19 +1,45 @@
-//vim: set ts=4:sw=2:expandtab:cindent
+// vim: set ts=4:sw=2:expandtab:cindent:
+/////////////////////////////////////////////////////////////////////////
+//
+// Melbourne Genomics Demonstration Project
+//
+// VCF to Excel Format Conversion
+//
+// This script reads the VCF file containing annotations by VEP 
+// and produces an Excel file that can be easily viewed and filtered
+// by less technical users.
+//
+// Requires: Groovy NGS Utils (https://github.com/ssadedin/groovy-ngs-utils)
+//           ExcelCategory    (https://github.com/ssadedin/excelcatgory)
+//
+// Author: Simon Sadedin, simon.sadedin@mcri.edu.au
+//
+/////////////////////////////////////////////////////////////////////////
+
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 
+// Quick and simple way to exit with a message
+CliBuilder cli = new CliBuilder(usage: "<options> <gatk coverage report prefixes>\n",writer: new PrintWriter(System.err))
+err = { msg ->
+  System.err.println("\nERROR: " + msg + "\n")
+  cli.usage()
+  System.err.println()
+  System.exit(1)
+}
 
-CliBuilder cli = new CliBuilder(usage: "<options> <gatk coverage report prefixes>")
 cli.with {
     s "comma separated list of samples to include", longOpt: "samples", args: 1
+    o "name of output file", args:1
 }
 
 opts = cli.parse(args)
-
 samples = null
-if(opts.s) {
-    samples = opts.s.split(',')
-}
+if(!opts.s) 
+    err "Please provide -s option to specify samples"
+if(!opts.o) 
+    err "Please provide -o option to specify output file name"
 
+samples = opts.s.split(',')
 args = opts.arguments()
 
 err = { msg ->
@@ -21,21 +47,19 @@ err = { msg ->
   System.exit(1)
 }
 
-// The files are named similarly to this:
-// NA18507.dedup.realign.recal.cov.sample_interval_statistics
-
-//println "args = $args"
-
-// TODO: need to suffix sample names with underscore
+// TODO: this is not robust enough sample name matching: 
+// need to suffix sample names with underscore
 // when the file names are changed to contain library info
+matchesSample = { fileName, sample, extension -> new File(fileName).name.startsWith(sample) && fileName.endsWith(extension)}
+
 files = samples.collectEntries { sample ->
         [ 
           sample, 
             [ 
-              cov: args.find { it.startsWith(sample) && it.endsWith(".sample_cumulative_coverage_proportions")},
-              intervals: args.find { it.startsWith(sample) && it.endsWith(".sample_interval_statistics")},
-              metrics: args.find { it.startsWith(sample) && it.endsWith(".metrics") },
-              lowcov: args.find { new File(it).name.startsWith(sample) && it.endsWith(".cov.txt") }
+              cov: args.find { matchesSample(it,sample,".sample_cumulative_coverage_proportions") },
+              intervals: args.find { matchesSample(it,sample,".sample_interval_statistics") },
+              metrics: args.find { matchesSample(it,sample,".metrics") },
+              coverage: args.find { matchesSample(it,sample,".cov.txt") }
             ]
         ]
 }
@@ -52,11 +76,11 @@ covs = samples.collectEntries { sample ->
 // Read the Picard deduplication metrics
 metrics = samples.collectEntries { sample ->
         if(!files[sample].metrics)
-                err "Unable to find Picard metrics file in provided inputs: $args"
+                err "Unable to find Picard metrics file for sample $sample in provided inputs: $args"
         lines = new File(files[sample].metrics).readLines()
         int index = lines.findIndexOf { it.startsWith("LIBRARY") }
         if(index < 0)
-            err "Unable to locate LIBRARY line in Picard metrics file"
+            err "Unable to locate LIBRARY line in Picard metrics file ${files[sample].metrics}"
 
         [ sample, [ [ lines[index].split('\t'), lines[index+1].split('\t')*.toFloat() ].transpose().collectEntries() ]]
 }
@@ -122,10 +146,13 @@ new ExcelBuilder().build {
                     // println "Writing block ${block.hashCode()} for $gene from $start - $end"
                     block = null
                 }
-                
-                println "Low cov file for $sample = ${files[sample].lowcov}"
 
-                new File(files[sample].lowcov).eachLine { line ->
+                if(!files[sample].coverage)
+                        err "Unable to find coverage file (*.cov.txt) for sample $sample"
+
+                println "Low cov file for $sample = ${files[sample].coverage}"
+
+                new File(files[sample].coverage).eachLine { line ->
                     ++lineCount
                     (chr,start,end,gene,offset,cov) = line.split('\t')
                     cov = cov.toFloat()
@@ -192,4 +219,4 @@ new ExcelBuilder().build {
                 lowBed.close()
         }.autoSize()
     }
-}.save("qc.xlsx")
+}.save(opts.o)
