@@ -178,17 +178,20 @@ new ExcelBuilder().build {
                 }
             }
         }
+
         row {
             cell("Mean Coverage").bold()
             for(s in samples) { cell(sampleStats[s].mean) }
-        
+        }
+
+        row {
             cell("Median Coverage").bold()
             for(s in samples) { cell(sampleStats[s].getPercentile(50)) }
         }
 
         for(depth in [1,10,20,50]) {
             row { center {
-                  cell("Frac > $depth").bold()
+                  cell("Frac > ${depth}X").bold()
                   cells(samples.collect { covs[it]["gte_$depth"] })
             }}
         }
@@ -207,7 +210,7 @@ new ExcelBuilder().build {
                 cell(blocks.sum { it.end-it.start})
             }
             row {
-                cell('Percent low bp').bold()
+                cell('Frac low bp').bold()
                 cell(blocks.sum { it.end-it.start} / (float)sampleStats[sample].getN())
             }
             row {
