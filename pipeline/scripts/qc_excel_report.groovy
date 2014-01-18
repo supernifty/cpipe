@@ -218,7 +218,7 @@ new ExcelBuilder().build {
                 cell(blocks*.gene.unique().size())
             }
             row {
-                cell('Percent Genes containing low bp').bold()
+                cell('Frac Genes containing low bp').bold()
                 cell(blocks*.gene.unique().size() / (float)allGenes.size())
             }
 
