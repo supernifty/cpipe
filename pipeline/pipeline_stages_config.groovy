@@ -301,12 +301,13 @@ gatk_depth_of_coverage = {
 
     //var target_name : "all"
 
-    transform(".bam") to("."+target_name + ".cov.sample_cumulative_coverage_counts") {
+    transform(".bam") to("."+target_name + ".cov.sample_cumulative_coverage_proportions", 
+                         "."+target_name + ".cov.sample_interval_statistics") { 
         exec """
             java -Xmx2g -jar $GATK/GenomeAnalysisTK.jar 
                -R $REF
                -T DepthOfCoverage 
-               -o $output.sample_cumulative_coverage_counts.prefix
+               -o $output.sample_cumulative_coverage_proportions.prefix
                -I $input.bam
                -ct 1 -ct 10 -ct 20 -ct 50 -ct 100
                -L $target_bed_file
@@ -319,16 +320,16 @@ qc_excel_report = {
     doc "Create an excel file containing a summary of QC data for all the samples for a given target region"
 
     def samples = sample_info.grep { it.value.target == target_name }.collect { it.value.sample }
-
-    from(target_name+".bed.cov.txt") {
-        exec """
-            JAVA_OPTS=-Xmx4g groovy -cp $EXCEL/excel.jar $BASE/pipeline/scripts/qc_excel_report.groovy 
-                -s ${samples.keySet().join(",")} 
-                $inputs.sample_cumulative_coverage_proportions  
-                $inputs.sample_interval_statistics 
-                $inputs.metrics 
-                $inputs.txt
-        """
+    from("*.cov.txt", "*.dedup.metrics") produce(target_name + ".qc.xlsx") {
+            exec """
+                JAVA_OPTS="-Xmx4g -Djava.awt.headless=true" groovy -cp $EXCEL/excel.jar $BASE/pipeline/scripts/qc_excel_report.groovy 
+                    -s ${target_samples.join(",")} 
+                    -o $output.xlsx
+                    $inputs.sample_cumulative_coverage_proportions  
+                    $inputs.sample_interval_statistics 
+                    $inputs.metrics 
+                    $inputs.txt
+            """
     }
 }
 

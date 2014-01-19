@@ -15,6 +15,13 @@
 //
 /////////////////////////////////////////////////////////////////////////
 
+// Quick and simple way to exit with a message
+err = { msg ->
+  System.err.println("\nERROR: " + msg + "\n")
+  cli.usage()
+  System.err.println()
+  System.exit(1)
+}
 
 // Parse command line args
 CliBuilder cli = new CliBuilder(usage: "vcf_to_excel.groovy [options]\n")
@@ -24,18 +31,11 @@ cli.with {
   t 'Name for main spreadsheet tab (should reflect batch, sample group, etc)', args:1
   o 'Name of output file', args:1
 }
+
 opts = cli.parse(args)
 if(!opts) {
    cli.usage()
    err "Failed to parse command line options"
-}
-
-// Quick and simple way to exit with a message
-err = { msg ->
-  System.err.println("\nERROR: " + msg + "\n")
-  cli.usage()
-  System.err.println()
-  System.exit(1)
 }
 
 args = opts.arguments()

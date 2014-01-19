@@ -36,3 +36,5 @@ VEP="/usr/local/variant_effect_predictor"
 PLATFORM="illumina"
 
 
+// Set location of Annovar distribution
+ANNOVAR="$TOOLS/annovar/2013aug23"
