@@ -1,11 +1,11 @@
-//vim: set shiftwidth=4:ts=4:expandtab
+//vim: shiftwidth=4:ts=4:expandtab
 /////////////////////////////////////////////////////////////////////////
 //
 // Melbourne Genomics Demonstration Project
 //
 // VCF to Excel Format Conversion
 //
-// This script reads the VCF file containing annotations by VEP 
+// This script reads the VCF file and Annovar exome summary file
 // and produces an Excel file that can be easily viewed and filtered
 // by less technical users.
 //
@@ -16,6 +16,7 @@
 //
 /////////////////////////////////////////////////////////////////////////
 
+import groovy.sql.Sql
 
 // Parse command line args
 CliBuilder cli = new CliBuilder(usage: "vcf_to_excel.groovy [options]\n")
@@ -25,6 +26,7 @@ cli.with {
   a 'Annovar file containing annotations', args:1
   o 'Name of output file', args:1
   x 'Comma separated list of functional types to exclude', args:1
+  db 'Sqlite database containing known variants. If known, a column will be populated with the count of times observed.', args:1
 }
 opts = cli.parse(args)
 if(!opts) {
@@ -71,6 +73,14 @@ VCFIndex vcf = new VCFIndex(opts.i)
 missing_samples = samples.grep { !(it in vcf.headerVCF.samples) }
 if(missing_samples)
     err "The following samples were not found in the VCF file provided: ${missing_samples.join(',')}"
+
+
+// connect to database, if specified
+sql = null
+if(opts.db) {
+    Class.forName("org.sqlite.JDBC")
+    sql = Sql.newInstance("jdbc:sqlite:${opts.db}")
+}
 
 //
 // Function to find an Annovar variant in the original VCF file
@@ -142,6 +152,12 @@ new ExcelBuilder().build {
                     }
                 }
 
+              // Look up in database
+              if(sql) {
+                def variant_count = sql.firstRow("select count(*) from variant_observation o, variant v where o.variant_id = v.id and v.chr = 'chr22' and v.pos = 18923713 and v.alt = 'A'")[0]
+                cell(variant_count)
+              }
+
               // Try to annotate allele frequencies
               if(variant)
                   cells(variant.sampleGenoType(sample).AD)
@@ -184,3 +200,6 @@ new ExcelBuilder().build {
         }
     }.autoSize()
 }.save(opts.o)
+
+if(sql)
+   sql.close()
