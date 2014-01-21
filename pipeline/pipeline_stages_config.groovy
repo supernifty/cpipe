@@ -65,7 +65,11 @@ align_bwa = {
 
     // TODO: replace with real platform unit, ID and lane value based on real 
     // meta data file. For now these are faked
-    produce(sample + ".bam") {
+    println "All gz file are $inputs.gz"
+    def lane = (input.gz.toString() =~ /L[0-9]{1,3}/)[0]
+    def outputFile = sample + "_" + lane + ".bam"
+    println "Producing output bam $outputFile"
+    produce(outputFile) {
         exec """
                 set -o pipefail
 
@@ -91,6 +95,26 @@ merge_vcf = {
                 --out $output.vcf
              """
     }
+}
+
+@filter("merge")
+merge_bams = {
+
+    // If there is only 1 bam file, then there is no need to merge
+    // if(inputs.bam.size()==1)  {
+    //     forward input.bam
+    //     return
+    //}
+
+    msg "Merging $inputs.bam"
+    exec """
+    java -Xmx2g -jar $PICARD_HOME/lib/MergeSamFiles.jar
+            ${inputs.bam.withFlag("INPUT=")}
+            VALIDATION_STRINGENCY=LENIENT
+            ASSUME_SORTED=true
+            CREATE_INDEX=true
+            OUTPUT=$output.bam
+         """, "merge"
 }
 
 index_bam = {
@@ -349,3 +373,11 @@ annovar_summarize_refgene = {
         """
     }
 }
+
+add_to_database = {
+    // TODO
+    exec """
+        groovy -cp $EXCEL/excel.jar:$TOOLS/sqlite/sqlitejdbc-v056.jar vcf_to_db.groovy -v $input.vcf -a $input.csv -db $VARIANT_DB -b "testbatch"
+    """
+}
+

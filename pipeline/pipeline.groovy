@@ -61,8 +61,8 @@ run {
         sample_info.keySet() * [
                set_sample_info +
                     "%.gz" * [ fastqc ] + 
-                   align_bwa +
-                   index_bam +
+                   "L%_R*.gz" * [ align_bwa + index_bam ] +
+                   merge_bams +
                    dedup + index_bam + 
                    realignIntervals + realign + index_bam +
                    recal_count + recal + index_bam +
