@@ -306,7 +306,7 @@ gatk_depth_of_coverage = {
         exec """
             java -Xmx2g -jar $GATK/GenomeAnalysisTK.jar 
                -R $REF
-               -T DepthOfCoverage 
+               -T Coverage 
                -o $output.sample_cumulative_coverage_proportions.prefix
                -I $input.bam
                -ct 1 -ct 10 -ct 20 -ct 50 -ct 100
