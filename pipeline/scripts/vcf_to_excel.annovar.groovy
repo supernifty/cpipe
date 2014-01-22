@@ -112,8 +112,7 @@ new ExcelBuilder().build {
                     // Write out the header columns
                     bold {
                         row {
-                            cells(ANNOVAR_FIELDS + ['RefCount','AltCount'])
-                            cells(samples)
+                            cells(ANNOVAR_FIELDS + ["MapQ", "QD"] + (sql?["Prev Obs"]:[]) + ['RefCount','AltCount'])
                         }
                     }
                 }
@@ -149,12 +148,13 @@ new ExcelBuilder().build {
                         def exonicFunc = func=="splicing"?"":av.ExonicFunc
                         cells(func,gene,exonicFunc,aaChange)
                         cells(av.values[4..-1])
+                        println "Total values = ${av.values.size()}"
                     }
                 }
 
               // Look up in database
               if(sql) {
-                def variant_count = sql.firstRow("select count(*) from variant_observation o, variant v where o.variant_id = v.id and v.chr = 'chr22' and v.pos = 18923713 and v.alt = 'A'")[0]
+                def variant_count = sql.firstRow("select count(*) from variant_observation o, variant v where o.variant_id = v.id and v.chr = $variant.chr and v.pos = $variant.pos and v.alt = ${av.Obs}")[0]
                 cell(variant_count)
               }
 
