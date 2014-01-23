@@ -53,6 +53,14 @@ sample_info = lines.collect {
     it.split("\t") }.collectEntries { [ it[0], [ sample: it[0], files: it[2].split(",")*.trim(), target: it[1] ]] 
 } 
 
+// We are specifying that each analysis takes place inside a fixed file structure
+// where the parent directory is named according to the batch name. Thus we
+// can infer the batch name from the name of the parent directory.
+// 
+// Note: this variable can be overridden by passing a parameter to bpipe in case
+// you are running in a different location.
+batch = new File("..").canonicalFile.name
+
 targets = sample_info*.value*.target as Set
 
 run {
@@ -67,6 +75,7 @@ run {
                    realignIntervals + realign + index_bam +
                    recal_count + recal + index_bam +
                        [ call_variants, calc_coverage_stats, gatk_depth_of_coverage ]
-        ] + merge_vcf + filter_variants + annovar_summarize_refgene + [vcf_to_excel, qc_excel_report]
-   ]
+        ] + merge_vcf + filter_variants + [annovar_summarize_refgene + add_to_database, qc_excel_report]
+   ] + targets * [ set_target_info +  vcf_to_excel ]
 }
+
