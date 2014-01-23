@@ -32,7 +32,6 @@ set_sample_info = {
     doc "Validate and set information about the sample to be processed"
 
     branch.sample = branch.name
-
     if(sample_info[sample].target != target_name) {
         succeed "No files to process for sample $sample, target $target_name"
     }
@@ -97,31 +96,46 @@ merge_vcf = {
     }
 }
 
-@filter("merge")
 merge_bams = {
+    doc """
+        Merge the BAM files from multiple lanes together.
+        <p>
+        When there is only one BAM file the merge is skipped, and a 
+        symbolic link created instead.
+        """
 
-    // If there is only 1 bam file, then there is no need to merge
-    // if(inputs.bam.size()==1)  {
-    //     forward input.bam
-    //     return
-    //}
+    output.dir="align"
+    produce(sample + ".merge.bam") {
 
-    msg "Merging $inputs.bam"
-    exec """
-    java -Xmx2g -jar $PICARD_HOME/lib/MergeSamFiles.jar
-            ${inputs.bam.withFlag("INPUT=")}
-            VALIDATION_STRINGENCY=LENIENT
-            ASSUME_SORTED=true
-            CREATE_INDEX=true
-            OUTPUT=$output.bam
-         """, "merge"
+        // If there is only 1 bam file, then there is no need to merge
+        if(inputs.bam.size()==1)  {
+                msg "Skipping merge of $inputs.bam because there is only one file"
+                // This use of symbolic links may be questionable
+                // However if the ordinary case involves only one
+                // bam file then there may be some significant savings
+                // from doing this.
+                exec "ln -s ${file(input.bam).name} $output.bam; ln -s ${file(input.bam).name}.bai ${output.bam}.bai;"
+        }
+        else {
+            msg "Merging $inputs.bam size=${inputs.bam.size()}"
+            filter("merge") {
+                exec """
+                    java -Xmx2g -jar $PICARD_HOME/lib/MergeSamFiles.jar
+                        ${inputs.bam.withFlag("INPUT=")}
+                        VALIDATION_STRINGENCY=LENIENT
+                        ASSUME_SORTED=true
+                        CREATE_INDEX=true
+                        OUTPUT=$output.bam
+                 """, "merge"
+            }
+        }
+    }
 }
 
 index_bam = {
     // A bit of a hack to ensure the index appears in the
     // same directory as the input bam, no matter where it is
     // nb: fixed in new version of Bpipe
-    output.dir=file(input.bam).absoluteFile.parentFile.absolutePath
     transform("bam") to ("bam.bai") {
         exec "samtools index $input.bam"
     }
@@ -208,7 +222,7 @@ call_variants = {
                    -dcov 1600 
                    -L $EXOME_TARGET
                    -l INFO 
-                   -A AlleleBalance -A DepthOfCoverage -A FisherStrand 
+                   -A AlleleBalance -A Coverage -A FisherStrand 
                    -glm BOTH
                    -metrics $output.metrics
                    -o $output.vcf
