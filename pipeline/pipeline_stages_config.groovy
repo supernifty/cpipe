@@ -298,7 +298,7 @@ vcf_to_excel_vep = {
 vcf_to_excel = {
     doc "Convert a VCF output file to Excel format, merging information from Annovar"
 
-    from("*.exome_summary.csv", "*.vcf") produce(target_name + ".xlsx") {
+    from("*.exome_summary.sig.csv", "*.vcf") produce(target_name + ".xlsx") {
         exec """
             JAVA_OPTS="-Xmx2g -Djava.awt.headless=true" groovy 
                 -cp $EXCEL/excel.jar $BASE/pipeline/scripts/vcf_to_excel.annovar.groovy 
@@ -371,6 +371,16 @@ qc_excel_report = {
     }
 }
 
+@filter("sig")
+annotate_significance = {
+    doc "Add clinical significance category annotations as defined by Melbourne Genomics"
+    from("exome_summary.csv") {
+        exec """
+            python $BASE/pipeline/scripts/annotate_significance.py $input.csv > $output.csv
+        """
+    }
+}
+
 
 annovar_summarize_refgene = {
     doc "Annotate variants using Annovar"
@@ -389,7 +399,7 @@ annovar_summarize_refgene = {
 }
 
 add_to_database = {
-    // TODO
+    doc "Add discovered variants to a database to enable annotation of number of observations of the variant"
     exec """
         groovy -cp $EXCEL/excel.jar:$TOOLS/sqlite/sqlitejdbc-v056.jar vcf_to_db.groovy -v $input.vcf -a $input.csv -db $VARIANT_DB -b "testbatch"
     """
