@@ -1,5 +1,9 @@
+// The base of everything - set this ideally to the absolute path of the 
+// directory in which this file resides
+BASE="..."
+
 // Set location of you reference files here (see below for the files required)
-REFBASE="./hg19"
+REFBASE="$BASE/hg19"
 
 // Set a good location for storing large temp files here (probably not /tmp)
 TMPDIR="/tmp"
@@ -38,3 +42,40 @@ PLATFORM="illumina"
 
 // Set location of Annovar distribution
 ANNOVAR="$TOOLS/annovar/2013aug23"
+
+// Utilities for making Excel files 
+EXCEL="$TOOLS/excel/1.0"
+
+// Location of Bedtools binary
+BEDTOOLS="/usr/local/bedtools/2.17.0-intel/bin"
+
+// Utilties for processing NGS data in Java/Groovy
+GROOVY_NGS="$TOOLS/groovy-ngs-utils/1.0"
+
+// Set location of Variant Effect Predictor here
+// You also need to download the vep_cache data
+// and store it in the local directory called 'vep_cache'
+// (you can create a symlink to an existing directory with 
+// that name if desired).
+VEP="$TOOLS/variant_effect_predictor_74"
+
+IGVTOOLS="$TOOLS/IGVTools/2.3.6"
+
+// Location and version of BWA
+BWA="/usr/local/bwa/0.7.5a-intel/bin/bwa"
+
+// This is only used for setting read group information in the
+// BAM files
+PLATFORM="illumina"
+
+// The exome target region to use for the analysis
+// Note this is relative to the analysis directory, not
+// the directory of this file!
+EXOME_TARGET="../design/target_region.bed"
+
+ANNOVAR="$TOOLS/annovar/2013aug23"
+
+CONDEL="$TOOLS/condel/24-1-2013"
+
+// Database of unique variants, updated for each sample
+VARIANT_DB="$BASE/variants.db"
