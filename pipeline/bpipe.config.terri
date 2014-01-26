@@ -6,6 +6,12 @@ memory="8"
 jobtype="single"
 queue="terri"
 
+// To lower contention on the variant database,
+// restrict the concurrency on updating it down to 1
+limits {
+    variantdb = 1
+}
+
 // Command specific configuration
 commands {
 
