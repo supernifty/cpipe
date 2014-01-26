@@ -81,7 +81,7 @@ class Annovar:
         elif self.is_truncating():
             return 4
 
-        elif self.ExonicFunc == "synonymous SNV":
+        elif self.ExonicFunc in ["synonymous SNV", "unknown"]:
             return 0
         else:
             print >>sys.stderr, "WARNING: variant %s:%s %s/%s func=%s failed to be categorized" % \
@@ -96,18 +96,26 @@ class Annovar:
 
     def is_rare(self):
         # Return true iff at least one database has the variant at > the MAF_THRESHOLD
-        return any(map(lambda f: self.maf_value(f)>self.MAF_THRESHOLD, self.POPULATION_FREQ_FIELDS))
+        return not any(map(lambda f: self.maf_value(f)>self.MAF_THRESHOLD, self.POPULATION_FREQ_FIELDS))
 
     def is_novel(self):
         # return true iff the variant has no MAF in any database AND no DBSNP ID
         return not any(map(lambda f: self.maf_value(f) == 0, self.POPULATION_FREQ_FIELDS)) and self.dbSNP138 == ""
 
     def is_conserved(self):
-        return self.Conserved != ""
+        # At the moment, interpret this as Condel > 0.7, Conserved != ""
+        if not self.Conserved:
+            return false
+
+        condel_str = self.Condel 
+        if condel_str != "":
+            return float(condel_str) >= 0.7
+        else:
+            return false
 
     @staticmethod
     def init_columns(cols):
-        Annovar.columns = cols + ["MapQ","QD"]
+        Annovar.columns = cols #+ ["MapQ","QD"]
 
     def maf_value(self, name):
         value = self.line[self.columns.index(name)]
@@ -145,13 +153,21 @@ reader = csv.reader(open(options["-a"]), delimiter=',', quotechar='"', doublequo
 
 # Open CSV writer to standard output, first for header (for body comes in the loop below)
 header_out = csv.writer(sys.stdout, delimiter=',', quotechar='"', quoting=csv.QUOTE_NONE)
-header = True
+is_header = True
 for line in reader:
 
-    if header:
-        header = False
+    if is_header:
+        is_header = False
+        if "Qual" not in line:
+            line = line + ["Qual"]
+        
+        if "Depth" not in line:
+            line = line + ["Depth"]
+
         Annovar.init_columns(line)
-        header_out.writerow(Annovar.columns)
+
+        # Note: Annovar does not seem to provide Qual and Depth headings itself
+        header_out.writerow(Annovar.columns + ["Priority_Index"])
         sys.stdout.flush()
         output = csv.writer(sys.stdout, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
         continue

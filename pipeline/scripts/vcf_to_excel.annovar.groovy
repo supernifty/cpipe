@@ -29,10 +29,6 @@ cli.with {
   db 'Sqlite database containing known variants. If known, a column will be populated with the count of times observed.', args:1
 }
 opts = cli.parse(args)
-if(!opts) {
-   cli.usage()
-   err "Failed to parse command line options"
-}
 
 // Quick and simple way to exit with a message
 err = { msg ->
@@ -42,6 +38,10 @@ err = { msg ->
   System.exit(1)
 }
 
+if(!opts) {
+   cli.usage()
+   err "Failed to parse command line options"
+}
 args = opts.arguments()
 if(!opts.s) 
     err "Please provide -s option to specify samples to export"
@@ -52,6 +52,10 @@ if(!opts.o)
 if(!opts.a)
     err "Please provide -a option to specify Annovar annotation file"
 
+sample_info = new Sample().parse_sample_info('samples.txt')
+
+println "sample_info = $sample_info"
+
 exclude_types = opts.x ? opts.x.split(",") : []
 
 samples = opts.s.split(",")
@@ -61,7 +65,8 @@ ANNOVAR_FIELDS = null
 new File(opts.a).withReader { r -> ANNOVAR_FIELDS = r.readLine().split(",") as List }
 
 // Not all the fields have headers (why?)
-ANNOVAR_FIELDS += ["Qual","Depth"]
+if(!("Qual" in ANNOVAR_FIELDS))
+    ANNOVAR_FIELDS += ["Qual","Depth"]
 
 println "Annovar fields are " + ANNOVAR_FIELDS
 
@@ -73,7 +78,6 @@ VCFIndex vcf = new VCFIndex(opts.i)
 missing_samples = samples.grep { !(it in vcf.headerVCF.samples) }
 if(missing_samples)
     err "The following samples were not found in the VCF file provided: ${missing_samples.join(',')}"
-
 
 // connect to database, if specified
 sql = null
@@ -96,6 +100,11 @@ def find_vcf_variant(vcf, av, lineIndex) {
   }
 }
 
+// These are copied directly from the ##INFO section of an example VCF
+// that was processed by VEP. If the flags to VEP are changed, then they
+// may need to be updated
+VEP_FIELDS = "Allele|Gene|Feature|Feature_type|Consequence|cDNA_position|CDS_position|Protein_position|Amino_acids|Codons|Existing_variation|CANONICAL|PolyPhen|SYMBOL|SYMBOL_SOURCE|HGVSc|HGVSp|AA_MAF|EA_MAF|AFR_MAF|AMR_MAF|ASN_MAF|EUR_MAF|PUBMED|ENSP|SIFT|DISTANCE|CLIN_SIG|Condel".split("\\|")
+
 //
 // Now build our spreadsheet
 //
@@ -106,17 +115,20 @@ new ExcelBuilder().build {
             lineIndex = 0
             sampleCount = 0
             includeCount=0
-            annovar_csv = parseCSV(opts.a, ',')
+
+            // Read the CSV file entirely
+            def annovar_csv = parseCSV(opts.a, ',').collect { it }.sort { -it.Priority_Index.toInteger() }
+
+            // Write out header row
+            bold { row {
+                    cells(["Gene Category","Priority Index"] + ANNOVAR_FIELDS[0..-2] + (sql?["Prev Obs"]:[]) + ['RefCount','AltCount'])
+            } }
+
+            println "Priority genes for $sample are ${sample_info[sample].genes}"
+
+            // Sort the annovar output by significance
+
             for(av in annovar_csv) {
-                if(lineIndex == 0) {
-                    // Write out the header columns
-                    bold {
-                        row {
-                            cells(ANNOVAR_FIELDS + ['RefCount','AltCount'])
-                            cells(samples)
-                        }
-                    }
-                }
                 ++lineIndex
                 if(lineIndex%5000==0)
                     println new Date().toString() + "\tProcessed $lineIndex lines"
@@ -147,21 +159,30 @@ new ExcelBuilder().build {
                             aaChange = geneParts[2].toString()
                         }
                         def exonicFunc = func=="splicing"?"":av.ExonicFunc
+                        center {
+                            cells(gene in sample_info[sample].genes?1:2, av.Priority_Index)
+                        }
                         cells(func,gene,exonicFunc,aaChange)
-                        cells(av.values[4..-1])
+                        cells(av.values[4..-2])
                     }
                 }
 
               // Look up in database
               if(sql) {
-                def variant_count = sql.firstRow("select count(*) from variant_observation o, variant v where o.variant_id = v.id and v.chr = 'chr22' and v.pos = 18923713 and v.alt = 'A'")[0]
+                def variant_count = sql.firstRow("select count(*) from variant_observation o, variant v where o.variant_id = v.id and v.chr = $variant.chr and v.pos = $variant.pos and v.alt = ${av.Obs}")[0]
                 cell(variant_count)
               }
 
               // Try to annotate allele frequencies
-              if(variant)
-                  cells(variant.sampleGenoType(sample).AD)
+              if(variant) {
 
+                  // Reference depth
+                  cell(variant.sampleGenoType(sample).AD[0])
+
+                  // Alternate depth depends on which allele
+                  int altAllele = variant.alts.size()==1?1:variant.equalsAnnovar(av.Chr, av.Start.toInteger(), av.Obs)
+                  cell(variant.sampleGenoType(sample).AD[altAllele])
+              }
         
               // TODO: check concordance between annoation sources
               /*
@@ -173,8 +194,8 @@ new ExcelBuilder().build {
         }
         println "Sample $sample has ${sampleCount} / ${includeCount} of included variants"
         s/*.autoFilter("A:"+(char)(65+6+samples.size()))*/.autoSize()
-        s.setColumnWidth(3,30*256) // 30 chars wide for Gene column
-        s.setColumnWidth(1,60*256) // 60 chars wide for AAChange column
+        s.setColumnWidth(5,60*256) // 30 chars wide for Gene column
+        s.setColumnWidth(3,30*256) // 60 chars wide for AAChange column
     }
 
     sheet("README") {

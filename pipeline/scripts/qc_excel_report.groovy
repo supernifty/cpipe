@@ -6,8 +6,7 @@
 // VCF to Excel Format Conversion
 //
 // This script reads the VCF file containing annotations by VEP 
-// and produces an Excel file that can be easily viewed and filtered
-// by less technical users.
+// and produces an Excel file that can be easily viewed and filtered.
 //
 // Requires: Groovy NGS Utils (https://github.com/ssadedin/groovy-ngs-utils)
 //           ExcelCategory    (https://github.com/ssadedin/excelcatgory)
@@ -29,23 +28,22 @@ err = { msg ->
 
 cli.with {
     s "comma separated list of samples to include", longOpt: "samples", args: 1
+    t "threshold for reporting low coverage regions", args:1
     o "name of output file", args:1
 }
+
 
 opts = cli.parse(args)
 samples = null
 if(!opts.s) 
     err "Please provide -s option to specify samples"
+
+println "opts.o = $opts.o"
 if(!opts.o) 
     err "Please provide -o option to specify output file name"
 
 samples = opts.s.split(',')
 args = opts.arguments()
-
-err = { msg ->
-  System.err.println "\nERROR: $msg\n"
-  System.exit(1)
-}
 
 // TODO: this is not robust enough sample name matching: 
 // need to suffix sample names with underscore
@@ -82,7 +80,7 @@ metrics = samples.collectEntries { sample ->
         if(index < 0)
             err "Unable to locate LIBRARY line in Picard metrics file ${files[sample].metrics}"
 
-        [ sample, [ [ lines[index].split('\t'), lines[index+1].split('\t')*.toFloat() ].transpose().collectEntries() ]]
+        [ sample, [ [ lines[index].split('\t')[1..-1], lines[index+1].split('\t')[1..-1]*.toFloat() ].transpose().collectEntries() ]]
 }
 
 class Block {
@@ -102,7 +100,8 @@ Set allGenes = new HashSet()
 
 for(sample in samples) {
     Block block = null
-    int threshold =15
+    int threshold = (opts.t == false ? 15 : opts.t.toInteger())
+    println "Coverage threshodl = $threshold"
     int lineCount = 0
     int blockCount = 0
     int totalBP = 0
@@ -186,7 +185,9 @@ new ExcelBuilder().build {
 
         row {
             cell("Median Coverage").bold()
-            for(s in samples) { cell(sampleStats[s].getPercentile(50)) }
+            center {
+                for(s in samples) { cell(sampleStats[s].getPercentile(50)) }
+            }
         }
 
         for(depth in [1,10,20,50]) {
@@ -199,6 +200,7 @@ new ExcelBuilder().build {
 
     // Per sample summary
     for(sample in samples) {
+        println "Writing sheet for $sample"
         sheet(sample) {
             def blocks = sampleBlocks[sample]
             row {
@@ -211,7 +213,8 @@ new ExcelBuilder().build {
             }
             row {
                 cell('Frac low bp').bold()
-                cell(blocks.sum { it.end-it.start} / (float)sampleStats[sample].getN())
+                if(blocks)
+                    cell(blocks.sum { it.end-it.start} / (float)sampleStats[sample].getN())
             }
             row {
                 cell('Genes containing low bp').bold()

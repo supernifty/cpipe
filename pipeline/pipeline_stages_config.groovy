@@ -1,4 +1,4 @@
-// vim: set ts=4:sw=4:expandtab:cindent
+// vim: ts=4:sw=4:expandtab:cindent:
 ////////////////////////////////////////////////////////////
 //
 // Melbourne Genomics Variant Calling Pipeline
@@ -136,6 +136,7 @@ index_bam = {
     // A bit of a hack to ensure the index appears in the
     // same directory as the input bam, no matter where it is
     // nb: fixed in new version of Bpipe
+    output.dir=file(input.bam).absoluteFile.parentFile.absolutePath
     transform("bam") to ("bam.bai") {
         exec "samtools index $input.bam"
     }
@@ -245,10 +246,11 @@ filter_variants = {
 }
 
 @filter("vep")
-annotate = {
+annotate_vep = {
     doc "Annotate variants using VEP to add Ensemble annotations"
     output.dir="variants"
     exec """
+        PERL5LIB="$CONDEL"
         perl $VEP/variant_effect_predictor.pl --cache --dir $VEP/vep_cache 
             -i $input.vcf 
             --vcf -o $output.vcf 
@@ -256,18 +258,17 @@ annotate = {
             --canonical --per_gene --protein 
             --sift=b --polyphen=b
             --symbol hgnc --force_overwrite --hgvs  --maf_1kg --maf_esp --pubmed
+            --plugin Condel,$CONDEL/config,s
     """
 }
 
 calc_coverage_stats = {
     doc "Calculate coverage across a target region"
     output.dir="qc"
-    from(target_bed_file) {
-        transform("bam") to(file(input.bed).name+".cov.txt") {
-            exec """
-              coverageBed -d  -abam $input.bam -b $input.bed > $output.txt
-            """
-        }
+    transform("bam") to(file(target_bed_file).name+".cov.txt") {
+        exec """
+          coverageBed -d  -abam $input.bam -b $target_bed_file > $output.txt
+        """
     }
 }
 
@@ -281,13 +282,33 @@ sort_vcf = {
     }
 }
 
+augment_condel = {
+    from("exome_summary.csv") filter("con") {
+        exec """
+            JAVA_OPTS="-Xmx4g -Djava.awt.headless=true" groovy 
+                -cp $GROOVY_NGS/groovy-ngs-utils.jar:$EXCEL/excel.jar 
+                $SCRIPTS/merge_condel.groovy
+                    -i $input.vcf
+                    -a $input.csv
+                    -o $output.csv
+        """
+    }
+}
+
+index_vcf = {
+    output.dir="variants"
+    transform("vcf") to ("vcf.idx") {
+        exec "$IGVTOOLS/igvtools index $input.vcf"
+    }
+}
+
 @transform("xlsx")
 vcf_to_excel_vep = {
     doc "Convert a VCF output file to Excel format, including annotations from VEP"
     exec """
         JAVA_OPTS="-Xmx4g -Djava.awt.headless=true" groovy 
-            -cp $GROOVY_NGS/groovy-ngs-utils.jar:$EXCEL/excel.jar 
-            $BASE/pipeline/scripts/vcf_to_excel_vep.groovy 
+            -cp $SCRIPTS:$GROOVY_NGS/groovy-ngs-utils.jar:$EXCEL/excel.jar 
+            $SCRIPTS/vcf_to_excel_vep.groovy 
                 -i $input.vcf
                 -o $output.xlsx
                 -t ${new File("..").absoluteFile.name}
@@ -298,14 +319,15 @@ vcf_to_excel_vep = {
 vcf_to_excel = {
     doc "Convert a VCF output file to Excel format, merging information from Annovar"
 
-    from("*.exome_summary.sig.csv", "*.vcf") produce(target_name + ".xlsx") {
+    from(target_name+"*.exome_summary.*.csv", target_name+".*.vcf") produce(target_name + ".xlsx") {
         exec """
             JAVA_OPTS="-Xmx2g -Djava.awt.headless=true" groovy 
-                -cp $EXCEL/excel.jar $BASE/pipeline/scripts/vcf_to_excel.annovar.groovy 
+                -cp $SCRIPTS:$EXCEL/excel.jar:$TOOLS/sqlite/sqlitejdbc-v056.jar $SCRIPTS/vcf_to_excel.annovar.groovy 
                 -s '${target_samples.join(",")}'
                 -a $input.csv 
                 -i $input.vcf
                 -x "synonymous SNV"
+                -db $VARIANT_DB
                 -o $output.xlsx
         """
     }
@@ -337,12 +359,10 @@ gatk_depth_of_coverage = {
 
     output.dir = "qc"
 
-    //var target_name : "all"
-
-    transform(".bam") to("."+target_name + ".cov.sample_cumulative_coverage_proportions", 
+    transform("bam") to("."+target_name + ".cov.sample_cumulative_coverage_proportions", 
                          "."+target_name + ".cov.sample_interval_statistics") { 
         exec """
-            java -Xmx2g -jar $GATK/GenomeAnalysisTK.jar 
+            java -Xmx4g -jar $GATK/GenomeAnalysisTK.jar 
                -R $REF
                -T DepthOfCoverage 
                -o $output.sample_cumulative_coverage_proportions.prefix
@@ -357,11 +377,14 @@ qc_excel_report = {
 
     doc "Create an excel file containing a summary of QC data for all the samples for a given target region"
 
+    var coverage_threshold : 15
+
     def samples = sample_info.grep { it.value.target == target_name }.collect { it.value.sample }
     from("*.cov.txt", "*.dedup.metrics") produce(target_name + ".qc.xlsx") {
             exec """
-                JAVA_OPTS="-Xmx4g -Djava.awt.headless=true" groovy -cp $EXCEL/excel.jar $BASE/pipeline/scripts/qc_excel_report.groovy 
+                JAVA_OPTS="-Xmx4g -Djava.awt.headless=true" groovy -cp $EXCEL/excel.jar $SCRIPTS/qc_excel_report.groovy 
                     -s ${target_samples.join(",")} 
+                    -t $coverage_threshold
                     -o $output.xlsx
                     $inputs.sample_cumulative_coverage_proportions  
                     $inputs.sample_interval_statistics 
@@ -374,9 +397,10 @@ qc_excel_report = {
 @filter("sig")
 annotate_significance = {
     doc "Add clinical significance category annotations as defined by Melbourne Genomics"
-    from("exome_summary.csv") {
+    output.dir="variants"
+    from("con.csv") {
         exec """
-            python $BASE/pipeline/scripts/annotate_significance.py $input.csv > $output.csv
+            python $SCRIPTS/annotate_significance.py -a $input.csv > $output.csv
         """
     }
 }
@@ -387,21 +411,47 @@ annovar_summarize_refgene = {
     output.dir="variants"
     transform("vcf") to(["av","av.refgene.exome_summary.csv","av.refgene.exonic_variant_function","av.refgene.genome_summary.csv"]) {
         exec """
-                $ANNOVAR/convert2annovar.pl $input -format vcf4 > $output.av
+            $ANNOVAR/convert2annovar.pl $input.vcf -format vcf4 > $output.av
 
-                $ANNOVAR/summarize_annovar.pl 
-                    --genetype refgene 
-                    --verdbsnp 138  
-                    --outfile ${output.av}.refgene 
-                    --buildver hg19  $output.av $ANNOVAR/../humandb/
+            $ANNOVAR/summarize_annovar.pl 
+                --genetype refgene 
+                --verdbsnp 138  
+                --outfile ${output.av}.refgene 
+                --buildver hg19  $output.av $ANNOVAR/../humandb/
         """
     }
 }
 
 add_to_database = {
     doc "Add discovered variants to a database to enable annotation of number of observations of the variant"
-    exec """
-        groovy -cp $EXCEL/excel.jar:$TOOLS/sqlite/sqlitejdbc-v056.jar vcf_to_db.groovy -v $input.vcf -a $input.csv -db $VARIANT_DB -b "testbatch"
-    """
+    output.dir="variants"
+    uses(variantdb:1) {
+        exec """
+
+            echo "====> Adding variants for flaship $target_name to database"
+
+            JAVA_OPTS="-Xmx2g" groovy -cp $EXCEL/excel.jar:$TOOLS/sqlite/sqlitejdbc-v056.jar $SCRIPTS/vcf_to_db.groovy 
+                   -v $input.vcf 
+                   -a $input.csv 
+                   -db $VARIANT_DB 
+                   -b "$batch" 
+
+            echo "<==== Finished adding variants for flaship $target_name to database"
+
+            echo "Variants from $input.vcf were added to database $VARIANT_DB on ${new Date()}" > $output.txt
+        """
+    }
 }
 
+reorder = {
+    filter('reorder') {
+        exec """
+            java -Xmx2g -jar $PICARD_HOME/lib/ReorderSam.jar
+                TMP_DIR=$TMP_DIR
+                I=$input.bam
+                O=$output.bam
+                VALIDATION_STRINGENCY=LENIENT
+                REFERENCE=$HGFA
+            """ 
+    }
+}

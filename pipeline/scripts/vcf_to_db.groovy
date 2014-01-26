@@ -53,8 +53,11 @@ if(!opts.b)
 
 // Register driver / create database connection
 Class.forName("org.sqlite.JDBC")
+
+// Check if we need to create the necessary database tables or not
+isNewDb = !new File(opts.db).exists()
 sql = Sql.newInstance("jdbc:sqlite:${opts.db}")
-if(opts.c) {
+if(opts.c || isNewDb) {
   tables = ["""
         create table variant ( 
                 id integer primary key asc, 
@@ -92,7 +95,6 @@ if(opts.c) {
   ]
   tables.each { sql.execute(it) }
   println "Created ${tables.size()} tables"
-  System.exit(0)
 }
 
 exclude_types = opts.x ? opts.x.split(",") : []
@@ -182,7 +184,7 @@ for(sample in samples) {
         else {
             sql.execute("""
                 insert into variant (id,chr,pos,start,end,ref,alt,protein_change,freq_1000g, freq_esp, dbsnp_id) 
-                       values (NULL, $variant.chr, $variant.pos, $av.Start.toInteger(), $av.End.toInteger(), 
+                       values (NULL, $variant.chr, $variant.pos, ${av.Start.toInteger()}, ${av.End.toInteger()}, 
                               $av.Ref, $av.Obs, $av.AAChange, 
                               ${av["1000g2010nov_ALL"]},${av["ESP5400_ALL"]}, $av.dbSNP138)
             """)

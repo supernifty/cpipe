@@ -33,6 +33,9 @@ about title: "Melbourne Genomics Demonstration Project Pipeline"
 // Create this file by copying config.groovy.template and editing
 load 'config.groovy'
 
+// Supporting routines that parse and set up sample information
+load 'scripts/Sample.groovy'
+
 // All the core pipeline stages in the pipeline
 load 'pipeline_stages_config.groovy'
 
@@ -44,20 +47,25 @@ inputs "samples.txt" : """
                         Files containing paired end FastQ reads with sequencing data
                        """
 
-// Load the samples (todo: replace with something more robust)
-// The sample data will come from a real meta data file that is yet to be
-// specified.  Below we parse lines into a map keyed by sample name with submap 
-// having keys "sample", "target" and "files" as values
-lines = new File(args[0]).readLines().grep { !it.trim().startsWith('#') }
-sample_info = lines.collect { 
-    it.split("\t") }.collectEntries { [ it[0], [ sample: it[0], files: it[2].split(",")*.trim(), target: it[1] ]] 
-} 
+sample_info = parse_sample_info(args[0])
+
+// We are specifying that each analysis takes place inside a fixed file structure
+// where the parent directory is named according to the batch name. Thus we
+// can infer the batch name from the name of the parent directory.
+// 
+// Note: this variable can be overridden by passing a parameter to bpipe in case
+// you are running in a different location.
+batch = new File("..").canonicalFile.name
 
 targets = sample_info*.value*.target as Set
 
 run {
+    // For each target (flagship) we run the main pipeline in parallel
     targets * [
+
         set_target_info +
+        
+        // The first phase is to perform alignment and variant calling for each sample
         sample_info.keySet() * [
                set_sample_info +
                     "%.gz" * [ fastqc ] + 
@@ -67,6 +75,17 @@ run {
                    realignIntervals + realign + index_bam +
                    recal_count + recal + index_bam +
                        [ call_variants, calc_coverage_stats, gatk_depth_of_coverage ]
-        ] + merge_vcf + filter_variants + annovar_summarize_refgene + [vcf_to_excel, qc_excel_report]
-   ]
+        ] + 
+
+        // The second phase is to merge all the variants for the target (flagship)
+        // and then annotate them
+        merge_vcf + 
+        filter_variants + 
+        annotate_vep + index_vcf +
+        [ annovar_summarize_refgene + augment_condel + annotate_significance + add_to_database, qc_excel_report]
+   ] + 
+
+   // The final phase is to produce the output spreadsheet, 1 per target (flagship)
+   targets * [ set_target_info +  vcf_to_excel ]
 }
+
