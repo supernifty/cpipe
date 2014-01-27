@@ -100,18 +100,18 @@ class Annovar:
 
     def is_novel(self):
         # return true iff the variant has no MAF in any database AND no DBSNP ID
-        return not any(map(lambda f: self.maf_value(f) == 0, self.POPULATION_FREQ_FIELDS)) and self.dbSNP138 == ""
+        return not any(map(lambda f: self.maf_value(f) > 0.0, self.POPULATION_FREQ_FIELDS)) and self.dbSNP138 == ""
 
     def is_conserved(self):
         # At the moment, interpret this as Condel > 0.7, Conserved != ""
         if not self.Conserved:
-            return false
+            return False
 
         condel_str = self.Condel 
         if condel_str != "":
             return float(condel_str) >= 0.7
         else:
-            return false
+            return False
 
     @staticmethod
     def init_columns(cols):
@@ -127,55 +127,61 @@ class Annovar:
     def __getattr__(self,name):
         return self.line[self.columns.index(name)]
     
+    def set_value(self,name,value):
+        self.line[self.columns.index(name)]=value
+    
 ####################################################################################
 #
 # Main body
 #
 ####################################################################################
 
-# Parse command line options
-optstring = "a:"
-opts,args = getopt.getopt(sys.argv[1:],optstring)
-
-options = {}
-for opt in opts:
-   options[opt[0]] = opt[1]
-
-def usage(msg):
-    print >>sys.stderr, "\nERROR: %s\n\nUsage: annotate_significance.py -a <annovar file>\n" % msg
-    sys.exit(1)
-        
-if not '-a' in options:
-    usage("Please provide -a option.")
-
-# Read the file
-reader = csv.reader(open(options["-a"]), delimiter=',', quotechar='"', doublequote=True)
-
-# Open CSV writer to standard output, first for header (for body comes in the loop below)
-header_out = csv.writer(sys.stdout, delimiter=',', quotechar='"', quoting=csv.QUOTE_NONE)
-is_header = True
-for line in reader:
-
-    if is_header:
-        is_header = False
-        if "Qual" not in line:
-            line = line + ["Qual"]
-        
-        if "Depth" not in line:
-            line = line + ["Depth"]
-
-        Annovar.init_columns(line)
-
-        # Note: Annovar does not seem to provide Qual and Depth headings itself
-        header_out.writerow(Annovar.columns + ["Priority_Index"])
-        sys.stdout.flush()
-        output = csv.writer(sys.stdout, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-        continue
-
-    av = Annovar(line)
-
-    while len(line)<len(Annovar.columns):
-            line.append("")
-      
-    output.writerow(line + [av.category()])
-
+def main():
+    # Parse command line options
+    optstring = "a:"
+    opts,args = getopt.getopt(sys.argv[1:],optstring)
+    
+    options = {}
+    for opt in opts:
+       options[opt[0]] = opt[1]
+    
+    def usage(msg):
+        print >>sys.stderr, "\nERROR: %s\n\nUsage: annotate_significance.py -a <annovar file>\n" % msg
+        sys.exit(1)
+            
+    if not '-a' in options:
+        usage("Please provide -a option.")
+    
+    # Read the file
+    reader = csv.reader(open(options["-a"]), delimiter=',', quotechar='"', doublequote=True)
+    
+    # Open CSV writer to standard output, first for header (for body comes in the loop below)
+    header_out = csv.writer(sys.stdout, delimiter=',', quotechar='"', quoting=csv.QUOTE_NONE)
+    is_header = True
+    for line in reader:
+    
+        if is_header:
+            is_header = False
+            if "Qual" not in line:
+                line = line + ["Qual"]
+            
+            if "Depth" not in line:
+                line = line + ["Depth"]
+    
+            Annovar.init_columns(line)
+    
+            # Note: Annovar does not seem to provide Qual and Depth headings itself
+            header_out.writerow(Annovar.columns + ["Priority_Index"])
+            sys.stdout.flush()
+            output = csv.writer(sys.stdout, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            continue
+    
+        av = Annovar(line)
+    
+        while len(line)<len(Annovar.columns):
+                line.append("")
+          
+        output.writerow(line + [av.category()])
+    
+if __name__ == "__main__":    
+    main()
