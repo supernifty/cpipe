@@ -49,7 +49,7 @@ class SampleInfo {
                     sample: fields[0], 
                     files: fields[2].split(",")*.trim(), 
                     target: fields[1], 
-                    genes:  fields.size()>3?fields[3].split(","):[]
+                    genes:  fields.size()>3?fields[3].split(",")*.trim():[]
                 ) 
         }.collectEntries { [it.sample, it] } // Convert to map keyed by sample name
     }
