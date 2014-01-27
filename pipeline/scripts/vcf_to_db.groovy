@@ -1,4 +1,4 @@
-//vim: set shiftwidth=4:ts=4:expandtab
+//vim: shiftwidth=4:ts=4:expandtab:
 /////////////////////////////////////////////////////////////////////////
 //
 // Melbourne Genomics Demonstration Project
@@ -61,35 +61,38 @@ if(opts.c || isNewDb) {
   tables = ["""
         create table variant ( 
                 id integer primary key asc, 
-                chr text,
-                pos integer,   
-                start integer,
-                end integer,
-                ref text,
-                alt text,
-                protein_change text,
-                freq_1000g float,
-                freq_esp float,
-                dbsnp_id text
+                chr text NOT NULL,
+                pos integer NOT NULL,   -- the position as specified in VCF
+                start integer NOT NULL, -- the position as specified by Annovar
+                end integer NOT NULL,   -- end position as specified by Annovar
+                ref text NOT NULL,      -- reference sequence
+                alt text NOT NULL,      -- alternate (observed) sequence
+                protein_change text,    -- protein change (where applicable)
+                freq_1000g float,       -- frequency in 1000 genomes (if known)
+                freq_esp float,         -- frequency in ESP (if known)
+                dbsnp_id text           -- DBSNP ID (if known)
         );
         CREATE INDEX variant_idx ON variant (chr,pos,alt);
     """,
     """
         create table variant_observation (
                id integer primary key asc, 
-               variant_id integer,
-               sample_id integer,
+               variant_id integer references variant(id),
+               sample_id integer references sample(id),
                qual float,
-               dosage integer,
-               date date
+               dosage integer,  -- how many copies of the variant (1=het, 2=hom)
+               created datetime NOT NULL,
+               UNIQUE (variant_id, sample_id) ON CONFLICT ROLLBACK
         );
         CREATE INDEX variant_observation_idx ON variant_observation (variant_id);
    """,
    """
         create table sample (
                id integer primary key asc, 
-               sampleid text,
-               batch text
+               sampleid text NOT NULL,
+               batch text,
+               created datetime NOT NULL,
+               UNIQUE (sampleid) ON CONFLICT ROLLBACK
         )
    """
   ]
@@ -131,6 +134,7 @@ for(sample in samples) {
     lineIndex = 0
     sampleCount = 0
     includeCount=0
+    existingCount=0
     annovar_csv = ExcelCategory.parseCSV("", opts.a, ',')
     for(av in annovar_csv) {
         ++lineIndex
@@ -170,35 +174,42 @@ for(sample in samples) {
             // cells(av.values[4..-1])
         }
 
-
         def sample_row = sql.firstRow("select * from sample where sampleid = $sample")
         if(!sample_row) {
-            sql.execute("insert into sample (id, sampleid, batch) values (NULL, $sample, ${opts.b})")
+            sample_row = sql.execute("insert into sample (id, sampleid, batch, created) values (NULL, $sample, ${opts.b},datetime('now'))")
             sample_row = sql.firstRow("select * from sample where sampleid = $sample")
         }
 
         def variant_row = sql.firstRow("select * from variant where chr=$variant.chr and pos=$variant.pos and alt=$av.Obs")
         if(variant_row) {
-                println "Variant $variant.chr:$variant.pos is already known"
+                //println "Variant $variant.chr:$variant.pos is already known"
         }
         else {
-            sql.execute("""
+            variant_row = sql.execute("""
                 insert into variant (id,chr,pos,start,end,ref,alt,protein_change,freq_1000g, freq_esp, dbsnp_id) 
                        values (NULL, $variant.chr, $variant.pos, ${av.Start.toInteger()}, ${av.End.toInteger()}, 
                               $av.Ref, $av.Obs, $av.AAChange, 
                               ${av["1000g2010nov_ALL"]},${av["ESP5400_ALL"]}, $av.dbSNP138)
             """)
-
             variant_row = sql.firstRow("select * from variant where chr=$variant.chr and pos=$variant.pos and alt=$av.Obs")
         }
 
-        sql.execute("""
-                insert into variant_observation (id,variant_id,sample_id,qual,dosage, date) 
-                            values (NULL, $variant_row.id, $sample_row.id, ${gt.GQ.toDouble()}, ${variant.sampleDosage(sample)}, 'now')
-        """)
+        variant_obs = sql.firstRow("select * from variant_observation where sample_id = ${sample_row.id} and variant_id = ${variant_row.id}")
+        if(!variant_obs) {
+            sql.execute("""
+                    insert into variant_observation (id,variant_id,sample_id,qual,dosage, created) 
+                                values (NULL, $variant_row.id, $sample_row.id, ${gt.GQ.toDouble()}, ${variant.sampleDosage(sample)}, datetime('now'))
+            """)
+        }
+        else
+            existingCount++
 
     }
     println "Sample $sample has ${sampleCount} / ${includeCount} of included variants"
+    if(existingCount>0) {
+        println "WARNING: sample $sample has $existingCount variants that were already registered in the database"
+        println "WARNING: this sample may have been re-processed or re-sequenced."
+    }
 }
 sql.close()
 
