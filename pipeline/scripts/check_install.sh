@@ -12,15 +12,6 @@
 #
 ############################################################
 
-# Default versions of tools. Would be nice to share this with
-# config.groovy
-: ${BWA="0.7.5a"}
-: ${GATK="2.8.1-g932cd3a"}
-: ${SAMTOOLS="0.1.19"}
-: ${BEDTOOLS="2.18.2"}
-: ${ANNOVAR:="2013aug23"}
-: ${VEP="74"}
-
 # Helper functions
 function err() {
         echo
