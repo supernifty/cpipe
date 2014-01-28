@@ -46,7 +46,7 @@ fastqc = {
     doc "Run FASTQC to generate QC metrics for raw reads"
     output.dir = "fastqc"
     transform('.fastq.gz')  to('_fastqc.zip') {
-        exec "fastqc -o ${output.dir} $inputs.gz"
+        exec "$FASTQC/fastqc -o ${output.dir} $inputs.gz"
     }
 }
 
@@ -75,7 +75,7 @@ align_bwa = {
                 $BWA mem -M -t $threads -k $seed_length 
                          -R "@RG\\tID:1\\tPL:illumina\\tPU:1\\tLB:1\\tSM:${sample}"  
                          $REF $input1.gz $input2.gz | 
-                         samtools view -F 0x100 -bSu - | samtools sort - $output.prefix
+                         $SAMTOOLS/samtools view -F 0x100 -bSu - | $SAMTOOLS/samtools sort - $output.prefix
         ""","bwamem"
     }
 }
@@ -138,7 +138,7 @@ index_bam = {
     // nb: fixed in new version of Bpipe
     output.dir=file(input.bam).absoluteFile.parentFile.absolutePath
     transform("bam") to ("bam.bai") {
-        exec "samtools index $input.bam"
+        exec "$SAMTOOLS/samtools index $input.bam"
     }
     forward input
 }
@@ -159,6 +159,7 @@ realign = {
 }
 
 dedup = {
+    doc "Remove PCR duplicates from reads"
     output.dir="align"
     exec """
         java -Xmx4g -Djava.io.tmpdir=$TMPDIR -jar $PICARD_HOME/lib/MarkDuplicates.jar
@@ -174,14 +175,16 @@ dedup = {
 recal_count = {
     doc "Recalibrate base qualities in a BAM file so that quality metrics match actual observed error rates"
     output.dir="align"
-    // TODO: use non-lite version of GATK, remove disable_indel_quals flag
+    INDEL_QUALS=""
+    // To use lite version of GATK uncomment below
+    // INDEL_QUALS="--disable_indel_quals"
     exec """
         java -Xmx5g -jar $GATK/GenomeAnalysisTK.jar 
              -T BaseRecalibrator 
              -I $input.bam 
              -R $REF 
              --knownSites $DBSNP 
-             --disable_indel_quals
+             $INDEL_QUALS
              -l INFO 
              -cov ReadGroupCovariate -cov QualityScoreCovariate -cov CycleCovariate -cov ContextCovariate 
              -o $output.counts
@@ -251,7 +254,7 @@ annotate_vep = {
     output.dir="variants"
     exec """
         PERL5LIB="$CONDEL"
-        perl $VEP/variant_effect_predictor.pl --cache --dir $VEP/vep_cache 
+        perl $VEP/variant_effect_predictor.pl --cache --dir $TOOLS/vep/vep_cache 
             -i $input.vcf 
             --vcf -o $output.vcf 
             -species human 
@@ -267,7 +270,7 @@ calc_coverage_stats = {
     output.dir="qc"
     transform("bam") to(file(target_bed_file).name+".cov.txt") {
         exec """
-          coverageBed -d  -abam $input.bam -b $target_bed_file > $output.txt
+          $BEDTOOLS/bin/coverageBed -d  -abam $input.bam -b $target_bed_file > $output.txt
         """
     }
 }
@@ -283,6 +286,7 @@ sort_vcf = {
 }
 
 augment_condel = {
+    output.dir="variants"
     from("exome_summary.csv") filter("con") {
         exec """
             JAVA_OPTS="-Xmx4g -Djava.awt.headless=true" groovy 
@@ -322,7 +326,7 @@ vcf_to_excel = {
     from(target_name+"*.exome_summary.*.csv", target_name+".*.vcf") produce(target_name + ".xlsx") {
         exec """
             JAVA_OPTS="-Xmx2g -Djava.awt.headless=true" groovy 
-                -cp $SCRIPTS:$EXCEL/excel.jar:$TOOLS/sqlite/sqlitejdbc-v056.jar $SCRIPTS/vcf_to_excel.annovar.groovy 
+                -cp $SCRIPTS:$GROOVY_NGS/groovy-ngs-utils.jar:$EXCEL/excel.jar:$TOOLS/sqlite/sqlitejdbc-v056.jar $SCRIPTS/vcf_to_excel.annovar.groovy 
                 -s '${target_samples.join(",")}'
                 -a $input.csv 
                 -i $input.vcf
