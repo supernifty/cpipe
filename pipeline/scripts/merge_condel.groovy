@@ -97,7 +97,7 @@ for(av in annovar_csv) {
     if(lineIndex%5000==0)
         println new Date().toString() + "\tProcessed $lineIndex lines"
 
-    def values = trim_columns ? av.values[0..(av.values.size()-trim_columns-1)] : av.values
+    def values = trim_columns ? av.values[0..(trim_columns-1)] : av.values
 
     def variant = find_vcf_variant(vcf,av,lineIndex)
     if(!variant) {
