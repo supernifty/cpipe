@@ -68,8 +68,8 @@ run {
         // The first phase is to perform alignment and variant calling for each sample
         sample_info.keySet() * [
                set_sample_info +
-                    "%.gz" * [ fastqc ] + 
-                   "%_R*.gz" * [ align_bwa + index_bam ] +
+                   "%.gz" * [ fastqc ] + 
+                   "%_R#.fastq.gz" * [ align_bwa + index_bam ] +
                    merge_bams +
                    dedup + index_bam + 
                    realignIntervals + realign + index_bam +
