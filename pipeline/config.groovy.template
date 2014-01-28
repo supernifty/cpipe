@@ -31,7 +31,7 @@ BASE="..." // <===== YOU MUST EDIT THIS
 TMPDIR="/tmp"
 
 // Set location of you reference files here (see below for the files required)
-REFBASE="$BASE/hg19"
+REFBASE="$BASE/hg19" // <====== YOU MUST EDIT THIS OR CREATE IT
 
 // Set to the reference FASTA file, which must be indexed with bwa, and samtools faidx
 REF="$REFBASE/gatk.ucsc.hg19.fasta"
@@ -39,14 +39,27 @@ REF="$REFBASE/gatk.ucsc.hg19.fasta"
 // Set to a VCF file containing DBSNP entries
 DBSNP="$REFBASE/dbsnp_132.hg19.vcf"
 
-// Set VCF files containing known indels here
+// Set to a VCF file containing known indels here
 GOLD_STANDARD_INDELS="$REFBASE/Mills_and_1000G_gold_standard.indels.b37.chr.vcf"
+
+// NEXT: now run ./pipeline/scripts/check_install.sh from the root of 
+// the distribution
 
 //////////////////// OPTIONAL PARAMTERS ////////////////////////////////
 //
+// You probably do NOT need to set anything under here! 
+//
+///////////////////////////////////////////////////////////////////////
+
 // This is only used for setting read group information in the
 // BAM files
 PLATFORM="illumina"
+
+// Base location of all the tools that we use
+TOOLS="$BASE/tools"
+
+// Various support scripts that the pipeline uses
+SCRIPTS="$BASE/pipeline/scripts"
 
 // Location of Picard tools here
 PICARD_HOME="$BASE/tools/picard/picard-tools-1.65"
@@ -91,10 +104,6 @@ IGVTOOLS="$TOOLS/IGVTools/2.3.6"
 
 // Location and version of BWA
 BWA="$TOOLS/bwa/0.7.5a/bwa"
-
-// This is only used for setting read group information in the
-// BAM files
-PLATFORM="illumina"
 
 // The exome target region to use for the analysis
 // Note this is relative to the analysis directory, not
