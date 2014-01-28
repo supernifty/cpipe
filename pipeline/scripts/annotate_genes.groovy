@@ -1,12 +1,8 @@
-// vim: set cindent:ts=4:expandtab:sw=2
+// vim: cindent:ts=4:expandtab:sw=2
 /**
- *
  * Add genes to a bed file that are annotated in a second bed file,
- * and alternatively, check the genes in the second bed file by cross referencing
- * to UCSC database.
- * 
+ * or in RefSeq table downloaded from UCSC. 
  */
-
 CliBuilder cli = new CliBuilder(usage:"annotate_genes.groovy [-r <ucsc refgene annotations>] [-c] <bed_to_annotate> <bed_with_genes>")
 
 cli.with {
@@ -89,7 +85,7 @@ new BED(args[0]).eachRange { chr, start,end ->
         // err.println "(aborted)"
         // System.exit(1)
         if(!opts.c)
-            println "$chr\t${start-1}\t$end\t$gene"
+            println "$chr\t$start\t$end\t$gene"
 }
 
 if(misannotatedSize>0) {
