@@ -1,32 +1,32 @@
 // vim: set ts=4:sw=4:expandtab:cindent
-////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////
 //
 // Melbourne Genomics Variant Calling Pipeline
 //
-// This pipeline executes an exome variant calling analysis.
-//
-// There are a number of software requirements, which you should ensure are 
-// satisfied before running the pipeline. These need to be configured 
-// in the file called 'config.groovy'. A template is provided in 
-// config.groovy.template which you can use to create the file and set 
-// the right paths to your tools and reference data.
+// This pipeline executes the standard variant calling analysis for 
+// analysing data for the MGHA project.
 //
 // The best available documentation for setting up the pipeline is located
 // here:
 //
-//   https://sites.google.com/a/student.unimelb.edu.au/melbourne-genomics-pipeline-development/how-tos/setting-up-the-pipeline
+//   https://sites.google.com/site/melbournegenomics/how-tos/setting-up-the-pipeline
 // 
-// This documentation is temporary and subject to rapid change as the pipeline
-// is under heavy development.
+// Usage:
 //
-//    bpipe run -n 4 ../../../pipeline/pipeline.groovy data/*.fastq.gz
+//   bpipe run ../../../pipeline/pipeline.groovy samples.txt
 // 
 // Author: Simon Sadedin, MCRI
 //         Members of the Melbourne Genomics
 // 
-// License: TODO
+// Copyright Melbourne Genomics Health Alliance members. All rights reserved.
 //
-////////////////////////////////////////////////////////////
+// DISTRIBUTION:
+//
+// This source code should not be distributed to a third party without prior
+// approval of the Melbourne Genomics Health Alliance steering committee (via
+// Natalie Thorne - natalie.thorne@melbournegenomics.org.au).
+//
+////////////////////////////////////////////////////////////////////////////
 
 about title: "Melbourne Genomics Demonstration Project Pipeline"
 
@@ -69,7 +69,7 @@ run {
         sample_info.keySet() * [
                set_sample_info +
                     "%.gz" * [ fastqc ] + 
-                   "L%_R*.gz" * [ align_bwa + index_bam ] +
+                   "%_R*.gz" * [ align_bwa + index_bam ] +
                    merge_bams +
                    dedup + index_bam + 
                    realignIntervals + realign + index_bam +
