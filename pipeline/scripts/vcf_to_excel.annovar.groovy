@@ -13,6 +13,11 @@
 //           ExcelCategory    (https://github.com/ssadedin/excelcatgory)
 //
 // Author: Simon Sadedin, simon.sadedin@mcri.edu.au
+// DISTRIBUTION:
+//
+// This source code should not be distributed to a third party without prior
+// approval of the Melbourne Genomics Health Alliance steering committee (via
+// Natalie Thorne - natalie.thorne@melbournegenomics.org.au).
 //
 /////////////////////////////////////////////////////////////////////////
 
@@ -180,7 +185,7 @@ new ExcelBuilder().build {
                   cell(variant.sampleGenoType(sample).AD[0])
 
                   // Alternate depth depends on which allele
-                  int altAllele = variant.alts.size()==1?1:variant.equalsAnnovar(av.Chr, av.Start.toInteger(), av.Obs)
+                  int altAllele = (variant.alts.size()==1)?1:variant.equalsAnnovar(av.Chr, av.Start.toInteger(), av.Obs)
                   cell(variant.sampleGenoType(sample).AD[altAllele])
               }
         
