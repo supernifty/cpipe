@@ -21,6 +21,11 @@ set_target_info = {
     branch.target_bed_file = "../design/${target_name}.bed"
     branch.target_samples = sample_info.grep { it.value.target == target_name }*.value*.sample
 
+    // Copy design region used to the (private) design region directory for 
+    // this batch
+    output.dir="../design"
+    exec "if [ ! -e $target_bed_file ]; then cp $BASE/designs/flagships/${target_name}.bed $target_bed_file; fi"
+
     if(!new File(target_bed_file).exists())
         fail("Target bed file $target_bed_file could not be located for processing sample $branch.name")
 
@@ -48,6 +53,19 @@ fastqc = {
     transform('.fastq.gz')  to('_fastqc.zip') {
         exec "$FASTQC/fastqc -o ${output.dir} $inputs.gz"
     }
+}
+
+check_fastqc = {
+
+   //  from("fastqc_summary.txt") {
+   //     if(file(input.txt).text.indexOf("Failed")) {
+            send html {
+                body {
+                    p("Hi simon, your pipeline failed :-(")
+                }
+            } //to gtalk
+   //     }
+   // }
 }
 
 align_bwa = {
@@ -224,7 +242,6 @@ call_variants = {
                    --dbsnp $DBSNP 
                    -stand_call_conf $call_conf -stand_emit_conf $emit_conf
                    -dcov 1600 
-                   -L $EXOME_TARGET
                    -l INFO 
                    -A AlleleBalance -A Coverage -A FisherStrand 
                    -glm BOTH
