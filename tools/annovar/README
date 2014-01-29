@@ -1,0 +1,6 @@
+====================== Melbourne Genomics Variant Calling Pipeline =======================
+
+This directory is where Annovar should be placed. Due to licensing restrictions, (Annovar
+is a proprietary, commercial product), Annovar is not included. Therefore you should register
+and download it yourself, so that it appears here, in the directory "2013aug23" (if you use
+a different version, but you have to then modify config.groovy to reflect that).
