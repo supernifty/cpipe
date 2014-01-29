@@ -49,7 +49,7 @@ function compile() {
             read -p "$PROGRAM does not seem to be compiled: do you want me to compile it? (y/n): "
             if [ "$REPLY" == "y" ];
             then
-                pushd `dirname $PROGRAM`
+                pushd `dirname $PROGRAM` || pushd `dirname $(dirname $PROGRAM)`
                 [ ! -e Makefile ] && cd ..
                 [ ! -e Makefile ] && err "Cannot find Makefile for $PROGRAM"
                 make || err "$PROGRAM failed to compile"
@@ -79,7 +79,7 @@ compile "$BEDTOOLS/bin/bedtools"
 
 msg "Check GATK is downloaded and available"
 [ -e $GATK/GenomeAnalysisTK.jar ] || \
-        err "Could not locate GATK jar file. Please download and install GATK to tools/gatk/$GATK/" 
+        err "Could not locate $GATK/GenomeAnalysisTK.jar file. Please download and install GATK to $GATK/" 
 
 msg "Check Annovar is downloaded and available"
 [ -e $ANNOVAR/annotate_variation.pl ] || \
