@@ -34,6 +34,8 @@ TMPDIR="/tmp"
 REFBASE="$BASE/hg19" // <====== YOU MUST EDIT THIS OR CREATE IT
 
 // Set to the reference FASTA file, which must be indexed with bwa, and samtools faidx
+// To download this file, and the files below, visit the GATK resource bundle
+// at ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/2.8/hg19
 REF="$REFBASE/gatk.ucsc.hg19.fasta"
 
 // Set to a VCF file containing DBSNP entries
@@ -87,7 +89,7 @@ BEDTOOLS="$TOOLS/bedtools/2.18.2"
 SAMTOOLS="$TOOLS/samtools/0.1.19"
 
 // FastQC tool
-FASTQC="$TOOLS/fastqc/10.1"
+FASTQC="$TOOLS/fastqc/0.10.1"
 
 // Utilties for processing NGS data in Java/Groovy
 GROOVY_NGS="$TOOLS/groovy-ngs-utils/1.0"
