@@ -29,14 +29,15 @@ set_target_info = {
 
     // Copy design region used to the (private) design region directory for 
     // this batch
-    output.dir="../design"
-    exec """
-        if [ ! -e $target_bed_file ]; 
-        then 
-            mkdir -p ../design;
-            cp $BASE/designs/flagships/${target_name}.bed $target_bed_file; 
-        fi
-    """
+    if(!file(target_bed_file).exists()) {
+        exec """
+            if [ ! -e $target_bed_file ]; 
+            then 
+                mkdir -p ../design;
+                cp $BASE/designs/flagships/${target_name}.bed $target_bed_file; 
+            fi
+        """
+    }
 
     if(!new File(target_bed_file).exists())
         fail("Target bed file $target_bed_file could not be located for processing sample $branch.name")
@@ -213,8 +214,7 @@ recal_count = {
              -T BaseRecalibrator 
              -I $input.bam 
              -R $REF 
-             --knownSites $DBSNP 
-             $INDEL_QUALS
+             --knownSites $DBSNP $INDEL_QUALS
              -l INFO 
              -cov ReadGroupCovariate -cov QualityScoreCovariate -cov CycleCovariate -cov ContextCovariate 
              -o $output.counts
