@@ -9,8 +9,14 @@
 // Author: Simon Sadedin, MCRI
 //         Members of Melbourne Genomics
 //
-// License: TODO
-// 
+// Copyright Melbourne Genomics Health Alliance members. All rights reserved.
+//
+// DISTRIBUTION:
+//
+// This source code should not be distributed to a third party without prior
+// approval of the Melbourne Genomics Health Alliance steering committee (via
+// Natalie Thorne - natalie.thorne@melbournegenomics.org.au).
+/// 
 ////////////////////////////////////////////////////////
 
 set_target_info = {
@@ -24,7 +30,13 @@ set_target_info = {
     // Copy design region used to the (private) design region directory for 
     // this batch
     output.dir="../design"
-    exec "if [ ! -e $target_bed_file ]; then cp $BASE/designs/flagships/${target_name}.bed $target_bed_file; fi"
+    exec """
+        if [ ! -e $target_bed_file ]; 
+        then 
+            mkdir -p ../design;
+            cp $BASE/designs/flagships/${target_name}.bed $target_bed_file; 
+        fi
+    """
 
     if(!new File(target_bed_file).exists())
         fail("Target bed file $target_bed_file could not be located for processing sample $branch.name")

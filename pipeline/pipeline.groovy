@@ -69,7 +69,7 @@ run {
         sample_info.keySet() * [
                set_sample_info +
                    "%.gz" * [ fastqc ] + 
-                   "%_R#.fastq.gz" * [ align_bwa + index_bam ] +
+                   ~"(.*)_R[0-9][_.].*fastq.gz" * [ align_bwa + index_bam ] +
                    merge_bams +
                    dedup + index_bam + 
                    realignIntervals + realign + index_bam +
