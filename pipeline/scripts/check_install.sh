@@ -17,7 +17,7 @@ function err() {
         echo
         echo "========================= ERROR =================================="
         echo
-        echo "$1" | fmt
+        echo "$1" | fmt -w 100
         echo
         echo "=================================================================="
         echo
@@ -26,18 +26,18 @@ function err() {
 
 function warn() {
         echo
-        echo "============================================================"
-        echo "WARNING: $1" | fmt
-        echo "============================================================"
+        echo "================================================================"
+        echo "WARNING: $1" | fmt -w 100
+        echo "================================================================"
         echo
 }
 
 
 function msg() {
         echo
-        echo "============================================================"
+        echo "================================================================"
         echo "$1"
-        echo "============================================================"
+        echo "================================================================"
         echo
 }
 
@@ -100,7 +100,16 @@ msg "Check VEP database downloaded for version $VEP_VERSION..."
 msg "Check that reference FASTA exists"
 [ -e "$REF" ] || err "Reference FASTA file $REF could not be found. Please place it there or change config.groovy to point to your reference"
 
+msg "Check reference FASTA is indexed"
+
 [ -e "$REF.fai" ] || err "Reference FASTA file $REF is not indexed. Please run samtools faidx to index it"
+
+[ -e "$REF.bwt" ] || err "Reference FASTA file $REF is not indexed by bwa. Please run 'bwa index -a bwtsw' on reference file ($REF) to index it"
+
+find `dirname $REF`/ -name '*.bwt' -mtime +180 | grep -q bwt && {
+    warn "The BWA index on your reference is more than 180 days old. If you experience errors in the alignment stage, please try re-indexing your data"
+    read -p "Press enter to continue"
+}
 
 [ -e "$DBSNP" ] || err "The DBSNP file $DBSNP does not exist. Please download it."
 
