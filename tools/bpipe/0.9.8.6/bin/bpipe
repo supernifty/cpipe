@@ -24,7 +24,7 @@ VERSION=0.9.8.6_beta_1
 # Build date as an integer (unix epoch time)
 # This should be 0 in the source tree, 
 # it will be replaced by the build script at build time
-BUILDDATE=1391048011837
+BUILDDATE=1391053358493
 
 # Default memory used
 # Mainly here to limit memory on systems with very large memory
@@ -351,7 +351,7 @@ display_log() {
 # Note: the first test below is necessary for Cygwin
 if readlink $0 > /dev/null && type readlink > /dev/null 2>&1 ; 
 then
-    BPIPE_HOME=$(dirname $(readlink $0))/..
+    BPIPE_HOME=$(dirname $(readlink -f $0))/..
 else
     BPIPE_HOME=`dirname $0`/..
 fi
