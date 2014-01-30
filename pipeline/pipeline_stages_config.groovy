@@ -294,6 +294,16 @@ annotate_vep = {
     """
 }
 
+coverage_metrics = {
+    exec """
+        java -Xmx2g -jar $PICARD_HOME/lib/CollectHsMetrics.jar
+            BAIT_INTERVALS=$EXOME_TARGET
+            TARGET_INTERVALS=$EXOME_TARGET
+            INPUT=$input.bam
+            REFERENCE_SEQUENCE=$REF
+    """
+}
+
 calc_coverage_stats = {
     doc "Calculate coverage across a target region"
     output.dir="qc"
@@ -302,6 +312,30 @@ calc_coverage_stats = {
           $BEDTOOLS/bin/coverageBed -d  -abam $input.bam -b $target_bed_file > $output.txt
         """
     }
+}
+
+check_coverage = {
+    output.dir = "qc"
+    transform("cov.txt") to("cov.stats.median", "cov.stats.tsv") {
+        R {"""
+            bam.cov = read.table("$input.txt", col.names=c("chr","start","end", "gene", "offset", "cov"))
+            meds = aggregate(bam.cov$cov, list(bam.cov$gene), median)
+            write.table(data.frame(gene=meds[,1],med=meds$x), "$output.tsv", quote=F, col.names=F, row.names=F)
+            writeLines(as.character(median(bam.cov$cov)), "$output.median")
+        """}
+
+        def medianCov = file(output.median).text.toFloat() 
+        if(medianCov< 30) {
+        /*    send html { body {
+               h2("Sample $sample has failed in batch $batch due to poor coverage")
+               p("Please examine this sample manually.")
+               p("Median Coverage: " + medianCov.toString())
+            } } to channel: gmail, file: output.tsv
+            */
+            succeed "Sample $sample has failed with insufficient median coverage"
+        }
+    }
+
 }
 
 sort_vcf = {
