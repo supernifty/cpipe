@@ -25,6 +25,7 @@ CliBuilder cli = new CliBuilder(usage: "vcf_to_excel.groovy [options]\n")
 cli.with {
   i 'VCF file to convert to Excel format', args:1
   a 'Annovar file containing annotations', args:1
+  t 'Trim <integer> columns from end (different versions of Annovar put unwanted columns on the end)', args:1
   o 'Output file (*.csv)', args:1
 }
 opts = cli.parse(args)
@@ -49,6 +50,8 @@ if(!opts.o)
     err "Please provide -o option to specify output file name"
 if(!opts.a)
     err "Please provide -a option to specify Annovar annotation file"
+
+trim_columns = opts.t ? opts.t.toInteger() : 0
 
 // First sniff the header line from the Annovar file to get the columns
 ANNOVAR_FIELDS = null
@@ -94,16 +97,18 @@ for(av in annovar_csv) {
     if(lineIndex%5000==0)
         println new Date().toString() + "\tProcessed $lineIndex lines"
 
+    def values = trim_columns ? av.values[0..(trim_columns-1)] : av.values
+
     def variant = find_vcf_variant(vcf,av,lineIndex)
     if(!variant) {
         println "WARNING: Variant $av.Chr:$av.Start at line $lineIndex could not be found in the original VCF file"
-        csvWriter.writeNext((av.values + [""]) as String[])
+        csvWriter.writeNext((values + [""]) as String[])
     }
 
     // Parse out the VEP annotations - the only one we want is Condel
     def vep = [VEP_FIELDS,variant.info.CSQ.split(",")[0].split("\\|")].transpose().collectEntries()
     
-    println "Condel score for $variant.chr:$variant.pos = $vep.Condel"
-    csvWriter.writeNext((av.values + [vep.Condel]) as String[])
+    // println "Condel score for $variant.chr:$variant.pos = $vep.Condel"
+    csvWriter.writeNext((values + [vep.Condel]) as String[])
 }
 writer.close()

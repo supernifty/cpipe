@@ -47,7 +47,7 @@ class SampleInfo {
         def sample_info = lines.collect { it.split("\t") }.collect { fields ->
                 new SampleInfo(
                     sample: fields[0], 
-                    files: fields[2].split(",")*.trim(), 
+                    files: fields[2].split(",")*.trim().collect {new File(it).parentFile?it:"../data/$it"}, 
                     target: fields[1], 
                     genes:  fields.size()>3?fields[3].split(",")*.trim():[]
                 ) 

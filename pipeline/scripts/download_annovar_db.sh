@@ -4,7 +4,7 @@
 #
 #######################################################
 
-if [ -z "$1" ] || [ -z "$2"];
+if [ -z "$1" ] || [ -z "$2" ];
 then
         echo
         echo "Usage: download_annovar_db.sh <annovar dir> <db dir>"
