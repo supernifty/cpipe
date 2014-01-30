@@ -106,6 +106,8 @@ msg "Check reference FASTA is indexed"
 
 [ -e "$REF.bwt" ] || err "Reference FASTA file $REF is not indexed by bwa. Please run 'bwa index -a bwtsw' on reference file ($REF) to index it"
 
+[ -e `echo "$REF" | sed 's/\.fa$/.dict/'` ] || err "Reference FASTA file $REF doesn't have a dictionary. Please run Picard CreateSequenceDictionary to make the dictionary (or download the .dict file)."
+
 find `dirname $REF`/ -name '*.bwt' -mtime +180 | grep -q bwt && {
     warn "The BWA index on your reference is more than 180 days old. If you experience errors in the alignment stage, please try re-indexing your data"
     read -p "Press enter to continue"
