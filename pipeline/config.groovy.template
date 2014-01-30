@@ -77,7 +77,7 @@ ANNOVAR="$TOOLS/annovar/2013aug23"
 // Due to GATK license restrictions, you must download
 // GATK 2.8.1 yourself and place it in this location
 // (or point this to your installation)
-GATK="$TOOLS/gatk/2.8.1-g932cd3a"
+GATK="$TOOLS/gatk/2.8-1-g932cd3a"
 
 // Utilities for making Excel files 
 EXCEL="$TOOLS/excel/1.0"
