@@ -121,7 +121,7 @@ new ExcelBuilder().build {
 
             // Write out header row
             bold { row {
-                    cells(["Gene Category","Priority Index"] + ANNOVAR_FIELDS[0..-2] + (sql?["Prev Obs"]:[]) + ['RefCount','AltCount'])
+                    cells(["Gene Category","Priority Index"] + ANNOVAR_FIELDS[0..-2] + (sql?["#Obs"]:[]) + ['RefCount','AltCount'])
             } }
 
             println "Priority genes for $sample are ${sample_info[sample].genes}"
