@@ -23,6 +23,7 @@ set_target_info = {
 
     doc "Validate and set information about the target region to be processed"
 
+    branch.batch = batch
     branch.target_name = branch.name
     branch.target_bed_file = "../design/${target_name}.bed"
     branch.target_samples = sample_info.grep { it.value.target == target_name }*.value*.sample
@@ -69,16 +70,23 @@ fastqc = {
 }
 
 check_fastqc = {
+    from("*_fastqc.zip") {
+        check {
+           exec """
+               for i in fastqc/${sample}*_fastqc/summary.txt; 
+               do
+                 grep -q 'FAIL' $i && exit 1;
+               done
 
-   //  from("fastqc_summary.txt") {
-   //     if(file(input.txt).text.indexOf("Failed")) {
-            send html {
-                body {
-                    p("Hi simon, your pipeline failed :-(")
-                }
-            } //to gtalk
-   //     }
-   // }
+               exit 0
+           """
+        } otherwise {
+            send report('templates/fastqc_failure.html') to channel: gmail, 
+                                                            subject: "Sample $sample has failed FastQC Check", 
+                                                            file: input.zip
+            succeed "Sample $sample failed FastQC check"
+        }
+    }
 }
 
 align_bwa = {
@@ -294,16 +302,6 @@ annotate_vep = {
     """
 }
 
-coverage_metrics = {
-    exec """
-        java -Xmx2g -jar $PICARD_HOME/lib/CollectHsMetrics.jar
-            BAIT_INTERVALS=$EXOME_TARGET
-            TARGET_INTERVALS=$EXOME_TARGET
-            INPUT=$input.bam
-            REFERENCE_SEQUENCE=$REF
-    """
-}
-
 calc_coverage_stats = {
     doc "Calculate coverage across a target region"
     output.dir="qc"
@@ -315,27 +313,29 @@ calc_coverage_stats = {
 }
 
 check_coverage = {
+
     output.dir = "qc"
-    transform("cov.txt") to("cov.stats.median", "cov.stats.tsv") {
+    var coverage_threshold : 60
+
+    transform("cov.txt") to("cov.stats.median", "cov.stats.csv") {
+
         R {"""
             bam.cov = read.table("$input.txt", col.names=c("chr","start","end", "gene", "offset", "cov"))
             meds = aggregate(bam.cov$cov, list(bam.cov$gene), median)
-            write.table(data.frame(gene=meds[,1],med=meds$x), "$output.tsv", quote=F, col.names=F, row.names=F)
+            write.csv(data.frame(Gene=meds[,1],MedianCov=meds$x), "$output.csv", quote=F, row.names=F)
             writeLines(as.character(median(bam.cov$cov)), "$output.median")
         """}
 
         def medianCov = file(output.median).text.toFloat() 
-        if(medianCov< 30) {
-        /*    send html { body {
-               h2("Sample $sample has failed in batch $batch due to poor coverage")
-               p("Please examine this sample manually.")
-               p("Median Coverage: " + medianCov.toString())
-            } } to channel: gmail, file: output.tsv
-            */
-            succeed "Sample $sample has failed with insufficient median coverage"
+        if(medianCov< 60) {
+
+            send report('templates/sample_failure.html') to channel: gmail, median: medianCov, file:output.csv
+
+            // It may seem odd to call this a success, but what we mean by it is that
+            // Bpipe should not fail the whole pipeline, merely this branch of it
+            succeed "Sample $sample has failed with insufficient median coverage ($medianCov)"
         }
     }
-
 }
 
 sort_vcf = {
