@@ -1,5 +1,7 @@
+BASE="/vlsci/VR0320/shared"
+
 // Set location of you reference files here (see below for the files required)
-REFBASE="/vlsci/VR0320/shared/hg19"
+REFBASE="$BASE/hg19"
 
 // Set a good location for storing large temp files here (probably not /tmp)
 // This is the scratch directory for Simon's account - not sure if others can access?
@@ -23,12 +25,13 @@ GOLD_STANDARD_INDELS="$REFBASE/Mills_and_1000G_gold_standard.indels.b37.chr.vcf"
 // High confidence SNPs from Illumina Omni chip
 SNPS_1000G="$REFBASE/1000G_omni2.5.hg19.sites.vcf"
 
-BASE="/vlsci/VR0320/shared/"
-
 // Location of all the tools that we custom install (eventually
 // this may be all of them, for now we are getting some from
 // VLSCI)
 TOOLS="$BASE/tools"
+
+// Location of supporting scripts
+SCRIPTS="$BASE/pipeline/scripts"
 
 // Set GATK location here - this pipeline ist tested with 2.3.9
 // and will not work with 1.x versions
@@ -65,3 +68,8 @@ PLATFORM="illumina"
 EXOME_TARGET="../design/target_region.bed"
 
 ANNOVAR="$TOOLS/annovar/2013aug23"
+
+CONDEL="$TOOLS/condel/24-1-2013"
+
+// Database of unique variants, updated for each sample
+VARIANT_DB="$BASE/variants.db"
