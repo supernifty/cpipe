@@ -57,12 +57,11 @@ set_sample_info = {
     }
 
     def files = sample_info[sample].files
-    if(files.any { !file(it).name.startsWith(sample+"_")})
-        succeed report('templates/invalid_input.html') to [
-            channel: gmail,
-            subject: "FASTQ files for sample $sample have invalid file name format",
-            message: "Files $files do not start with the sample name $sample"
-        ]
+    if(files.any { !file(it).name.startsWith(sample+"_")}) {
+        succeed report('templates/invalid_input.html') to channel: gmail, 
+                                                          subject: "FASTQ files for sample $sample have invalid file name format", 
+                                                          message: "Files $files do not start with the sample name $sample" 
+    }
 
     println "Processing input files ${files} for target region ${target_bed_file}"
     forward files
@@ -85,7 +84,7 @@ check_fastqc = {
            exec """
                for i in fastqc/${sample}*_fastqc/summary.txt; 
                do
-                 grep -q 'FAIL' $i && exit 1;
+                 [ ! -e ${i}.ignore ] && grep -q 'FAIL' $i && exit 1;
                done
 
                exit 0
@@ -107,13 +106,12 @@ align_bwa = {
     var seed_length : 19
 
     def lanes = inputs.gz.collect { (it.toString() =~ /_(L[0-9]{1,3})_/)[0][1] }.unique()
-    if(lanes.size()!=1) {
-        succeed report('templates/invalid_input.html') to [
-            channel: gmail, 
-            subject: "Invalid input files for sample $sample: Bad lane information",
-            message: """Failed to identify a unique lane number from FASTQ files: ${inputs.gz}. 
-                        Please check the format of the input file names""".stripIndent()
-    }
+    if(lanes.size()!=1) 
+        succeed report('templates/invalid_input.html') to channel: gmail, 
+                                                          subject: "Invalid input files for sample $sample: Bad lane information",
+                                                          message: """Failed to identify a unique lane number from FASTQ files: ${inputs.gz}. 
+                                                                        Please check the format of the input file names""".stripIndent()
+        
     branch.lane = lanes[0]
 
     def outputFile = sample + "_" + lane + ".bam"
