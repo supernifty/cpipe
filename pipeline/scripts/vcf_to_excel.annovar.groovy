@@ -122,7 +122,7 @@ new ExcelBuilder().build {
             includeCount=0
 
             // Read the CSV file entirely
-            def annovar_csv = parseCSV(opts.a, ',').collect { it }.sort { -it.Priority_Index.toInteger() }
+            def annovar_csv = parseCSV(opts.a, ',').grep { it.Priority_Index.toInteger()>0 }.sort { -it.Priority_Index.toInteger() }
 
             // Write out header row
             bold { row {
