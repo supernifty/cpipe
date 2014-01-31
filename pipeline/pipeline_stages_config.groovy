@@ -52,13 +52,20 @@ set_sample_info = {
 
     branch.sample = branch.name
     if(sample_info[sample].target != target_name) {
+        // This is expected because every file is processed for every target/flagship
         succeed "No files to process for sample $sample, target $target_name"
     }
-    else {
-        def files = sample_info[sample].files
-        println "Processing input files ${files} for target region ${target_bed_file}"
-        forward files
-    }
+
+    def files = sample_info[sample].files
+    if(files.any { !file(it).name.startsWith(sample+"_")})
+        succeed report('templates/invalid_input.html') to [
+            channel: gmail,
+            subject: "FASTQ files for sample $sample have invalid file name format",
+            message: "Files $files do not start with the sample name $sample"
+        ]
+
+    println "Processing input files ${files} for target region ${target_bed_file}"
+    forward files
 }
 
 fastqc = {
@@ -118,7 +125,7 @@ align_bwa = {
                 set -o pipefail
 
                 $BWA mem -M -t $threads -k $seed_length 
-                         -R "@RG\\tID:1\\tPL:$PLATFORM\\tPU:1\\tLB:1\\tSM:${sample}"  
+                         -R "@RG\\tID:${sample}_${lane}\\tPL:$PLATFORM\\tPU:1\\tLB:${sample_info[sample].library}\\tSM:${sample}"  
                          $REF $input1.gz $input2.gz | 
                          $SAMTOOLS/samtools view -F 0x100 -bSu - | $SAMTOOLS/samtools sort - $output.prefix
         ""","bwamem"
