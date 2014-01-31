@@ -82,7 +82,7 @@ GATK="$TOOLS/gatk/2.8-1-g932cd3a"
 // Utilities for making Excel files 
 EXCEL="$TOOLS/excel/1.0"
 
-// Location of Bedtools binary
+// Location of Bedtools distribution
 BEDTOOLS="$TOOLS/bedtools/2.18.2"
 
 // Location of Samtools
