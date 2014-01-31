@@ -10,9 +10,15 @@
 // Author: Simon Sadedin, MCRI
 //         Members of Melbourne Genomics
 //
-// License: TODO
-// 
-////////////////////////////////////////////////////////
+// Copyright Melbourne Genomics Health Alliance members. All rights reserved.
+//
+// DISTRIBUTION:
+//
+// This source code should not be distributed to a third party without prior
+// approval of the Melbourne Genomics Health Alliance steering committee (via
+// Natalie Thorne - natalie.thorne@melbournegenomics.org.au).
+//
+////////////////////////////////////////////////////////////////////////////
 
 /**
  * A simple data structure to represent the information
@@ -32,6 +38,9 @@ class SampleInfo {
     /** List of genes prioritised for the sample */
     List    genes
 
+    /** The library */
+    String library
+
     /**
      * Parse the given file to extract sample information
      *
@@ -49,7 +58,8 @@ class SampleInfo {
                     sample: fields[0], 
                     files: fields[2].split(",")*.trim().collect {new File(it).parentFile?it:"../data/$it"}, 
                     target: fields[1], 
-                    genes:  fields.size()>3?fields[3].split(",")*.trim():[]
+                    genes:  fields.size()>3?fields[3].split(",")*.trim():[],
+                    library: fields[0]
                 ) 
         }.collectEntries { [it.sample, it] } // Convert to map keyed by sample name
     }
