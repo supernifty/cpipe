@@ -28,7 +28,7 @@ set_target_info = {
     branch.target_bed_file = "../design/${target_name}.bed"
     branch.target_samples = sample_info.grep { it.value.target == target_name }*.value*.sample
 
-    // Copy design region used to the (private) design region directory for 
+    // Copy target region file to the design region directory for 
     // this batch
     if(!file(target_bed_file).exists()) {
         exec """
@@ -40,7 +40,7 @@ set_target_info = {
         """
     }
 
-    if(!new File(target_bed_file).exists())
+    if(!file(target_bed_file).exists())
         fail("Target bed file $target_bed_file could not be located for processing sample $branch.name")
 
     println "Target $target_name is processing samples $target_samples"
@@ -70,6 +70,9 @@ fastqc = {
 }
 
 check_fastqc = {
+
+    doc "Search for any failures in FastQC output and abort further processing if they are found"
+
     from("*_fastqc.zip") {
         check {
            exec """
@@ -81,38 +84,41 @@ check_fastqc = {
                exit 0
            """
         } otherwise {
-            send report('templates/fastqc_failure.html') to channel: gmail, 
+            succeed report('templates/fastqc_failure.html') to channel: gmail, 
                                                             subject: "Sample $sample has failed FastQC Check", 
                                                             file: input.zip
-            succeed "Sample $sample failed FastQC check"
         }
     }
 }
 
 align_bwa = {
-    doc """
-        Align with bwa mem algorithm.
-    """
 
-    //    Note: the results are filtered with flag 0x100 because bwa mem includes multiple 
-    //    secondary alignments for each read, which upsets downstream tools such as 
-    //    GATK and Picard.
+    doc "Align with bwa mem algorithm."
+
     output.dir = "align"
 
     var seed_length : 19
 
-    // TODO: replace with real platform unit, ID and lane value based on real 
-    // meta data file. For now these are faked
-    println "All gz file are $inputs.gz"
-    def lane = (input.gz.toString() =~ /L[0-9]{1,3}/)[0]
+    def lanes = inputs.gz.collect { (it.toString() =~ /_(L[0-9]{1,3})_/)[0][1] }.unique()
+    if(lanes.size()!=1) {
+        succeed report('templates/invalid_input.html') to [
+            channel: gmail, 
+            subject: "Invalid input files for sample $sample: Bad lane information",
+            message: """Failed to identify a unique lane number from FASTQ files: ${inputs.gz}. 
+                        Please check the format of the input file names""".stripIndent()
+    }
+    branch.lane = lanes[0]
+
     def outputFile = sample + "_" + lane + ".bam"
-    println "Producing output bam $outputFile"
     produce(outputFile) {
+        //    Note: the results are filtered with flag 0x100 because bwa mem includes multiple 
+        //    secondary alignments for each read, which upsets downstream tools such as 
+        //    GATK and Picard.
         exec """
                 set -o pipefail
 
                 $BWA mem -M -t $threads -k $seed_length 
-                         -R "@RG\\tID:1\\tPL:illumina\\tPU:1\\tLB:1\\tSM:${sample}"  
+                         -R "@RG\\tID:1\\tPL:$PLATFORM\\tPU:1\\tLB:1\\tSM:${sample}"  
                          $REF $input1.gz $input2.gz | 
                          $SAMTOOLS/samtools view -F 0x100 -bSu - | $SAMTOOLS/samtools sort - $output.prefix
         ""","bwamem"
@@ -172,6 +178,9 @@ merge_bams = {
 }
 
 index_bam = {
+
+    doc "Create an index for a BAM file"
+
     // A bit of a hack to ensure the index appears in the
     // same directory as the input bam, no matter where it is
     // nb: fixed in new version of Bpipe
@@ -183,17 +192,28 @@ index_bam = {
 }
 
 realignIntervals = {
-    // Hard-coded to take 2 known indels files right now
+    doc "Discover candidate regions for realignment in an alignment with GATK"
     output.dir="align"
     exec """
-        java -Xmx4g -jar $GATK/GenomeAnalysisTK.jar -T RealignerTargetCreator -R $REF -I $input.bam --known $GOLD_STANDARD_INDELS -o $output.intervals
+        java -Xmx4g -jar $GATK/GenomeAnalysisTK.jar 
+            -T RealignerTargetCreator 
+            -R $REF 
+            -I $input.bam 
+            --known $GOLD_STANDARD_INDELS 
+            -o $output.intervals
     """
 }
 
 realign = {
+    doc "Apply GATK local realignment to specified intervals in an alignment"
     output.dir="align"
     exec """
-        java -Xmx5g -jar $GATK/GenomeAnalysisTK.jar -T IndelRealigner -R $REF -I $input.bam -targetIntervals $input.intervals -o $output.bam
+        java -Xmx5g -jar $GATK/GenomeAnalysisTK.jar 
+             -T IndelRealigner 
+             -R $REF 
+             -I $input.bam 
+             -targetIntervals $input.intervals 
+             -o $output.bam
     ""","local_realign"
 }
 
@@ -250,8 +270,8 @@ call_variants = {
     // Default values of confidence thresholds
     // come from the Broad web site. However
     // these may be higher than suitable in our context
-    var call_conf:50.0, 
-        emit_conf:10.0
+    var call_conf:15.0, 
+        emit_conf:5.0
 
     transform("bam","bam") to("metrics","vcf") {
         exec """
@@ -303,7 +323,7 @@ annotate_vep = {
 }
 
 calc_coverage_stats = {
-    doc "Calculate coverage across a target region"
+    doc "Calculate coverage across a target region using Bedtools"
     output.dir="qc"
     transform("bam") to(file(target_bed_file).name+".cov.txt") {
         exec """
@@ -315,7 +335,6 @@ calc_coverage_stats = {
 check_coverage = {
 
     output.dir = "qc"
-    var coverage_threshold : 60
 
     transform("cov.txt") to("cov.stats.median", "cov.stats.csv") {
 
@@ -327,7 +346,7 @@ check_coverage = {
         """}
 
         def medianCov = file(output.median).text.toFloat() 
-        if(medianCov< 60) {
+        if(medianCov<MEDIAN_COVERAGE_THRESHOLD) {
 
             send report('templates/sample_failure.html') to channel: gmail, median: medianCov, file:output.csv
 
@@ -335,16 +354,6 @@ check_coverage = {
             // Bpipe should not fail the whole pipeline, merely this branch of it
             succeed "Sample $sample has failed with insufficient median coverage ($medianCov)"
         }
-    }
-}
-
-sort_vcf = {
-    output.dir="variants"
-    filter("sort") {
-        // NOTE: bedtools sorts in order chr1,chr10,... which is less intuitive
-        // and incompatible with reference
-        // exec "$BEDTOOLS/bedtools sort -header -i $input.vcf > $output.vcf"
-        exec "$IGVTOOLS/igvtools sort $input.vcf $output.vcf"
     }
 }
 
@@ -367,19 +376,6 @@ index_vcf = {
     transform("vcf") to ("vcf.idx") {
         exec "$IGVTOOLS/igvtools index $input.vcf"
     }
-}
-
-@transform("xlsx")
-vcf_to_excel_vep = {
-    doc "Convert a VCF output file to Excel format, including annotations from VEP"
-    exec """
-        JAVA_OPTS="-Xmx4g -Djava.awt.headless=true" groovy 
-            -cp $SCRIPTS:$GROOVY_NGS/groovy-ngs-utils.jar:$EXCEL/excel.jar 
-            $SCRIPTS/vcf_to_excel_vep.groovy 
-                -i $input.vcf
-                -o $output.xlsx
-                -t ${new File("..").absoluteFile.name}
-    """
 }
 
 @transform("xlsx")
@@ -424,8 +420,9 @@ plot_coverage = {
 
 gatk_depth_of_coverage = {
 
-    output.dir = "qc"
+    doc "Calculate statistics about depth of coverage for an alignment using GATK"
 
+    output.dir = "qc"
     transform("bam") to("."+target_name + ".cov.sample_cumulative_coverage_proportions", 
                          "."+target_name + ".cov.sample_interval_statistics") { 
         exec """
@@ -471,7 +468,6 @@ annotate_significance = {
         """
     }
 }
-
 
 annovar_summarize_refgene = {
     doc "Annotate variants using Annovar"
