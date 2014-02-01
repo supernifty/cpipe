@@ -79,21 +79,19 @@ check_fastqc = {
 
     doc "Search for any failures in FastQC output and abort further processing if they are found"
 
-    from("*_fastqc.zip") {
-        check {
-           exec """
-               for i in fastqc/${sample}*_fastqc/summary.txt; 
-               do
-                 [ ! -e ${i}.ignore ] && grep -q 'FAIL' $i && exit 1;
-               done
+    check {
+       exec """
+           for i in fastqc/${sample}*_fastqc/summary.txt; 
+           do
+             [ ! -e ${i}.ignore ] && grep -q 'FAIL' $i && exit 1;
+           done
 
-               exit 0
-           """
-        } otherwise {
-            succeed report('templates/fastqc_failure.html') to channel: gmail, 
-                                                            subject: "Sample $sample has failed FastQC Check", 
-                                                            file: input.zip
-        }
+           exit 0
+       """
+    } otherwise {
+        succeed report('templates/fastqc_failure.html') to channel: gmail, 
+                                                        subject: "Sample $sample has failed FastQC Check", 
+                                                        file: input.zip
     }
 }
 
@@ -351,7 +349,7 @@ check_coverage = {
         """}
 
         def medianCov = file(output.median).text.toFloat() 
-        if(medianCov<MEDIAN_COVERAGE_THRESHOLD) {
+        if(medianCov<MEDIAN_COVERAGE_THRESHOLD.toInteger()) {
 
             send report('templates/sample_failure.html') to channel: gmail, median: medianCov, file:output.csv
 
@@ -383,9 +381,14 @@ index_vcf = {
     }
 }
 
-@transform("xlsx")
 vcf_to_excel = {
     doc "Convert a VCF output file to Excel format, merging information from Annovar"
+
+    check {
+        exec "ls variants/${target_name}.*.exome_summary.*.csv > /dev/null 2>&1"
+    } otherwise { 
+        succeed "No samples succeeded for target $target_name" 
+    }
 
     from(target_name+"*.exome_summary.*.csv", target_name+".*.vcf") produce(target_name + ".xlsx") {
         exec """
