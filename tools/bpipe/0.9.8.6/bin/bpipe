@@ -1,4 +1,5 @@
 #!/bin/bash
+#vim: ts=4:expandtab:sw=4:
 #----------------------------------------------------------
 #
 # Bpipe Runner Script
@@ -24,7 +25,7 @@ VERSION=0.9.8.6_beta_1
 # Build date as an integer (unix epoch time)
 # This should be 0 in the source tree, 
 # it will be replaced by the build script at build time
-BUILDDATE=1391210216614
+BUILDDATE=1391341676189
 
 # Default memory used
 # Mainly here to limit memory on systems with very large memory
@@ -241,7 +242,7 @@ get_classpath() {
     LIB="local-lib"
   fi
 
-  CP="$BPIPE_HOME"/$LIB/bpipe.jar:"$BPIPE_HOME"/$LIB/groovy-all-2.1.0.jar:$BPIPE_HOME/$LIB/commons-cli-1.2.jar:$BPIPE_HOME/$LIB/jgraphx.jar:$BPIPE_HOME/$LIB/smack-3.2.2.jar:$BPIPE_HOME/$LIB/mail.jar:$HOME/bpipes/extra-lib.jar
+  CP="$BPIPE_HOME"/$LIB/*:$HOME/bpipes/extra-lib.jar
 
   # In case we are running in place in the bpipe project root, we pre-empt any other 
   # bpipe classes with those from the build directory and the eclipse compile path
@@ -345,15 +346,32 @@ display_log() {
     java -Xmx${MAX_JAVA_MEM} -classpath "$CP"  $BPIPEDEBUG -Dbpipe.home="$JVM_BPIPE_HOME" bpipe.Tail $ROWS_OPT $TAIL_OPT $* $LOG_ID
 }
 
+#----------------------------------------------------------
+# I am not happy about inheriting a dependency on Python,
+# but I haven't found a reasonable solution for resolving
+# symbolic link on OSX.
+#----------------------------------------------------------
+function python_readlink() {
+    python -c 'import os,sys; print os.path.realpath(sys.argv[1])' "$1"
+}
+
 # Locate Bpipe's home directory
 # In case readlink is not there we fall back to basename on its
 # own (will break in case of symbolic link)
 # Note: the first test below is necessary for Cygwin
-if readlink $0 > /dev/null && type readlink > /dev/null 2>&1 ; 
+
+
+if uname | grep -iq cygwin || uname | grep -iq Linux; 
 then
-    BPIPE_HOME=$(dirname $(readlink -f $0))/..
+    if readlink $0 > /dev/null && type readlink > /dev/null 2>&1 ; 
+    then
+        BPIPE_HOME=$(dirname $(readlink -f $0))/..
+    else
+        BPIPE_HOME=`dirname $0`/..
+    fi
 else
-    BPIPE_HOME=`dirname $0`/..
+   resolved_link=$(python_readlink "$0")
+   BPIPE_HOME=$(dirname "$resolved_link")/..
 fi
 
 # For Cygwin, we need windows compatible version of path for JVM to use
