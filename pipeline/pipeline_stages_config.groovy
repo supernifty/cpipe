@@ -382,7 +382,10 @@ index_vcf = {
 }
 
 vcf_to_excel = {
+
     doc "Convert a VCF output file to Excel format, merging information from Annovar"
+
+    requires sample_metadata_file : "File describing meta data for pipeline run (usually, samples.txt)"
 
     check {
         exec "ls variants/${target_name}.*.exome_summary.*.csv > /dev/null 2>&1"
@@ -400,6 +403,7 @@ vcf_to_excel = {
                 -x "synonymous SNV"
                 -db $VARIANT_DB
                 -o $output.xlsx
+                -si $sample_metadata_file
         """
     }
 }

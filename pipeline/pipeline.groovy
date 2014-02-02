@@ -47,6 +47,7 @@ inputs "samples.txt" : """
                         Files containing paired end FastQ reads with sequencing data
                        """
 
+sample_metadata_file = args[0]
 sample_info = parse_sample_info(args[0])
 
 // We are specifying that each analysis takes place inside a fixed file structure

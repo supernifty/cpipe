@@ -31,6 +31,7 @@ cli.with {
   a 'Annovar file containing annotations', args:1
   o 'Name of output file', args:1
   x 'Comma separated list of functional types to exclude', args:1
+  si 'sample meta data file for the pipeline', args:1
   db 'Sqlite database containing known variants. If known, a column will be populated with the count of times observed.', args:1
 }
 opts = cli.parse(args)
@@ -56,8 +57,10 @@ if(!opts.o)
     err "Please provide -o option to specify output file name"
 if(!opts.a)
     err "Please provide -a option to specify Annovar annotation file"
+if(!opts.si)
+    err "Please provide -si option to specify sample meta data file"
 
-sample_info = new Sample().parse_sample_info('samples.txt')
+sample_info = new Sample().parse_sample_info(opts.si)
 
 println "sample_info = $sample_info"
 
