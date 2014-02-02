@@ -57,12 +57,11 @@ set_sample_info = {
     }
 
     def files = sample_info[sample].files
-    if(files.any { !file(it).name.startsWith(sample+"_")})
-        succeed report('templates/invalid_input.html') to [
-            channel: gmail,
-            subject: "FASTQ files for sample $sample have invalid file name format",
-            message: "Files $files do not start with the sample name $sample"
-        ]
+    if(files.any { !file(it).name.startsWith(sample+"_")}) {
+        succeed report('templates/invalid_input.html') to channel: gmail, 
+                                                          subject: "FASTQ files for sample $sample have invalid file name format", 
+                                                          message: "Files $files do not start with the sample name $sample" 
+    }
 
     println "Processing input files ${files} for target region ${target_bed_file}"
     forward files
@@ -80,21 +79,19 @@ check_fastqc = {
 
     doc "Search for any failures in FastQC output and abort further processing if they are found"
 
-    from("*_fastqc.zip") {
-        check {
-           exec """
-               for i in fastqc/${sample}*_fastqc/summary.txt; 
-               do
-                 grep -q 'FAIL' $i && exit 1;
-               done
+    check {
+       exec """
+           for i in fastqc/${sample}*_fastqc/summary.txt; 
+           do
+             [ ! -e ${i}.ignore ] && grep -q 'FAIL' $i && exit 1;
+           done
 
-               exit 0
-           """
-        } otherwise {
-            succeed report('templates/fastqc_failure.html') to channel: gmail, 
-                                                            subject: "Sample $sample has failed FastQC Check", 
-                                                            file: input.zip
-        }
+           exit 0
+       """
+    } otherwise {
+        succeed report('templates/fastqc_failure.html') to channel: gmail, 
+                                                        subject: "Sample $sample has failed FastQC Check", 
+                                                        file: input.zip
     }
 }
 
@@ -107,13 +104,12 @@ align_bwa = {
     var seed_length : 19
 
     def lanes = inputs.gz.collect { (it.toString() =~ /_(L[0-9]{1,3})_/)[0][1] }.unique()
-    if(lanes.size()!=1) {
-        succeed report('templates/invalid_input.html') to [
-            channel: gmail, 
-            subject: "Invalid input files for sample $sample: Bad lane information",
-            message: """Failed to identify a unique lane number from FASTQ files: ${inputs.gz}. 
-                        Please check the format of the input file names""".stripIndent()
-    }
+    if(lanes.size()!=1) 
+        succeed report('templates/invalid_input.html') to channel: gmail, 
+                                                          subject: "Invalid input files for sample $sample: Bad lane information",
+                                                          message: """Failed to identify a unique lane number from FASTQ files: ${inputs.gz}. 
+                                                                        Please check the format of the input file names""".stripIndent()
+        
     branch.lane = lanes[0]
 
     def outputFile = sample + "_" + lane + ".bam"
@@ -353,7 +349,7 @@ check_coverage = {
         """}
 
         def medianCov = file(output.median).text.toFloat() 
-        if(medianCov<MEDIAN_COVERAGE_THRESHOLD) {
+        if(medianCov<MEDIAN_COVERAGE_THRESHOLD.toInteger()) {
 
             send report('templates/sample_failure.html') to channel: gmail, median: medianCov, file:output.csv
 
@@ -385,9 +381,17 @@ index_vcf = {
     }
 }
 
-@transform("xlsx")
 vcf_to_excel = {
+
     doc "Convert a VCF output file to Excel format, merging information from Annovar"
+
+    requires sample_metadata_file : "File describing meta data for pipeline run (usually, samples.txt)"
+
+    check {
+        exec "ls variants/${target_name}.*.exome_summary.*.csv > /dev/null 2>&1"
+    } otherwise { 
+        succeed "No samples succeeded for target $target_name" 
+    }
 
     from(target_name+"*.exome_summary.*.csv", target_name+".*.vcf") produce(target_name + ".xlsx") {
         exec """
@@ -399,6 +403,7 @@ vcf_to_excel = {
                 -x "synonymous SNV"
                 -db $VARIANT_DB
                 -o $output.xlsx
+                -si $sample_metadata_file
         """
     }
 }

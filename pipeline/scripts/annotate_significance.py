@@ -103,9 +103,9 @@ class Annovar:
         return not any(map(lambda f: self.maf_value(f) > 0.0, self.POPULATION_FREQ_FIELDS)) and self.dbSNP138 == ""
 
     def is_conserved(self):
-        # At the moment, interpret this as Condel > 0.7, Conserved != ""
-        if not self.Conserved:
-            return False
+        # At the moment, interpret this as Condel > 0.7 OR  Conserved != ""
+        if self.Conserved:
+            return True
 
         condel_str = self.Condel 
         if condel_str != "":
