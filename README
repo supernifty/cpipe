@@ -8,7 +8,7 @@ Directory structure under here:
  - batches  
      <batch id> : directories numbered by batch id containing source data
            - data     : source data (FastQ)
-           - design   : symbolic link to the design directory relevant to this batch
+           - design   : BED files specifying target regions for the batch
            - analysis : the outputs and working files from execution of the pipeline
 
  - designs
