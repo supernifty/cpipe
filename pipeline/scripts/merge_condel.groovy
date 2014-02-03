@@ -1,4 +1,4 @@
-//vim: shiftwidth=4:ts=4:expandtab
+// vim: shiftwidth=4:ts=4:expandtab
 /////////////////////////////////////////////////////////////////////////
 //
 // Melbourne Genomics Demonstration Project
@@ -83,7 +83,7 @@ def find_vcf_variant(vcf, av, lineIndex) {
 // These are copied directly from the ##INFO section of an example VCF
 // that was processed by VEP. If the flags to VEP are changed, then they
 // may need to be updated
-VEP_FIELDS = "Allele|Gene|Feature|Feature_type|Consequence|cDNA_position|CDS_position|Protein_position|Amino_acids|Codons|Existing_variation|CANONICAL|PolyPhen|SYMBOL|SYMBOL_SOURCE|HGVSc|HGVSp|AA_MAF|EA_MAF|AFR_MAF|AMR_MAF|ASN_MAF|EUR_MAF|PUBMED|ENSP|SIFT|DISTANCE|CLIN_SIG|Condel".split("\\|")
+VEP_FIELDS = "Allele|Gene|Feature|Feature_type|Consequence|cDNA_position|CDS_position|Protein_position|Amino_acids|Codons|Existing_variation|PolyPhen|AFR_MAF|AMR_MAF|ASN_MAF|EUR_MAF|AA_MAF|EA_MAF|CLIN_SIG|DISTANCE|SYMBOL|SYMBOL_SOURCE|HGVSc|HGVSp|CANONICAL|ENSP|PUBMED|SIFT|Condel".split("\\|")
 
 // Output file
 def writer = new FileWriter(opts.o)
@@ -106,9 +106,14 @@ for(av in annovar_csv) {
     }
 
     // Parse out the VEP annotations - the only one we want is Condel
-    def vep = [VEP_FIELDS,variant.info.CSQ.split(",")[0].split("\\|")].transpose().collectEntries()
-    
-    // println "Condel score for $variant.chr:$variant.pos = $vep.Condel"
+    def veps = variant.info.CSQ.split(",").collect { csq -> [VEP_FIELDS,csq.split("\\|")].transpose().collectEntries() }
+
+    def gene = av.Gene.replaceAll(/\(.*$/,"")
+    vep = veps.grep { it.SYMBOL == gene }.max { it.Condel ? it.Condel.toFloat() : 0 }
+    if(!vep) {
+        println "WARNING: No vep consequence was for the same gene: ${veps*.SYMBOL} vs $av.Gene"
+        vep = veps[0]
+    }
     csvWriter.writeNext((values + [vep.Condel]) as String[])
 }
 writer.close()
