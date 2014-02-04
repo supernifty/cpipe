@@ -273,7 +273,7 @@ call_variants = {
     // Default values of confidence thresholds
     // come from the Broad web site. However
     // these may be higher than suitable in our context
-    var call_conf:15.0, 
+    var call_conf:5.0, 
         emit_conf:5.0
 
     transform("bam","bam") to("metrics","vcf") {
