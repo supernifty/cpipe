@@ -89,7 +89,7 @@ msg "Check Annovar database exists"
 for i in hg19_snp138.txt hg19_avsift.txt hg19_esp5400_all.txt hg19_refGene.txt hg19_ALL.sites.2010_11.txt hg19_phastConsElements46way.txt; 
 do
     [ -e tools/annovar/humandb/$i ] || {
-        err "Failed to find all necessary Annovar data files ($i): please use Annovar downdb to download all the data files. See pipeline/scripts/pipeline/scripts/download_annovar_db.sh for assistance."
+        err "Failed to find all necessary Annovar data files ($i): please use Annovar downdb to download all the data files. See tools/annovar/README for assistance."
     }
 done
 
