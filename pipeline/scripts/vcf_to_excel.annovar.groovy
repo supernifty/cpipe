@@ -108,11 +108,6 @@ def find_vcf_variant(vcf, av, lineIndex) {
   }
 }
 
-// These are copied directly from the ##INFO section of an example VCF
-// that was processed by VEP. If the flags to VEP are changed, then they
-// may need to be updated
-VEP_FIELDS = "Allele|Gene|Feature|Feature_type|Consequence|cDNA_position|CDS_position|Protein_position|Amino_acids|Codons|Existing_variation|CANONICAL|PolyPhen|SYMBOL|SYMBOL_SOURCE|HGVSc|HGVSp|AA_MAF|EA_MAF|AFR_MAF|AMR_MAF|ASN_MAF|EUR_MAF|PUBMED|ENSP|SIFT|DISTANCE|CLIN_SIG|Condel".split("\\|")
-
 //
 // Now build our spreadsheet
 //
