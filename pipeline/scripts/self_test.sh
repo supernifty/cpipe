@@ -50,9 +50,22 @@ cp -v ./batches/na18507/samples.selftest.txt batches/selftest/samples.txt || err
 
 pushd batches/selftest/analysis
 
-msg "Running pipeline ..."
+msg "Running pipeline (should fail due to FastQC) ..."
 
 ../../../bpipe run ../../../pipeline/pipeline.groovy ../samples.txt > output.log
+
+msg "Checking FastQC error detected ..."
+[ -e EPIL.xlsx ] || err "Found results spreadsheet but pipeline should have failed due to FastQC failure"
+
+msg "Success: sample NA18507 failed with FastQC error"
+
+msg "Overriding FastQC error ..."
+../../../bpipe override NA18507.check_fastqc > check.log 2>&1
+grep -q 'NA18507.*Overridden' check.log || err "Failed to find expected text in check log"
+
+msg "Running pipeline again ..."
+
+../../../bpipe run ../../../pipeline/pipeline.groovy ../samples.txt > output2.log 2>&1
 
 [ -e EPIL.xlsx ] || err "Failed to find epilepsy result spreadsheet"
 [ -e EPIL.qc.xlsx ] || err "Failed to find epilepsy QC  spreadsheet"
@@ -66,7 +79,8 @@ EXPECTED_VARIANTS=518
 ACTUAL_VARIANTS=`wc variants/EPIL.merge.filter.vep.vcf | awk '{print $1}'`
 
 # TODO: a lot more comparisons to check output, eg: variants
-[ ACTUAL_VARIANTS == $EXPECTED_VARIANTS ] || err "Epilepsy VCF file has incorrect number of variants (expected=$EXPECTED_VARIANTS, observed=$ACTUAL_VARIANTS)"
+[ "$ACTUAL_VARIANTS" == "$EXPECTED_VARIANTS" ] || \
+    err "Epilepsy VCF file has incorrect number of variants (expected=$EXPECTED_VARIANTS, observed=$ACTUAL_VARIANTS)"
 
 msg "Success: correct number of variants observed"
 
