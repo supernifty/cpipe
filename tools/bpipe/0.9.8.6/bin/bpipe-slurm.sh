@@ -240,7 +240,8 @@ status () {
                case "$job_state" in
                   CONFIGURING|PENDING|SUSPENDED) echo WAITING;; 
                   COMPLETING|RUNNING) echo RUNNING;;    
-                  CANCELLED|COMPLETED|FAILED|NODE_FAIL|PREEMPTED|TIMEOUT) 
+                  CANCELLED) echo COMPLETE 999;; # Artificial exit code because Slurm does not provide one    
+                  COMPLETED|FAILED|NODE_FAIL|PREEMPTED|TIMEOUT) 
                   # scontrol will include ExitCode=N:M, where the N is exit code and M is signal (ignored)
                   #        command_exit_status=`echo $scontrol_output |grep Exit|sed 's/.*ExitCode=\([0-9]*\):[0-9]*/\1/'`
                   command_exit_status=`echo $scontrol_output|tr ' ' '\n' |awk -vk="ExitCode" -F"=" '$1~k{ print $2}'|awk -F":" '{print $1}'`
