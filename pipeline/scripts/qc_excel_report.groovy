@@ -98,10 +98,11 @@ Map sampleBlocks = [:]
 Map sampleStats = [:]
 Set allGenes = new HashSet()
 
+int threshold = (opts.t == false ? 15 : opts.t.toInteger())
+println "Coverage threshold = $threshold"
+
 for(sample in samples) {
     Block block = null
-    int threshold = (opts.t == false ? 15 : opts.t.toInteger())
-    println "Coverage threshodl = $threshold"
     int lineCount = 0
     int blockCount = 0
     int totalBP = 0
@@ -228,6 +229,9 @@ new ExcelBuilder().build {
             row {
             }
 
+            bold { row { bottomBorder {
+                cells('','','',"Regions","< $threshold x",'','','')
+            }}}
             bold { row {
                 cells('gene','chr','start','end','min','max','median','length')
             }}
@@ -235,7 +239,10 @@ new ExcelBuilder().build {
             def lowBed = new File("${sample}.low.bed").newWriter()
             blocks.each { b ->
                 b.with {
-                    row { cells(gene, chr, start, end, stats.min, stats.max, stats.getPercentile(50), end-start) }
+                    row { 
+                        cells(gene, chr, start, end, stats.min, stats.max, stats.getPercentile(50), end-start);
+                        cell("ucsc").link("http://genome.ucsc.edu/cgi-bin/hgTracks?db=hg19&position=$chr%3A$start-$end&refGene=pack")
+                    }
                     lowBed.println([chr,start,end,stats.getPercentile(50)+'-'+gene].join("\t"))
                 }
             }

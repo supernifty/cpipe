@@ -20,12 +20,12 @@
 
 # Version of Bpipe - this should be 0.0.0 in the source tree,
 # it will be replaced by the build script at build time
-VERSION=0.9.8.6_beta_1
+VERSION=0.9.8.6_beta_2
 
 # Build date as an integer (unix epoch time)
 # This should be 0 in the source tree, 
 # it will be replaced by the build script at build time
-BUILDDATE=1391341676189
+BUILDDATE=1391559591549
 
 # Default memory used
 # Mainly here to limit memory on systems with very large memory
@@ -64,6 +64,15 @@ killtree() {
             killtree ${child_pid}
         done
     fi
+    
+    # If second arg supplied, wait before killing parent
+    # this allows Bpipe itself to notice its children are dead
+    # by itself.
+    if [ ! -z "$2" ];
+    then
+        sleep $2
+    fi
+    
     kill -TERM ${ppid}
 }
 
@@ -447,6 +456,10 @@ elif [ "$COMMAND" == "stop" ];
 then
     shift 1
 
+    # Stop any commands that must be stopped by a custom resource
+    # manager (non-local commands)
+    java -Xmx${MAX_JAVA_MEM} -classpath "$CP" -Dbpipe.home="$JVM_BPIPE_HOME" -Dbpipe.mode=stopcommands bpipe.Runner
+    
     # Find all the process ids and kill it
     get_last_run_pid
 
@@ -460,21 +473,28 @@ then
       echo
       echo "Killing job $LAST_PID"
       echo
-      killtree $LAST_PID
+      killtree $LAST_PID 5
     else
       echo
       echo "Job $LAST_PID appears to be finished"
       echo
     fi
 
-    # Now stop any remaining commands
-    java -Xmx${MAX_JAVA_MEM} -classpath "$CP" -Dbpipe.home="$JVM_BPIPE_HOME" -Dbpipe.mode=stopcommands bpipe.Runner
     exit
 elif [ "$COMMAND" == "cleancommands" ];
 then
     # Clean all commands considered to be currently executing
     rm -rf .bpipe/commands
     exit 
+elif [ "$COMMAND" == "checks" ];
+then
+    java -Xmx${MAX_JAVA_MEM} -classpath "$CP" -Dbpipe.home="$JVM_BPIPE_HOME" -Dbpipe.mode=showchecks bpipe.ChecksCommand
+    exit
+elif [ "$COMMAND" == "override" ];
+then
+    shift 1
+    java -Xmx${MAX_JAVA_MEM} -classpath "$CP" -Dbpipe.home="$JVM_BPIPE_HOME" -Dbpipe.mode=showchecks bpipe.ChecksCommand -o $*
+    exit
 elif [ "$COMMAND" == "jobs" ];
 then
     print_jobs
