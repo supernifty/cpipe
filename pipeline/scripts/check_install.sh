@@ -61,16 +61,20 @@ function compile() {
     fi
 }
 
+
+[ -e pipeline ] || \
+        err "I can't see the pipeline directory. Maybe you didn't clone the repository, or you're running this script from the wrong location?"
+
 eval `sed 's/\/\/.*$//' pipeline/config.groovy` 
 
 [ ! -e pipeline/config.groovy ] && \
         err "You haven't created the file pipeline/config.groovy yet: you need to copy the file pipeline/config.groovy.template and edit it."
 
+msg "Check base location is correct ..."
+[ ! -e "$BASE/pipeline" ] && [ ! -e "$BASE/scripts" ] && \
+        err "Cannot see $BASE/pipeline or $BASE/scripts - please check BASE is defined correctly in config.groovy. It should probably be "`pwd`
+
 msg "Checking dependencies ..."
-
-[ -e pipeline ] || \
-        err "I can't see the pipeline directory. Maybe you didn't clone the repository, or you're running this script from the wrong location?"
-
 compile "$BWA"
 
 compile "$SAMTOOLS/samtools"
@@ -79,7 +83,7 @@ compile "$BEDTOOLS/bin/bedtools"
 
 msg "Check GATK is downloaded and available"
 [ -e $GATK/GenomeAnalysisTK.jar ] || \
-        err "Could not locate $GATK/GenomeAnalysisTK.jar file. Please download and install GATK to $GATK/" 
+        err "Could not locate $GATK/GenomeAnalysisTK.jar file. Please download and install GATK to $GATK/. See instructions in tools/gatk/README." 
 
 msg "Check Annovar is downloaded and available"
 [ -e $ANNOVAR/annotate_variation.pl ] || \
