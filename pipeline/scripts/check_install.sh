@@ -108,7 +108,7 @@ msg "Check reference FASTA is indexed"
 
 [ -e "$REF.fai" ] || err "Reference FASTA file $REF is not indexed. Please run samtools faidx to index it"
 
-[ -e "$REF.bwt" ] || err "Reference FASTA file $REF is not indexed by bwa. Please run 'bwa index -a bwtsw' on reference file ($REF) to index it"
+[ -e "$REF.bwt" ] || err "Reference FASTA file $REF is not indexed by bwa. Please run 'cd "`dirname $REF`"; ../tools/bwa/0.7.5a/bwa index -a bwtsw ucsc.hg19.fasta' on reference file ($REF) to index it"
 
 [ -e `echo "$REF" | sed 's/\.fa$/.dict/'` ] || err "Reference FASTA file $REF doesn't have a dictionary. Please run Picard CreateSequenceDictionary to make the dictionary (or download the .dict file)."
 
