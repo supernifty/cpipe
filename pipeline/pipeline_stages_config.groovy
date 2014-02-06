@@ -56,6 +56,8 @@ set_sample_info = {
         succeed "No files to process for sample $sample, target $target_name"
     }
 
+    def files = sample_info[sample].files
+
     println "Processing input files ${files} for target region ${target_bed_file}"
     forward files
 }
