@@ -87,7 +87,7 @@ msg "Check GATK is downloaded and available"
 
 msg "Check Annovar is downloaded and available"
 [ -e $ANNOVAR/annotate_variation.pl ] || \
-        err "Could not locate Annovar script. Please download and install Annovar to tools/annovar/$ANNOVAR/"
+        err "Could not locate Annovar script. Please download and install Annovar to $ANNOVAR/"
 
 msg "Check Annovar database exists"
 for i in hg19_snp138.txt hg19_avsift.txt hg19_esp5400_all.txt hg19_refGene.txt hg19_ALL.sites.2010_11.txt hg19_phastConsElements46way.txt; 
