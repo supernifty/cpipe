@@ -71,8 +71,8 @@ eval `sed 's/\/\/.*$//' pipeline/config.groovy`
         err "You haven't created the file pipeline/config.groovy yet: you need to copy the file pipeline/config.groovy.template and edit it."
 
 msg "Check base location is correct ..."
-[ ! -e "$BASE/pipeline" ] && [ ! -e "$BASE/scripts" ] && \
-        err "Cannot see $BASE/pipeline or $BASE/scripts - please check BASE is defined correctly in config.groovy. It should probably be "`pwd`
+[ ! -e "$BASE/pipeline" ] &&  \
+        err "Cannot see $BASE/pipeline - please check BASE is defined correctly in config.groovy. It should probably be "`pwd`
 
 msg "Checking dependencies ..."
 compile "$BWA"
