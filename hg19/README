@@ -21,7 +21,7 @@ In fact, we only rely on small parts of the resource bundle so you should only d
     ucsc.hg19.fasta
     ucsc.hg19.fasta.fai
 
-These will be zipped on FTP site, so you need to unzip them (tar -xjf <file>) after downloading.
+These will be zipped on FTP site, so you need to unzip them (tar -xzf <file>) after downloading.
 
 Finally, the reference FASTA needs to be indexed:
 
