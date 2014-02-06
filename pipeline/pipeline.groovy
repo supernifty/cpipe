@@ -60,7 +60,12 @@ batch = new File("..").canonicalFile.name
 
 targets = sample_info*.value*.target as Set
 
+samples = sample_info.keySet()
+
 run {
+    // Check the basic sample information first
+    check_sample_info +
+
     // For each target (flagship) we run the main pipeline in parallel
     targets * [
 
