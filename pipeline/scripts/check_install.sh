@@ -75,6 +75,17 @@ msg "Check base location is correct ..."
         err "Cannot see $BASE/pipeline - please check BASE is defined correctly in config.groovy. It should probably be "`pwd`
 
 msg "Checking dependencies ..."
+
+msg "Checking version of Java ..."
+
+type java > /dev/null || \
+        err "No Java executable could be located in the current PATH. Please ensure Oracle, Sun or OpenJDK Java is the default Java in your path, and set JAVA_HOME to the corresponding Java location."
+
+java -version | grep -q gij && \
+        err "You are using the GNU Java implementation which is not compatible with the pipeline. Please ensure Oracle, Sun or OpenJDK Java is the default Java in your path, and set JAVA_HOME to the corresponding Java location."
+
+[ -z "$JAVA_HOME" ] || err "The JAVA_HOME environment variable is not defined. Please set it to the location of your Java installation."
+
 compile "$BWA"
 
 compile "$SAMTOOLS/samtools"

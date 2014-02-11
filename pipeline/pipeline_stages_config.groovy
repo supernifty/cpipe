@@ -409,7 +409,7 @@ augment_condel = {
     output.dir="variants"
     from("exome_summary.csv") filter("con") {
         exec """
-            JAVA_OPTS="-Xmx4g -Djava.awt.headless=true" groovy 
+            JAVA_OPTS="-Xmx4g -Djava.awt.headless=true" $GROOVY 
                 -cp $GROOVY_NGS/groovy-ngs-utils.jar:$EXCEL/excel.jar 
                 $SCRIPTS/merge_condel.groovy
                     -i $input.vcf
@@ -440,7 +440,7 @@ vcf_to_excel = {
 
     from(target_name+"*.exome_summary.*.csv", target_name+".*.vcf") produce(target_name + ".xlsx") {
         exec """
-            JAVA_OPTS="-Xmx2g -Djava.awt.headless=true" groovy 
+            JAVA_OPTS="-Xmx2g -Djava.awt.headless=true" $GROOVY 
                 -cp $SCRIPTS:$GROOVY_NGS/groovy-ngs-utils.jar:$EXCEL/excel.jar:$TOOLS/sqlite/sqlitejdbc-v056.jar $SCRIPTS/vcf_to_excel.annovar.groovy 
                 -s '${target_samples.join(",")}'
                 -a $input.csv 
@@ -503,7 +503,7 @@ qc_excel_report = {
     def samples = sample_info.grep { it.value.target == target_name }.collect { it.value.sample }
     from("*.cov.txt", "*.dedup.metrics") produce(target_name + ".qc.xlsx") {
             exec """
-                JAVA_OPTS="-Xmx4g -Djava.awt.headless=true" groovy -cp $EXCEL/excel.jar $SCRIPTS/qc_excel_report.groovy 
+                JAVA_OPTS="-Xmx4g -Djava.awt.headless=true" $GROOVY -cp $EXCEL/excel.jar $SCRIPTS/qc_excel_report.groovy 
                     -s ${target_samples.join(",")} 
                     -t $coverage_threshold
                     -o $output.xlsx
@@ -550,7 +550,7 @@ add_to_database = {
 
             echo "====> Adding variants for flaship $target_name to database"
 
-            JAVA_OPTS="-Xmx2g" groovy -cp $EXCEL/excel.jar:$TOOLS/sqlite/sqlitejdbc-v056.jar $SCRIPTS/vcf_to_db.groovy 
+            JAVA_OPTS="-Xmx2g" $GROOVY -cp $EXCEL/excel.jar:$TOOLS/sqlite/sqlitejdbc-v056.jar $SCRIPTS/vcf_to_db.groovy 
                    -v $input.vcf 
                    -a $input.csv 
                    -db $VARIANT_DB 

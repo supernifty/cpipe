@@ -40,7 +40,7 @@ REFBASE="$BASE/hg19" // <====== YOU MUST EDIT THIS OR CREATE IT
 REF="$REFBASE/ucsc.hg19.fasta"
 
 // Set to a VCF file containing DBSNP entries
-DBSNP="$REFBASE/dbsnp_132.hg19.vcf"
+DBSNP="$REFBASE/dbsnp_138.hg19.vcf"
 
 // Set to a VCF file containing known indels here
 GOLD_STANDARD_INDELS="$REFBASE/Mills_and_1000G_gold_standard.indels.hg19.vcf"
@@ -120,4 +120,7 @@ CONDEL="$TOOLS/condel/24-1-2013"
 
 // Database of unique variants, updated for each sample
 VARIANT_DB="$BASE/variants.db"
+
+// Location of groovy binary
+GROOVY="$TOOLS/groovy/2.2.1/bin/groovy"
 
