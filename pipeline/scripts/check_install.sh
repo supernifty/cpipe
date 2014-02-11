@@ -87,7 +87,7 @@ msg "Check GATK is downloaded and available"
 
 msg "Check Annovar is downloaded and available"
 [ -e $ANNOVAR/annotate_variation.pl ] || \
-        err "Could not locate Annovar script. Please download and install Annovar to tools/annovar/$ANNOVAR/"
+        err "Could not locate Annovar script. Please download and install Annovar to $ANNOVAR/"
 
 msg "Check Annovar database exists"
 for i in hg19_snp138.txt hg19_avsift.txt hg19_esp5400_all.txt hg19_refGene.txt hg19_ALL.sites.2010_11.txt hg19_phastConsElements46way.txt; 
@@ -108,7 +108,7 @@ msg "Check reference FASTA is indexed"
 
 [ -e "$REF.fai" ] || err "Reference FASTA file $REF is not indexed. Please run samtools faidx to index it"
 
-[ -e "$REF.bwt" ] || err "Reference FASTA file $REF is not indexed by bwa. Please run 'bwa index -a bwtsw' on reference file ($REF) to index it"
+[ -e "$REF.bwt" ] || err "Reference FASTA file $REF is not indexed by bwa. Please run 'cd "`dirname $REF`"; ../tools/bwa/0.7.5a/bwa index -a bwtsw ucsc.hg19.fasta' on reference file ($REF) to index it"
 
 [ -e `echo "$REF" | sed 's/\.fa$/.dict/'` ] || err "Reference FASTA file $REF doesn't have a dictionary. Please run Picard CreateSequenceDictionary to make the dictionary (or download the .dict file)."
 

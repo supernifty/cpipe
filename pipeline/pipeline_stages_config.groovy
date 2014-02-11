@@ -57,14 +57,36 @@ set_sample_info = {
     }
 
     def files = sample_info[sample].files
-    if(files.any { !file(it).name.startsWith(sample+"_")}) {
-        succeed report('templates/invalid_input.html') to channel: gmail, 
-                                                          subject: "FASTQ files for sample $sample have invalid file name format", 
-                                                          message: "Files $files do not start with the sample name $sample" 
-    }
 
     println "Processing input files ${files} for target region ${target_bed_file}"
     forward files
+}
+
+check_sample_info = {
+
+    doc "Validate basic sample information is correct"
+
+    def missingSummary = []
+    for(sample in samples) {
+
+        def files = sample_info[sample].files
+        if(files.any { !file(it).name.startsWith(sample+"_")}) {
+            fail report('templates/invalid_input.html') to channel: gmail, 
+                                                              subject: "FASTQ files for sample $sample have invalid file name format", 
+                                                              message: "Files $files do not start with the sample name $sample" 
+        }
+
+        def missingFiles = files.grep { !file(it).exists() }
+        if(missingFiles) 
+            missingSummary << """
+                    The following files specified for sample $sample could not be found:\n\n${missingFiles*.center(120).join('\n')}
+
+                    Please check that the files in your sample file really exist in the data directory.
+                 """.stripIndent()
+    }
+    if(missingSummary) {
+        fail missingSummary.join("\n" + ("-" * 120) + "\n")
+    }
 }
 
 fastqc = {
