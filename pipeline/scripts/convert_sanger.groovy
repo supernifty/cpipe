@@ -1,5 +1,4 @@
 convert_sanger = {
-
         doc """
                 Convert old-format illumina reads to Sanger (Phred+33) format.
                 Requires manually patched version of MAQ.
