@@ -46,8 +46,6 @@ flatten = {
 }
 
 annotate = {
-    requires REFGENE:"The file hg19_refGene.txt (eg: as downloaded by Annovar. Please look in Annovar humandb folder and and supply absolute path to this file."
-
     exec """
         echo "Annotating genes ..."
 
