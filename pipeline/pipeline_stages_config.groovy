@@ -69,6 +69,7 @@ check_sample_info = {
     def missingSummary = []
     for(sample in samples) {
 
+        // Check that FASTQ files begin with the sample name followed by underscore
         def files = sample_info[sample].files
         if(files.any { !file(it).name.startsWith(sample+"_")}) {
             fail report('templates/invalid_input.html') to channel: gmail, 
@@ -76,6 +77,7 @@ check_sample_info = {
                                                               message: "Files $files do not start with the sample name $sample" 
         }
 
+        // Check that all the files specified for the sample exist
         def missingFiles = files.grep { !file(it).exists() }
         if(missingFiles) 
             missingSummary << """
@@ -83,7 +85,28 @@ check_sample_info = {
 
                     Please check that the files in your sample file really exist in the data directory.
                  """.stripIndent()
+
+        // Check that file names contain the lane information
+        def missingLanes = files.grep { !(it ==~ ".*_L[0-9]*_.*") }
+        if(missingLanes) 
+            missingSummary << """
+                    The following files specified for sample $sample do not contain lane information:\n\n${missingLanes*.center(120).join('\n')}
+
+                    FASTQ file names are required to contain lane identifiers such as L001, L1 or similar. 
+                    Please check your input FASTQ and rename it if necessary.
+            """
+
+        // Check that file names contain the read number information
+        def missingRP = files.grep { !(it ==~ ".*_R[0-9][_.].*fastq.gz\$") }
+        if(missingRP) 
+            missingSummary << """
+                    The following files for sample $sample do not contain the read number in the expected format:\n\n${missingRP*.center(120).join('\n')}
+
+                    FASTQ file names are required to contain the number of the read from the read pair (1 or 2) 
+                    in the form '_R1_' or '_R1.'. Please check your input FASTQ and rename it if necessary.
+            """
     }
+
     if(missingSummary) {
         fail missingSummary.join("\n" + ("-" * 120) + "\n")
     }
