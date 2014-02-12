@@ -226,7 +226,7 @@ realignIntervals = {
             -I $input.bam 
             --known $GOLD_STANDARD_INDELS 
             -o $output.intervals
-    """
+    """, "realign_target_creator"
 }
 
 realign = {
