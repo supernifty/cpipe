@@ -28,6 +28,15 @@
 #for i in *.bed; do sed -i.bak 's/^chrMT/chrM/' $i; done
 */
 
+BASE="/vlsci/VR0320/shared"
+
+if(!file(BASE).exists()) {
+  println "="*80
+  println "Please supply the BASE parameter using -p BASE=... when running the pipeline to point at the pipeline distriubtion root."
+  println "="*80
+  System.exit(1)
+}
+
 flatten = {
     exec """
         echo "Flattening and removing nonstandard chromosomes ..."
@@ -37,10 +46,12 @@ flatten = {
 }
 
 annotate = {
+    requires REFGENE:"The file hg19_refGene.txt (eg: as downloaded by Annovar. Please look in Annovar humandb folder and and supply absolute path to this file."
+
     exec """
         echo "Annotating genes ..."
 
-        groovy ../../pipeline/scripts/annotate_genes.groovy -r /mnt/storage/shared/genomes/hg19/gatk/humandb/hg19_refGene.txt $input.bed > $output.bed
+        $BASE/tools/groovy/2.2.1/bin/groovy ../../pipeline/scripts/annotate_genes.groovy -r $BASE/toosl/annovar/humandb/hg19_refGene.txt $input.bed > $output.bed
     """
 }
 
@@ -48,7 +59,7 @@ sort = {
     exec """
         echo "Sorting ..."
 
-        ../../tools/IGVTools/2.3.6/igvtools.lowmem sort $input.bed $output.bed
+        $BASE/tools/IGVTools/2.3.6/igvtools.lowmem sort $input.bed $output.bed
     """
 }
 
