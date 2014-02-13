@@ -141,7 +141,7 @@ check_fastqc = {
 
     check {
         exec """
-            [ `grep Illumina fastqc/${sample}*_fastqc/fastqc_data.txt | awk '{ print $3 * 10 }'` -lt 17 ] 
+            [ `grep Illumina fastqc/${sample}*_fastqc/fastqc_data.txt | awk '{ print \$3 * 10 }'` -lt 17 ] 
         """
     } otherwise {
         println "=" * 100
