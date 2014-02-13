@@ -414,8 +414,7 @@ check_coverage = {
 
     check {
         exec "[ $medianCov -ge $MEDIAN_COVERAGE_THRESHOLD ]"
-    }
-    otherwise {
+    } otherwise {
         // It may seem odd to call this a success, but what we mean by it is that
         // Bpipe should not fail the whole pipeline, merely this branch of it
         succeed report('templates/sample_failure.html') to channel: gmail, 
