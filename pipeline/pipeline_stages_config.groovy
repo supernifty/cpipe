@@ -382,7 +382,7 @@ annotate_vep = {
             --sift=b --polyphen=b
             --symbol hgnc --force_overwrite --hgvs  --maf_1kg --maf_esp --pubmed
             --plugin Condel,$CONDEL/config,s
-    """
+    """, "vep"
 }
 
 calc_coverage_stats = {
