@@ -98,6 +98,7 @@ for(av in annovar_csv) {
     if(!variant) {
         println "WARNING: Variant $av.Chr:$av.Start at line $lineIndex could not be found in the original VCF file"
         csvWriter.writeNext((values + [""]) as String[])
+        continue
     }
 
     // Parse out the VEP annotations - the only one we want is Condel
