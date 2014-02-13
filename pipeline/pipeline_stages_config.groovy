@@ -399,6 +399,7 @@ check_coverage = {
 
     output.dir = "qc"
 
+    def medianCov
     transform("cov.txt") to("cov.stats.median", "cov.stats.csv") {
 
         R {"""
@@ -408,15 +409,19 @@ check_coverage = {
             writeLines(as.character(median(bam.cov$cov)), "$output.median")
         """}
 
-        def medianCov = file(output.median).text.toFloat() 
-        if(medianCov<MEDIAN_COVERAGE_THRESHOLD.toInteger()) {
+        medianCov = Math.round(file(output.median).text.toFloat())
+    }
 
-            send report('templates/sample_failure.html') to channel: gmail, median: medianCov, file:output.csv
-
-            // It may seem odd to call this a success, but what we mean by it is that
-            // Bpipe should not fail the whole pipeline, merely this branch of it
-            succeed "Sample $sample has failed with insufficient median coverage ($medianCov)"
-        }
+    check {
+        exec "[ $medianCov -ge $MEDIAN_COVERAGE_THRESHOLD ]"
+    }
+    otherwise {
+        // It may seem odd to call this a success, but what we mean by it is that
+        // Bpipe should not fail the whole pipeline, merely this branch of it
+        succeed report('templates/sample_failure.html') to channel: gmail, 
+                                                           median: medianCov, 
+                                                           file:output.csv, 
+                                                           subject:"Sample $sample has failed with insufficient median coverage ($medianCov)"
     }
 }
 
@@ -502,6 +507,7 @@ gatk_depth_of_coverage = {
                -R $REF
                -T DepthOfCoverage 
                -o $output.sample_cumulative_coverage_proportions.prefix
+               --omitDepthOutputAtEachBase
                -I $input.bam
                -ct 1 -ct 10 -ct 20 -ct 50 -ct 100
                -L $target_bed_file
