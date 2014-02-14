@@ -518,14 +518,16 @@ qc_excel_report = {
 
     doc "Create an excel file containing a summary of QC data for all the samples for a given target region"
 
-    var coverage_threshold : 15
+    var LOW_COVERAGE_THRESHOLD : 15,
+        LOW_COVERAGE_WIDTH : 1
 
     def samples = sample_info.grep { it.value.target == target_name }.collect { it.value.sample }
     from("*.cov.txt", "*.dedup.metrics") produce(target_name + ".qc.xlsx") {
             exec """
-                JAVA_OPTS="-Xmx12g -Djava.awt.headless=true" $GROOVY -cp $EXCEL/excel.jar $SCRIPTS/qc_excel_report.groovy 
+                JAVA_OPTS="-Xmx14g -Djava.awt.headless=true" $GROOVY -cp $EXCEL/excel.jar $SCRIPTS/qc_excel_report.groovy 
                     -s ${target_samples.join(",")} 
-                    -t $coverage_threshold
+                    -t $LOW_COVERAGE_THRESHOLD
+                    -w $LOW_COVERAGE_WIDTH
                     -o $output.xlsx
                     $inputs.sample_cumulative_coverage_proportions  
                     $inputs.sample_interval_statistics 
