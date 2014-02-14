@@ -157,7 +157,7 @@ for(sample in samples) {
         }
     }
     sampleBlocks[sample] = blocks
-    sampleStats[sample] = coverageStats
+    sampleStats[sample] = [ max: coverageStats.max, min:coverageStats.min, median: coverageStats.getPercentile(50) ]
 }
 
 
@@ -245,7 +245,7 @@ new ExcelBuilder().build {
             blocks.each { b ->
                 b.with {
                     row { 
-                        cells(gene, chr, start, end, stats.min, stats.max, stats.getPercentile(50), end-start);
+                        cells(gene, chr, start, end, stats.min, stats.max, stats.median, end-start);
                         cell("ucsc").link("http://genome.ucsc.edu/cgi-bin/hgTracks?db=hg19&position=$chr%3A$start-$end&refGene=pack")
                     }
                     lowBed.println([chr,start,end,stats.getPercentile(50)+'-'+gene].join("\t"))
