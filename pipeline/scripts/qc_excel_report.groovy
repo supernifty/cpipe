@@ -113,7 +113,7 @@ for(sample in samples) {
     int blockCount = 0
     int totalBP = 0
     def coverageStats = new SummaryStatistics()
-    def coveragePercentiles = new CoveragePercentile()
+    def coveragePercentiles = new CoveragePercentile(1000)
 
     def blocks = []
 
