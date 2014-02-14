@@ -524,7 +524,7 @@ qc_excel_report = {
     def samples = sample_info.grep { it.value.target == target_name }.collect { it.value.sample }
     from("*.cov.txt", "*.dedup.metrics") produce(target_name + ".qc.xlsx") {
             exec """
-                JAVA_OPTS="-Xmx14g -Djava.awt.headless=true" $GROOVY -cp $EXCEL/excel.jar $SCRIPTS/qc_excel_report.groovy 
+                JAVA_OPTS="-Xmx14g -Djava.awt.headless=true" $GROOVY -cp $GROOVY_NGS/groovy-ngs-utils.jar:$EXCEL/excel.jar $SCRIPTS/qc_excel_report.groovy 
                     -s ${target_samples.join(",")} 
                     -t $LOW_COVERAGE_THRESHOLD
                     -w $LOW_COVERAGE_WIDTH
