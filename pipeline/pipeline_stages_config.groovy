@@ -518,7 +518,7 @@ qc_excel_report = {
 
     doc "Create an excel file containing a summary of QC data for all the samples for a given target region"
 
-    var COVERAGE_THRESHOLD : 15,
+    var LOW_COVERAGE_THRESHOLD : 15,
         LOW_COVERAGE_WIDTH : 1
 
     def samples = sample_info.grep { it.value.target == target_name }.collect { it.value.sample }
