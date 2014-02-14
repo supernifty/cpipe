@@ -28,7 +28,8 @@ err = { msg ->
 
 cli.with {
     s "comma separated list of samples to include", longOpt: "samples", args: 1
-    t "threshold for reporting low coverage regions", args:1
+    t "threshold of coverage for reporting low coverage regions", args:1
+    w "threshold of width for reporting low coverage regions (1)", args:1
     o "name of output file", args:1
 }
 
@@ -41,6 +42,10 @@ if(!opts.s)
 println "opts.o = $opts.o"
 if(!opts.o) 
     err "Please provide -o option to specify output file name"
+
+int minRegionWidth = 1
+if(opts.w)
+    minRegionWidth = opts.w.toInteger()
 
 samples = opts.s.split(',')
 args = opts.arguments()
@@ -143,7 +148,7 @@ for(sample in samples) {
             block.end = pos
         }
         else {
-            if(block) 
+            if(block && (block.end - block.start >= minRegionWidth) 
                 write()
         }
 
