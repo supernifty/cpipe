@@ -15,6 +15,7 @@
 //
 /////////////////////////////////////////////////////////////////////////
 
+import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 
 // Quick and simple way to exit with a message
@@ -111,7 +112,8 @@ for(sample in samples) {
     int lineCount = 0
     int blockCount = 0
     int totalBP = 0
-    def coverageStats = new DescriptiveStatistics()
+    def coverageStats = new SummaryStatistics()
+    def coveragePercentiles = new CoveragePercentile()
 
     def blocks = []
 
@@ -157,7 +159,7 @@ for(sample in samples) {
         }
     }
     sampleBlocks[sample] = blocks
-    sampleStats[sample] = [ max: coverageStats.max, min:coverageStats.min, median: coverageStats.getPercentile(50) ]
+    sampleStats[sample] = [ max: coverageStats.max, min:coverageStats.min, median: coveragePercentiles.getPercentile(50) ]
 }
 
 
@@ -192,7 +194,7 @@ new ExcelBuilder().build {
         row {
             cell("Median Coverage").bold()
             center {
-                for(s in samples) { cell(sampleStats[s].getPercentile(50)) }
+                for(s in samples) { cell(sampleStats[s].median) }
             }
         }
 
@@ -245,7 +247,7 @@ new ExcelBuilder().build {
             blocks.each { b ->
                 b.with {
                     row { 
-                        cells(gene, chr, start, end, stats.min, stats.max, stats.median, end-start);
+                        cells(gene, chr, start, end, stats.min, stats.max, stats.getPercentile(50), end-start);
                         cell("ucsc").link("http://genome.ucsc.edu/cgi-bin/hgTracks?db=hg19&position=$chr%3A$start-$end&refGene=pack")
                     }
                     lowBed.println([chr,start,end,stats.getPercentile(50)+'-'+gene].join("\t"))
