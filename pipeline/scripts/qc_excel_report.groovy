@@ -148,7 +148,7 @@ for(sample in samples) {
             block.end = pos
         }
         else {
-            if(block && (block.end - block.start >= minRegionWidth) 
+            if(block && (block.end - block.start >= minRegionWidth))
                 write()
         }
 
