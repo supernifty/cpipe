@@ -117,6 +117,7 @@ GParsPool.withPool(4) {
         int totalBP = 0
         def coverageStats = new SummaryStatistics()
         def coveragePercentiles = new CoveragePercentile(1000)
+        def sampleGenes = new HashSet()
 
         def blocks = []
 
@@ -140,7 +141,7 @@ GParsPool.withPool(4) {
             int pos = start.toInteger() + offset.toInteger()
             String region = "$chr:$start"
             ++totalBP
-            allGenes.add(gene)
+            sampleGenes.add(gene)
 
             if(block && block.region != region) 
                 write()
@@ -162,6 +163,7 @@ GParsPool.withPool(4) {
             }
         }
         synchronized(sampleBlocks) {
+            allGenes.addAll(sampleGenes)
             sampleBlocks[sample] = blocks
             sampleStats[sample] = [ max: coverageStats.max, 
                                     min:coverageStats.min, 
