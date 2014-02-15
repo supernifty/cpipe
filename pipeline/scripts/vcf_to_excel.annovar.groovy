@@ -183,11 +183,15 @@ new ExcelBuilder().build {
                   if(gt) {
 
                       // Reference depth
-                      cell(gt.AD[0])
+                      if(gt.containsKey('AD')) {
+                          cell(gt.AD[0])
 
-                      // Alternate depth depends on which allele
-                      int altAllele = (variant.alts.size()==1)?1:variant.equalsAnnovar(av.Chr, av.Start.toInteger(), av.Obs)
-                      cell(gt.AD[altAllele])
+                          // Alternate depth depends on which allele
+                          int altAllele = (variant.alts.size()==1)?1:variant.equalsAnnovar(av.Chr, av.Start.toInteger(), av.Obs)
+                          cell(gt.AD[altAllele])
+                      }
+                      else
+                        System.err.println("WARNING: variant $variant.chr:$variant.pos ($variant.ref/$variant.alt) had no AD info for sample $sample at line $lineIndex")
                   }
                   else {
                     System.err.println("WARNING: variant $variant.chr:$variant.pos ($variant.ref/$variant.alt) had no genotype for sample $sample at line $lineIndex")
