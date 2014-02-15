@@ -169,7 +169,7 @@ GParsPool.withPool(4) {
             allGenes.addAll(sampleGenes)
             sampleBlocks[sample] = blocks
             sampleStats[sample] = [ max: coverageStats.max, 
-                                    mean:coverageStats.mean
+                                    mean:coverageStats.mean,
                                     min:coverageStats.min, 
                                     median: coveragePercentiles.getPercentile(50),
                                     lowbp: coverageStats.getN()
