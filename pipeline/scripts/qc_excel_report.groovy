@@ -18,6 +18,8 @@
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 
+import groovyx.gpars.*
+
 // Quick and simple way to exit with a message
 CliBuilder cli = new CliBuilder(usage: "<options> <gatk coverage report prefixes>\n",writer: new PrintWriter(System.err))
 err = { msg ->
@@ -107,59 +109,67 @@ Set allGenes = new HashSet()
 int threshold = (opts.t == false ? 15 : opts.t.toInteger())
 println "Coverage threshold = $threshold"
 
-for(sample in samples) {
-    Block block = null
-    int lineCount = 0
-    int blockCount = 0
-    int totalBP = 0
-    def coverageStats = new SummaryStatistics()
-    def coveragePercentiles = new CoveragePercentile(1000)
+GParsPool.withPool(4) {
+    samples.collectParallel { sample ->
+        Block block = null
+        int lineCount = 0
+        int blockCount = 0
+        int totalBP = 0
+        def coverageStats = new SummaryStatistics()
+        def coveragePercentiles = new CoveragePercentile(1000)
 
-    def blocks = []
+        def blocks = []
 
-    def write = {
-        blockCount++
-        blocks.add(block)
-        // println "Writing block ${block.hashCode()} for $gene from $start - $end"
-        block = null
-    }
-
-    if(!files[sample].coverage)
-            err "Unable to find coverage file (*.cov.txt) for sample $sample"
-
-    println "Low cov file for $sample = ${files[sample].coverage}"
-
-    new File(files[sample].coverage).eachLine { line ->
-        ++lineCount
-        (chr,start,end,gene,offset,cov) = line.split('\t')
-        cov = cov.toFloat()
-        coverageStats.addValue(cov.toInteger())
-        int pos = start.toInteger() + offset.toInteger()
-        String region = "$chr:$start"
-        ++totalBP
-        allGenes.add(gene)
-
-        if(block && block.region != region) 
-            write()
-
-        if(cov < threshold) {
-            if(!block)  {
-               block = new Block(chr:chr, region:region, gene:gene, start:pos)
-            }
-            block.stats.addValue(cov.toInteger())
-            block.end = pos
+        def write = {
+            blockCount++
+            blocks.add(block)
+            // println "Writing block ${block.hashCode()} for $gene from $start - $end"
+            block = null
         }
-        else {
-            if(block && (block.end - block.start >= minRegionWidth))
+
+        if(!files[sample].coverage)
+                err "Unable to find coverage file (*.cov.txt) for sample $sample"
+
+        println "Low cov file for $sample = ${files[sample].coverage}"
+
+        new File(files[sample].coverage).eachLine { line ->
+            ++lineCount
+            (chr,start,end,gene,offset,cov) = line.split('\t')
+            cov = cov.toFloat()
+            coverageStats.addValue(cov.toInteger())
+            int pos = start.toInteger() + offset.toInteger()
+            String region = "$chr:$start"
+            ++totalBP
+            allGenes.add(gene)
+
+            if(block && block.region != region) 
                 write()
-        }
 
-        if(lineCount % 10000 == 0) {
-            println(new Date().toString() + "\t" + lineCount + " ($blockCount low coverage blocks observed)")
+            if(cov < threshold) {
+                if(!block)  {
+                   block = new Block(chr:chr, region:region, gene:gene, start:pos)
+                }
+                block.stats.addValue(cov.toInteger())
+                block.end = pos
+            }
+            else {
+                if(block && (block.end - block.start >= minRegionWidth))
+                    write()
+            }
+
+            if(lineCount % 10000 == 0) {
+                println(new Date().toString() + "\t" + lineCount + " ($blockCount low coverage blocks observed)")
+            }
+        }
+        synchronized(sampleBlocks) {
+            sampleBlocks[sample] = blocks
+            sampleStats[sample] = [ max: coverageStats.max, 
+                                    min:coverageStats.min, 
+                                    median: coveragePercentiles.getPercentile(50),
+                                    lowbp: coverageStats.getN()
+                                  ]
         }
     }
-    sampleBlocks[sample] = blocks
-    sampleStats[sample] = [ max: coverageStats.max, min:coverageStats.min, median: coveragePercentiles.getPercentile(50) ]
 }
 
 
@@ -222,7 +232,7 @@ new ExcelBuilder().build {
             row {
                 cell('Frac low bp').bold()
                 if(blocks)
-                    cell(blocks.sum { it.end-it.start} / (float)sampleStats[sample].getN())
+                    cell(blocks.sum { it.end-it.start} / (float)sampleStats[sample].lowbp)
             }
             row {
                 cell('Genes containing low bp').bold()
