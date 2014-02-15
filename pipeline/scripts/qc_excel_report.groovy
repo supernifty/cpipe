@@ -134,7 +134,7 @@ GParsPool.withPool(4) {
 
         new File(files[sample].coverage).eachLine { line ->
             ++lineCount
-            (chr,start,end,gene,offset,cov) = line.split('\t')
+            def (chr,start,end,gene,offset,cov) = line.split('\t')
             cov = cov.toFloat()
             coverageStats.addValue(cov.toInteger())
             int pos = start.toInteger() + offset.toInteger()
