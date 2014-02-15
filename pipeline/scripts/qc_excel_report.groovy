@@ -3,10 +3,12 @@
 //
 // Melbourne Genomics Demonstration Project
 //
-// VCF to Excel Format Conversion
+// Quality Control Excel SpreadSheet Script
 //
-// This script reads the VCF file containing annotations by VEP 
-// and produces an Excel file that can be easily viewed and filtered.
+// This script reads the coverage data for samples
+// and produces an Excel file containing QC metrics including aggregate
+// coverage statistics as well as detailed regions of missing coverage
+// for each sample.
 //
 // Requires: Groovy NGS Utils (https://github.com/ssadedin/groovy-ngs-utils)
 //           ExcelCategory    (https://github.com/ssadedin/excelcatgory)
@@ -138,6 +140,7 @@ GParsPool.withPool(4) {
             def (chr,start,end,gene,offset,cov) = line.split('\t')
             cov = cov.toFloat()
             coverageStats.addValue(cov.toInteger())
+            coveragePercentiles.addValue(cov.toInteger())
             int pos = start.toInteger() + offset.toInteger()
             String region = "$chr:$start"
             ++totalBP
@@ -166,6 +169,7 @@ GParsPool.withPool(4) {
             allGenes.addAll(sampleGenes)
             sampleBlocks[sample] = blocks
             sampleStats[sample] = [ max: coverageStats.max, 
+                                    mean:coverageStats.mean
                                     min:coverageStats.min, 
                                     median: coveragePercentiles.getPercentile(50),
                                     lowbp: coverageStats.getN()
