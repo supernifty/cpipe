@@ -138,6 +138,21 @@ check_fastqc = {
                                                         subject: "Sample $sample has failed FastQC Check", 
                                                         file: input.zip
     }
+
+    check {
+        exec """
+            [ `grep Illumina fastqc/${sample}*_fastqc/fastqc_data.txt | awk '{ print \$3 * 10 }'` -lt 17 ] 
+        """
+    } otherwise {
+        println "=" * 100
+        println "Sample $sample is encoded using a quality encoding incompatible with this pipeline."
+        println "Please convert the data first using maq sol2sanger."
+        println "=" * 100
+
+        succeed report('templates/fastqc_failure.html') to channel: gmail, 
+                                                        subject: "Sample $sample is encoded with incompatible quality scores (Illumina < 1.7)", 
+                                                        file: input.zip
+    }
 }
 
 align_bwa = {
@@ -249,7 +264,7 @@ realignIntervals = {
             -I $input.bam 
             --known $GOLD_STANDARD_INDELS 
             -o $output.intervals
-    """
+    """, "realign_target_creator"
 }
 
 realign = {
@@ -367,7 +382,7 @@ annotate_vep = {
             --sift=b --polyphen=b
             --symbol hgnc --force_overwrite --hgvs  --maf_1kg --maf_esp --pubmed
             --plugin Condel,$CONDEL/config,s
-    """
+    """, "vep"
 }
 
 calc_coverage_stats = {
@@ -384,6 +399,7 @@ check_coverage = {
 
     output.dir = "qc"
 
+    def medianCov
     transform("cov.txt") to("cov.stats.median", "cov.stats.csv") {
 
         R {"""
@@ -393,15 +409,18 @@ check_coverage = {
             writeLines(as.character(median(bam.cov$cov)), "$output.median")
         """}
 
-        def medianCov = file(output.median).text.toFloat() 
-        if(medianCov<MEDIAN_COVERAGE_THRESHOLD.toInteger()) {
+        medianCov = Math.round(file(output.median).text.toFloat())
+    }
 
-            send report('templates/sample_failure.html') to channel: gmail, median: medianCov, file:output.csv
-
-            // It may seem odd to call this a success, but what we mean by it is that
-            // Bpipe should not fail the whole pipeline, merely this branch of it
-            succeed "Sample $sample has failed with insufficient median coverage ($medianCov)"
-        }
+    check {
+        exec "[ $medianCov -ge $MEDIAN_COVERAGE_THRESHOLD ]"
+    } otherwise {
+        // It may seem odd to call this a success, but what we mean by it is that
+        // Bpipe should not fail the whole pipeline, merely this branch of it
+        succeed report('templates/sample_failure.html') to channel: gmail, 
+                                                           median: medianCov, 
+                                                           file:output.csv, 
+                                                           subject:"Sample $sample has failed with insufficient median coverage ($medianCov)"
     }
 }
 
@@ -487,6 +506,7 @@ gatk_depth_of_coverage = {
                -R $REF
                -T DepthOfCoverage 
                -o $output.sample_cumulative_coverage_proportions.prefix
+               --omitDepthOutputAtEachBase
                -I $input.bam
                -ct 1 -ct 10 -ct 20 -ct 50 -ct 100
                -L $target_bed_file
@@ -498,20 +518,22 @@ qc_excel_report = {
 
     doc "Create an excel file containing a summary of QC data for all the samples for a given target region"
 
-    var coverage_threshold : 15
+    var LOW_COVERAGE_THRESHOLD : 15,
+        LOW_COVERAGE_WIDTH : 1
 
     def samples = sample_info.grep { it.value.target == target_name }.collect { it.value.sample }
     from("*.cov.txt", "*.dedup.metrics") produce(target_name + ".qc.xlsx") {
             exec """
-                JAVA_OPTS="-Xmx4g -Djava.awt.headless=true" $GROOVY -cp $EXCEL/excel.jar $SCRIPTS/qc_excel_report.groovy 
+                JAVA_OPTS="-Xmx14g -Djava.awt.headless=true" $GROOVY -cp $GROOVY_NGS/groovy-ngs-utils.jar:$EXCEL/excel.jar $SCRIPTS/qc_excel_report.groovy 
                     -s ${target_samples.join(",")} 
-                    -t $coverage_threshold
+                    -t $LOW_COVERAGE_THRESHOLD
+                    -w $LOW_COVERAGE_WIDTH
                     -o $output.xlsx
                     $inputs.sample_cumulative_coverage_proportions  
                     $inputs.sample_interval_statistics 
                     $inputs.metrics 
                     $inputs.txt
-            """
+            ""","qc_excel_report"
     }
 }
 

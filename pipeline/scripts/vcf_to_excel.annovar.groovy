@@ -1,4 +1,4 @@
-//vim: shiftwidth=4:ts=4:expandtab
+// vim: shiftwidth=4:ts=4:expandtab:cindent
 /////////////////////////////////////////////////////////////////////////
 //
 // Melbourne Genomics Demonstration Project
@@ -101,7 +101,7 @@ def find_vcf_variant(vcf, av, lineIndex) {
   try {
       int pos = av.Start.toInteger()
       int end = av.End.toInteger()
-      return vcf.find(av.Chr,pos-10,end) { variant -> variant.equalsAnnovar(av.Chr,pos,av.Obs) }
+      return vcf.find(av.Chr,pos-15,end) { variant -> variant.equalsAnnovar(av.Chr,pos,av.Obs) }
   }
   catch(Exception e) {
       try { println "WARNING: unable to locate annovar variant at $lineIndex in VCF ($e)" } catch(Exception e2) { e.printStackTrace() }
@@ -179,12 +179,23 @@ new ExcelBuilder().build {
               // Try to annotate allele frequencies
               if(variant) {
 
-                  // Reference depth
-                  cell(variant.sampleGenoType(sample).AD[0])
+                  def gt = variant.sampleGenoType(sample)
+                  if(gt) {
 
-                  // Alternate depth depends on which allele
-                  int altAllele = (variant.alts.size()==1)?1:variant.equalsAnnovar(av.Chr, av.Start.toInteger(), av.Obs)
-                  cell(variant.sampleGenoType(sample).AD[altAllele])
+                      // Reference depth
+                      if(gt.containsKey('AD')) {
+                          cell(gt.AD[0])
+
+                          // Alternate depth depends on which allele
+                          int altAllele = (variant.alts.size()==1)?1:variant.equalsAnnovar(av.Chr, av.Start.toInteger(), av.Obs)
+                          cell(gt.AD[altAllele])
+                      }
+                      else
+                        System.err.println("WARNING: variant $variant.chr:$variant.pos ($variant.ref/$variant.alt) had no AD info for sample $sample at line $lineIndex")
+                  }
+                  else {
+                    System.err.println("WARNING: variant $variant.chr:$variant.pos ($variant.ref/$variant.alt) had no genotype for sample $sample at line $lineIndex")
+                  }
               }
         
               // TODO: check concordance between annoation sources

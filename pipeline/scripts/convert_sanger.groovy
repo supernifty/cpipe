@@ -5,7 +5,8 @@ convert_sanger = {
         """
         var MAQ : "maq"
 
-        filter("phred") {
+        // filter("phred") {
+        transform("fastq.gz") to("sanger.fastq.gz") {
             exec """
                     gunzip -c  $input.gz | $MAQ ill2sanger  - - | gzip -c > $output.gz
             """
