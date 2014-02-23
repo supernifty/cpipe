@@ -25,7 +25,7 @@ VERSION=0.9.8.6_beta_2
 # Build date as an integer (unix epoch time)
 # This should be 0 in the source tree, 
 # it will be replaced by the build script at build time
-BUILDDATE=1393150722122
+BUILDDATE=1393154175777
 
 # Default memory used
 # Mainly here to limit memory on systems with very large memory
