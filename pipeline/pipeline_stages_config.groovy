@@ -139,7 +139,7 @@ check_fastqc = {
                                                         file: input.zip
     }
 
-    check {
+    check("FASTQ Format") {
         exec """
             [ `grep Illumina fastqc/${sample}*_fastqc/fastqc_data.txt | awk '{ print \$3 * 10 }'` -lt 17 ] 
         """
