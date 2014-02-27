@@ -33,6 +33,7 @@ cli.with {
   x 'Comma separated list of functional types to exclude', args:1
   si 'sample meta data file for the pipeline', args:1
   db 'Sqlite database containing known variants. If known, a column will be populated with the count of times observed.', args:1
+  gc 'File listing genes and categories', args:1
 }
 opts = cli.parse(args)
 
@@ -59,6 +60,8 @@ if(!opts.a)
     err "Please provide -a option to specify Annovar annotation file"
 if(!opts.si)
     err "Please provide -si option to specify sample meta data file"
+if(!opts.gc)
+    err "Please provide -gc option to specify the gene category file"
 
 sample_info = new Sample().parse_sample_info(opts.si)
 
@@ -94,6 +97,9 @@ if(opts.db) {
     sql = Sql.newInstance("jdbc:sqlite:${opts.db}")
 }
 
+// Read the gene categories
+geneCategories = new File(opts.gc).readLines()*.split('\t').collect { [it[0],it[1]] }.collectEntries()
+
 //
 // Function to find an Annovar variant in the original VCF file
 //
@@ -127,7 +133,7 @@ new ExcelBuilder().build {
                     cells(["Gene Category","Priority Index"] + ANNOVAR_FIELDS[0..-2] + (sql?["#Obs"]:[]) + ['RefCount','AltCount'])
             } }
 
-            println "Priority genes for $sample are ${sample_info[sample].genes}"
+            println "Priority genes for $sample are ${sample_info[sample].geneCategories.keySet()}"
 
             // Sort the annovar output by significance
 
@@ -162,8 +168,12 @@ new ExcelBuilder().build {
                             aaChange = geneParts[2].toString()
                         }
                         def exonicFunc = func=="splicing"?"":av.ExonicFunc
+                        def geneCategory = geneCategories[gene]
+                        if(sample_info[sample].geneCategories[gene])
+                            geneCategory = sample_info[sample].geneCategories[gene]
+
                         center {
-                            cells(gene in sample_info[sample].genes?1:2, av.Priority_Index)
+                            cells(geneCategory?:1, av.Priority_Index)
                         }
                         cells(func,gene,exonicFunc,aaChange)
                         cells(av.values[4..-2])
