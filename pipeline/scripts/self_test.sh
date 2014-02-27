@@ -55,12 +55,12 @@ msg "Running pipeline (should fail due to FastQC) ..."
 ../../../bpipe run ../../../pipeline/pipeline.groovy ../samples.txt > output.log
 
 msg "Checking FastQC error detected ..."
-[ -e EPIL.xlsx ] || err "Found results spreadsheet but pipeline should have failed due to FastQC failure"
+[ -e EPIL.xlsx ] && err "Found results spreadsheet but pipeline should have failed due to FastQC failure"
 
 msg "Success: sample NA18507 failed with FastQC error"
 
 msg "Overriding FastQC error ..."
-../../../bpipe override NA18507.check_fastqc > check.log 2>&1
+../../../bpipe override check_fastqc.NA18507 > check.log 2>&1
 grep -q 'NA18507.*Overridden' check.log || err "Failed to find expected text in check log"
 
 msg "Running pipeline again ..."
