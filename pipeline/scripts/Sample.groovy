@@ -36,7 +36,7 @@ class SampleInfo {
     String  target
 
     /** List of genes prioritised for the sample */
-    List    genes
+    Map<String,Integer>    geneCategories
 
     /** The library */
     String library
@@ -54,13 +54,26 @@ class SampleInfo {
     static parse_sample_info(fileName) {
         def lines = new File(fileName).readLines().grep { !it.trim().startsWith('#') }
         def sample_info = lines.collect { it.split("\t") }.collect { fields ->
-                new SampleInfo(
+                def si = new SampleInfo(
                     sample: fields[0], 
                     files: fields[2].split(",")*.trim().collect {new File(it).parentFile?it:"../data/$it"}, 
                     target: fields[1], 
-                    genes:  fields.size()>3?fields[3].split(",")*.trim():[],
+                    geneCategories:  [:],
                     library: fields[0]
                 ) 
+                if(fields.size()>3) {
+                    fields[3].split(",")*.trim()
+
+                    // Index category to gene
+                    def genes = fields[3].split(" ")*.split(":").collect { 
+                        [ /* category */ it[0].trim().toInteger(), /* genes */ it[1].split(",")*.trim() ]
+                    }.collectEntries()
+
+                    // Invert 
+                    genes.each { k,v -> v.each { si.geneCategories[it] = k } }
+                }
+
+                return si
         }.collectEntries { [it.sample, it] } // Convert to map keyed by sample name
     }
 }
