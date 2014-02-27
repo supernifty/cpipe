@@ -40,11 +40,11 @@ load 'scripts/Sample.groovy'
 load 'pipeline_stages_config.groovy'
 
 inputs "samples.txt" : """
-                        File containing two columns, the first being sample name, 
-                        the second a comma separated list of FastQ files for the sample
-                       """,
-       "fastq.gz"    : """
-                        Files containing paired end FastQ reads with sequencing data
+                        File containing at least 3 columns, the first being sample name, 
+                        the second a target region ("flagship") name, and the third a
+                        comma separated list of FastQ files for the sample.
+                        See the Melbourne Genomics development web site for the full description
+                        of the file format.
                        """
 
 sample_metadata_file = args[0]
