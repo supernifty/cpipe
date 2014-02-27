@@ -26,19 +26,19 @@ set_target_info = {
     branch.batch = batch
     branch.target_name = branch.name
     branch.target_bed_file = "../design/${target_name}.bed"
+    branch.target_gene_file = "../design/${target_name}.genes.txt"
     branch.target_samples = sample_info.grep { it.value.target == target_name }*.value*.sample
 
-    // Copy target region file to the design region directory for 
-    // this batch
-    if(!file(target_bed_file).exists()) {
+    check {
+        exec """[ -e $target_bed_file ]"""
+    } otherwise {
         exec """
-            if [ ! -e $target_bed_file ]; 
-            then 
                 mkdir -p ../design;
                 cp $BASE/designs/flagships/${target_name}.bed $target_bed_file; 
-            fi
+                cp $BASE/designs/flagships/${target_name}.genes.txt ../design;
         """
     }
+
 
     if(!file(target_bed_file).exists())
         fail("Target bed file $target_bed_file could not be located for processing sample $branch.name")
@@ -126,13 +126,10 @@ check_fastqc = {
 
     check {
        exec """
-           for i in fastqc/${sample}*_fastqc/summary.txt; 
-           do
-             [ ! -e ${i}.ignore ] && grep -q 'FAIL' $i && exit 1;
-           done
+           grep -q 'FAIL' fastqc/${sample}_*fastqc/summary.txt && exit 1
 
            exit 0
-       """
+       ""","local"
     } otherwise {
         succeed report('templates/fastqc_failure.html') to channel: gmail, 
                                                         subject: "Sample $sample has failed FastQC Check", 
@@ -141,8 +138,8 @@ check_fastqc = {
 
     check("FASTQ Format") {
         exec """
-            [ `grep Illumina fastqc/${sample}*_fastqc/fastqc_data.txt | awk '{ print \$3 * 10 }'` -lt 17 ] 
-        """
+            awk -F'\t' '/Illumina/ { match(\$2, /[0-9.]+/ , result); exit(result[0]<1.7) }' fastqc/${sample}_*_fastqc/fastqc_data.txt
+        ""","local"
     } otherwise {
         println "=" * 100
         println "Sample $sample is encoded using a quality encoding incompatible with this pipeline."
@@ -468,6 +465,7 @@ vcf_to_excel = {
                 -db $VARIANT_DB
                 -o $output.xlsx
                 -si $sample_metadata_file
+                -gc $target_gene_file
         """
     }
 }
