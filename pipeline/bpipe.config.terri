@@ -104,6 +104,16 @@ commands {
             queue="terri"
         }
 
+        vep {
+            walltime="24:00:00"
+            memory="12"
+        }
+
+        qc_excel_report {
+            walltime="24:00:00"
+            memory="20"
+        }
+
         vcf_to_excel {
             walltime="24:00:00"
             memory="20"
