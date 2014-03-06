@@ -134,7 +134,7 @@ find `dirname $REF`/ -name '*.bwt' -mtime +180 | grep -q bwt && {
     if [ -e "$GOLD_STANDARD_INDELS.gz" ];
     then
         err "The indel file $GOLD_STANDARD_INDELS is still gzipped. Please use gunzip to uncompress it."
-    elif
+    else
         err "The indel file $GOLD_STANDARD_INDELS does not exist. Please download it from the GATK resource bundle."
     fi
 }
