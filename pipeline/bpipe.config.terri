@@ -109,17 +109,20 @@ commands {
             memory="12"
         }
 
-        qc_excel_report {
-            walltime="24:00:00"
-            memory="20"
-        }
-
         vcf_to_excel {
             walltime="24:00:00"
             memory="20"
+            jobtype="smp" // to get exclusive node
+        }
+
+        qc_excel_report {
+            memory="48"
+            walltime="14:00:00"
+            jobtype="smp" // to get exclusive node
         }
 }
 
+/*
 reports {
     // Customise the report format to include the date
     index {
@@ -127,3 +130,4 @@ reports {
         notification=true
     }
 }
+*/
