@@ -29,16 +29,15 @@ set_target_info = {
     branch.target_gene_file = "../design/${target_name}.genes.txt"
     branch.target_samples = sample_info.grep { it.value.target == target_name }*.value*.sample
 
-    check {
-        exec """[ -e $target_bed_file ]"""
-    } otherwise {
+    println "Checking for target bed file : $target_bed_file"
+
+    if(!file(target_bed_file).exists()) {
         exec """
                 mkdir -p ../design;
                 cp $BASE/designs/flagships/${target_name}.bed $target_bed_file; 
                 cp $BASE/designs/flagships/${target_name}.genes.txt ../design;
         """
     }
-
 
     if(!file(target_bed_file).exists())
         fail("Target bed file $target_bed_file could not be located for processing sample $branch.name")
