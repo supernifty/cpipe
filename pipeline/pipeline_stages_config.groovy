@@ -138,12 +138,12 @@ check_fastqc = {
 
     check("FASTQ Format") {
         exec """
-            awk -F'\t' '/Illumina/ { match(\$2, /[0-9.]+/ , result); exit(result[0]<1.7) }' fastqc/${sample}_*_fastqc/fastqc_data.txt
+            awk -F'\\t' '/Illumina/ { match(\$2, /[0-9.]+/ , result); exit(result[0]<1.7) }' fastqc/${sample}_*_fastqc/fastqc_data.txt
         ""","local"
     } otherwise {
         println "=" * 100
         println "Sample $sample is encoded using a quality encoding incompatible with this pipeline."
-        println "Please convert the data first using maq sol2sanger."
+        println "Please convert the data first using maq ill2sanger."
         println "=" * 100
 
         succeed report('templates/fastqc_failure.html') to channel: gmail, 
