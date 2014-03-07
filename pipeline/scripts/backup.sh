@@ -56,8 +56,14 @@ function err() {
     echo ===============================================
     echo "ERROR: $1"
     echo ===============================================
+    echo 
+    echo "Exiting at "`date`
+    echo
     
-    mail -s "WARNING: Melbourne Genomics Backup Failure" $EMAILS < $LOGFILE
+    mail -s "WARNING: Melbourne Genomics Backup Failure" $EMAILS !<<
+
+Error Message: $msg
+!
 
     exit 1
 }
