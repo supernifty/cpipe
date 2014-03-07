@@ -20,12 +20,12 @@
 
 # Version of Bpipe - this should be 0.0.0 in the source tree,
 # it will be replaced by the build script at build time
-VERSION=0.9.8.6_beta_2
+VERSION=0.9.8.6_beta_3_test_lsf_cwd2
 
 # Build date as an integer (unix epoch time)
 # This should be 0 in the source tree, 
 # it will be replaced by the build script at build time
-BUILDDATE=1393454511238
+BUILDDATE=1394154539580
 
 # Default memory used
 # Mainly here to limit memory on systems with very large memory
