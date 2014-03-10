@@ -33,9 +33,6 @@ about title: "Melbourne Genomics Demonstration Project Pipeline"
 // Create this file by copying config.groovy.template and editing
 load 'config.groovy'
 
-// Supporting routines that parse and set up sample information
-load 'scripts/Sample.groovy'
-
 // All the core pipeline stages in the pipeline
 load 'pipeline_stages_config.groovy'
 
@@ -48,7 +45,7 @@ inputs "samples.txt" : """
                        """
 
 sample_metadata_file = args[0]
-sample_info = parse_sample_info(args[0])
+sample_info = SampleInfo.parse_sample_info(args[0])
 
 // We are specifying that each analysis takes place inside a fixed file structure
 // where the parent directory is named according to the batch name. Thus we
