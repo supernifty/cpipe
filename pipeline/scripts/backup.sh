@@ -60,7 +60,7 @@ function err() {
     echo "Exiting at "`date`
     echo
     
-    mail -s "WARNING: Melbourne Genomics Backup Failure" $EMAILS !<<
+    mail -s "WARNING: Melbourne Genomics Backup Failure" $EMAILS <<!
 
 Error Message: $msg
 !
