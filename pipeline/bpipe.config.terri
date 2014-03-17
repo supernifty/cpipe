@@ -96,6 +96,7 @@ commands {
 	gatk_call_variants {
 		walltime="36:00:00"
 		memory="12"
+                procs=4
 	}
 
         coverageBed {

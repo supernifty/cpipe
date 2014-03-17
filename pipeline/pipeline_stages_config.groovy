@@ -1,4 +1,4 @@
-// vim: ts=4:sw=4:expandtab:cindent:
+// vim: ts=4:sw=4:expandtab:cindent:number
 ////////////////////////////////////////////////////////////
 //
 // Melbourne Genomics Variant Calling Pipeline
@@ -57,7 +57,7 @@ set_sample_info = {
         succeed "No files to process for sample $sample, target $target_name"
     }
 
-    def files = sample_info[sample].files
+    def files = sample_info[sample].files.fastq
 
     println "Processing input files ${files} for target region ${target_bed_file}"
     forward files
@@ -84,7 +84,7 @@ check_sample_info = {
     for(sample in samples) {
 
         // Check that FASTQ files begin with the sample name followed by underscore
-        def files = sample_info[sample].files
+        def files = sample_info[sample].files.fastq
         if(files.any { !file(it).name.startsWith(sample+"_")}) {
             fail report('templates/invalid_input.html') to channel: gmail, 
                                                               subject: "FASTQ files for sample $sample have invalid file name format", 

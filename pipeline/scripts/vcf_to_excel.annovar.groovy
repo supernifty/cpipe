@@ -63,7 +63,7 @@ if(!opts.si)
 if(!opts.gc)
     err "Please provide -gc option to specify the gene category file"
 
-sample_info = new Sample().parse_sample_info(opts.si)
+sample_info = new SampleInfo().parse_sample_info(opts.si)
 
 println "sample_info = $sample_info"
 
