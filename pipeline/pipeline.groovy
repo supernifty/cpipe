@@ -64,7 +64,7 @@ samples = sample_info.keySet()
 
 run {
     // Check the basic sample information first
-    check_sample_info +
+    check_sample_info + check_tools +
 
     // For each target (flagship) we run the main pipeline in parallel
     targets * [
@@ -89,7 +89,11 @@ run {
         merge_vcf + 
         filter_variants + 
         annotate_vep + index_vcf +
-        [ annovar_summarize_refgene + augment_condel + annotate_significance + add_to_database, qc_excel_report]
+        [
+          annovar_summarize_refgene + 
+            [augment_condel + annotate_significance, calculate_cadd_scores] + augment_cadd + add_to_database, 
+            qc_excel_report
+        ]
    ] + 
 
    // The final phase is to produce the output spreadsheet, 1 per target (flagship)

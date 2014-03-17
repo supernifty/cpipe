@@ -19,6 +19,8 @@
 /// 
 ////////////////////////////////////////////////////////
 
+ENABLE_CADD=true
+
 set_target_info = {
 
     doc "Validate and set information about the target region to be processed"
@@ -59,6 +61,19 @@ set_sample_info = {
 
     println "Processing input files ${files} for target region ${target_bed_file}"
     forward files
+}
+
+check_tools = {
+    doc """
+        Checks for presence of optional tools and sets appropriate pipeline variables
+        to enable or disable corresponding pipeline features
+        """
+
+    def CADD_DATA = "$BASE/tools/annovar/humandb/hg19_cadd.txt"
+    if(!file(CADD_DATA).exists()) {
+        msg "Unable to locate data for CADD annotations: CADD scores will not be included"
+        ENABLE_CADD = false
+    }
 }
 
 check_sample_info = {
@@ -434,6 +449,44 @@ augment_condel = {
     }
 }
 
+augment_cadd = {
+
+    doc "Add CADD annotations to an existing file of Annovar annotations"
+
+    if(!ENABLE_CADD) 
+        return
+
+    output.dir = "variants"
+    from("*.exome_summary.*.csv","*.hg19_cadd_dropped" ) filter("cadd") {
+        exec """
+            JAVA_OPTS="-Xmx4g -Djava.awt.headless=true" $GROOVY 
+                -cp $GROOVY_NGS/groovy-ngs-utils.jar:$EXCEL/excel.jar 
+                $SCRIPTS/add_cadd_scores.groovy
+                    -a $input.csv
+                    -c $input.hg19_cadd_dropped
+                    -o $output.csv
+        """
+    }
+}
+
+calculate_cadd_scores = {
+
+    doc "Compute CADD scores"
+
+    if(!ENABLE_CADD) 
+        return
+
+    exec """
+        $ANNOVAR/annotate_variation.pl
+        $input.av 
+        $ANNOVAR/../humandb/
+        -filter 
+        -dbtype cadd 
+        -buildver hg19 
+        -out $output.hg19_cadd_dropped.prefix
+    """
+}
+
 index_vcf = {
     output.dir="variants"
     transform("vcf") to ("vcf.idx") {
@@ -521,7 +574,7 @@ qc_excel_report = {
     def samples = sample_info.grep { it.value.target == target_name }.collect { it.value.sample }
     from("*.cov.txt", "*.dedup.metrics") produce(target_name + ".qc.xlsx") {
             exec """
-                JAVA_OPTS="-Xmx14g -Djava.awt.headless=true" $GROOVY -cp $GROOVY_NGS/groovy-ngs-utils.jar:$EXCEL/excel.jar $SCRIPTS/qc_excel_report.groovy 
+                JAVA_OPTS="-Xmx4g -Djava.awt.headless=true" $GROOVY -cp $GROOVY_NGS/groovy-ngs-utils.jar:$EXCEL/excel.jar $SCRIPTS/qc_excel_report.groovy 
                     -s ${target_samples.join(",")} 
                     -t $LOW_COVERAGE_THRESHOLD
                     -w $LOW_COVERAGE_WIDTH
