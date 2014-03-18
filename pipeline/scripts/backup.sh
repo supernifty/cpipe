@@ -39,7 +39,7 @@ TARGET_IP_ADRESS=128.250.252.218
 TARGET_USER=vlsci-syncuser
 
 # Backup failure email recipients
-EMAILS=ssadedin@gmail.com
+EMAILS="bakker.t@wehi.edu.au ssadedin@gmail.com"
 
 # The source folders that will be backed up
 SOURCES="repo production"
@@ -59,11 +59,11 @@ function err() {
     echo 
     echo "Exiting at "`date`
     echo
-    
-    mail -s "WARNING: Melbourne Genomics Backup Failure" $EMAILS <<!
 
-Error Message: $msg
-!
+    printf "Error Message : $1\n\nTail of log file:\n\n" > $BASE/logs/error.log 
+    tail -n 30 $LOGFILE >> $BASE/logs/error.log
+    
+    mail -s "WARNING: Melbourne Genomics Backup Failure" $EMAILS  < $BASE/logs/error.log
 
     exit 1
 }
@@ -81,7 +81,7 @@ function backup() {
     cd $BASE || err "Unable to change directory to base dir: $BASE"
 
     #echo "rsync -r -e \"ssh -i $BASE/.ssh/id_rsa\" repo production $TARGET_USER@$TARGET_IP_ADRESS:"
-    rsync -v -r -e "ssh -i $BASE/.ssh/id_rsa" $SOURCES $TARGET_USER@$TARGET_IP_ADRESS: || err "Rsync returned failure exit code"
+    rsync --inplace -v -r -e "ssh -i $BASE/.ssh/id_rsa" $SOURCES $TARGET_USER@$TARGET_IP_ADRESS: || err "Rsync returned failure exit code"
     echo
     echo "Done at "`date`
 }
