@@ -1,4 +1,4 @@
-// vim: ts=4:sw=4:expandtab:cindent:
+// vim: ts=4:sw=4:expandtab:cindent:number
 ////////////////////////////////////////////////////////////
 //
 // Melbourne Genomics Variant Calling Pipeline
@@ -19,6 +19,8 @@
 /// 
 ////////////////////////////////////////////////////////
 
+ENABLE_CADD=true
+
 set_target_info = {
 
     doc "Validate and set information about the target region to be processed"
@@ -29,16 +31,15 @@ set_target_info = {
     branch.target_gene_file = "../design/${target_name}.genes.txt"
     branch.target_samples = sample_info.grep { it.value.target == target_name }*.value*.sample
 
-    check {
-        exec """[ -e $target_bed_file ]"""
-    } otherwise {
+    println "Checking for target bed file : $target_bed_file"
+
+    if(!file(target_bed_file).exists()) {
         exec """
                 mkdir -p ../design;
                 cp $BASE/designs/flagships/${target_name}.bed $target_bed_file; 
                 cp $BASE/designs/flagships/${target_name}.genes.txt ../design;
         """
     }
-
 
     if(!file(target_bed_file).exists())
         fail("Target bed file $target_bed_file could not be located for processing sample $branch.name")
@@ -56,10 +57,23 @@ set_sample_info = {
         succeed "No files to process for sample $sample, target $target_name"
     }
 
-    def files = sample_info[sample].files
+    def files = sample_info[sample].files.fastq
 
     println "Processing input files ${files} for target region ${target_bed_file}"
     forward files
+}
+
+check_tools = {
+    doc """
+        Checks for presence of optional tools and sets appropriate pipeline variables
+        to enable or disable corresponding pipeline features
+        """
+
+    def CADD_DATA = "$BASE/tools/annovar/humandb/hg19_cadd.txt"
+    if(!file(CADD_DATA).exists()) {
+        msg "Unable to locate data for CADD annotations: CADD scores will not be included"
+        ENABLE_CADD = false
+    }
 }
 
 check_sample_info = {
@@ -70,7 +84,7 @@ check_sample_info = {
     for(sample in samples) {
 
         // Check that FASTQ files begin with the sample name followed by underscore
-        def files = sample_info[sample].files
+        def files = sample_info[sample].files.fastq
         if(files.any { !file(it).name.startsWith(sample+"_")}) {
             fail report('templates/invalid_input.html') to channel: gmail, 
                                                               subject: "FASTQ files for sample $sample have invalid file name format", 
@@ -138,12 +152,12 @@ check_fastqc = {
 
     check("FASTQ Format") {
         exec """
-            awk -F'\t' '/Illumina/ { match(\$2, /[0-9.]+/ , result); exit(result[0]<1.7) }' fastqc/${sample}_*_fastqc/fastqc_data.txt
+            awk -F'\\t' '/Illumina/ { match(\$2, /[0-9.]+/ , result); exit(result[0]<1.7) }' fastqc/${sample}_*_fastqc/fastqc_data.txt
         ""","local"
     } otherwise {
         println "=" * 100
         println "Sample $sample is encoded using a quality encoding incompatible with this pipeline."
-        println "Please convert the data first using maq sol2sanger."
+        println "Please convert the data first using maq ill2sanger."
         println "=" * 100
 
         succeed report('templates/fastqc_failure.html') to channel: gmail, 
@@ -435,6 +449,44 @@ augment_condel = {
     }
 }
 
+augment_cadd = {
+
+    doc "Add CADD annotations to an existing file of Annovar annotations"
+
+    if(!ENABLE_CADD) 
+        return
+
+    output.dir = "variants"
+    from("*.exome_summary.*.csv","*.hg19_cadd_dropped" ) filter("cadd") {
+        exec """
+            JAVA_OPTS="-Xmx4g -Djava.awt.headless=true" $GROOVY 
+                -cp $GROOVY_NGS/groovy-ngs-utils.jar:$EXCEL/excel.jar 
+                $SCRIPTS/add_cadd_scores.groovy
+                    -a $input.csv
+                    -c $input.hg19_cadd_dropped
+                    -o $output.csv
+        """
+    }
+}
+
+calculate_cadd_scores = {
+
+    doc "Compute CADD scores"
+
+    if(!ENABLE_CADD) 
+        return
+
+    exec """
+        $ANNOVAR/annotate_variation.pl
+        $input.av 
+        $ANNOVAR/../humandb/
+        -filter 
+        -dbtype cadd 
+        -buildver hg19 
+        -out $output.hg19_cadd_dropped.prefix
+    """
+}
+
 index_vcf = {
     output.dir="variants"
     transform("vcf") to ("vcf.idx") {
@@ -522,7 +574,7 @@ qc_excel_report = {
     def samples = sample_info.grep { it.value.target == target_name }.collect { it.value.sample }
     from("*.cov.txt", "*.dedup.metrics") produce(target_name + ".qc.xlsx") {
             exec """
-                JAVA_OPTS="-Xmx14g -Djava.awt.headless=true" $GROOVY -cp $GROOVY_NGS/groovy-ngs-utils.jar:$EXCEL/excel.jar $SCRIPTS/qc_excel_report.groovy 
+                JAVA_OPTS="-Xmx4g -Djava.awt.headless=true" $GROOVY -cp $GROOVY_NGS/groovy-ngs-utils.jar:$EXCEL/excel.jar $SCRIPTS/qc_excel_report.groovy 
                     -s ${target_samples.join(",")} 
                     -t $LOW_COVERAGE_THRESHOLD
                     -w $LOW_COVERAGE_WIDTH

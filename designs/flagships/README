@@ -4,7 +4,7 @@ This directory contains BED files that define the target region for each
 flagship. The files were received from Harriet Dashnow on 14 Jan 2014.
 
 Harriet's files were in slightly different format to that required, so
-they have been processed by the script in scripts/reformat_bed_files.sh.
+they have been processed by the script in scripts/reformat_bed_files.groovy
 
  - to rename chromosomes to 'chr' format
  - rename the actual files to more friendly names
@@ -14,3 +14,27 @@ they have been processed by the script in scripts/reformat_bed_files.sh.
 
 Author: Simon Sadedin, simon.sadedin@mcri.edu.au
 
+============ About the BED files ===================
+
+The flagship BED files are:
+
+    AML.bed     
+    CRC.bed     (colorectal cancer)
+    CMT.bed
+    EPIL.bed    (epilepsy)
+    CS.bed      (childhood syndromes)
+
+When you run a batch you need to select a target regions. If you want
+to run a full exome analysis, you should select a region targeting the
+whole exome. There are currently two such regions so far:
+
+ SS_V4_UTR      Sureselect V4+UTR
+ NEXTERA        Nextera NO UTR
+
+============ About the Gene files ===================
+
+Each target / flagship has a set of prioritised genes
+associated with it. This is literally just a list of
+genes in the *.genes.txt file for the flagship. These
+are empty at the moment, but the pipeline requires the
+the files to be present.

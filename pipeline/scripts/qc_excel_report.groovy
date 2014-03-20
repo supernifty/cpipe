@@ -118,7 +118,7 @@ GParsPool.withPool(4) {
         int blockCount = 0
         int totalBP = 0
         def coverageStats = new SummaryStatistics()
-        def coveragePercentiles = new CoveragePercentile(1000)
+        def coveragePercentiles = new CoverageStats(1000)
         def sampleGenes = new HashSet()
 
         def blocks = []

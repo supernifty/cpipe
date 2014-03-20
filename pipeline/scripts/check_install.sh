@@ -84,7 +84,7 @@ type java > /dev/null || \
 java -version | grep -q gij && \
         err "You are using the GNU Java implementation which is not compatible with the pipeline. Please ensure Oracle, Sun or OpenJDK Java is the default Java in your path, and set JAVA_HOME to the corresponding Java location."
 
-[ -z "$JAVA_HOME" ] || err "The JAVA_HOME environment variable is not defined. Please set it to the location of your Java installation."
+[ -z "$JAVA_HOME" ] && err "The JAVA_HOME environment variable is not defined. Please set it to the location of your Java installation."
 
 compile "$BWA"
 
@@ -134,7 +134,7 @@ find `dirname $REF`/ -name '*.bwt' -mtime +180 | grep -q bwt && {
     if [ -e "$GOLD_STANDARD_INDELS.gz" ];
     then
         err "The indel file $GOLD_STANDARD_INDELS is still gzipped. Please use gunzip to uncompress it."
-    elif
+    else
         err "The indel file $GOLD_STANDARD_INDELS does not exist. Please download it from the GATK resource bundle."
     fi
 }

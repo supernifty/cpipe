@@ -33,9 +33,6 @@ about title: "Melbourne Genomics Demonstration Project Pipeline"
 // Create this file by copying config.groovy.template and editing
 load 'config.groovy'
 
-// Supporting routines that parse and set up sample information
-load 'scripts/Sample.groovy'
-
 // All the core pipeline stages in the pipeline
 load 'pipeline_stages_config.groovy'
 
@@ -48,7 +45,7 @@ inputs "samples.txt" : """
                        """
 
 sample_metadata_file = args[0]
-sample_info = parse_sample_info(args[0])
+sample_info = SampleInfo.parse_sample_info(args[0])
 
 // We are specifying that each analysis takes place inside a fixed file structure
 // where the parent directory is named according to the batch name. Thus we
@@ -64,7 +61,7 @@ samples = sample_info.keySet()
 
 run {
     // Check the basic sample information first
-    check_sample_info +
+    check_sample_info + check_tools +
 
     // For each target (flagship) we run the main pipeline in parallel
     targets * [
@@ -89,7 +86,11 @@ run {
         merge_vcf + 
         filter_variants + 
         annotate_vep + index_vcf +
-        [ annovar_summarize_refgene + augment_condel + annotate_significance + add_to_database, qc_excel_report]
+        [
+          annovar_summarize_refgene + 
+            [augment_condel + annotate_significance, calculate_cadd_scores] + augment_cadd + add_to_database, 
+            qc_excel_report
+        ]
    ] + 
 
    // The final phase is to produce the output spreadsheet, 1 per target (flagship)

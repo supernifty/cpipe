@@ -63,7 +63,7 @@ if(!opts.si)
 if(!opts.gc)
     err "Please provide -gc option to specify the gene category file"
 
-sample_info = new Sample().parse_sample_info(opts.si)
+sample_info = new SampleInfo().parse_sample_info(opts.si)
 
 println "sample_info = $sample_info"
 
@@ -130,7 +130,7 @@ new ExcelBuilder().build {
 
             // Write out header row
             bold { row {
-                    cells(["Gene Category","Priority Index"] + ANNOVAR_FIELDS[0..-2] + (sql?["#Obs"]:[]) + ['RefCount','AltCount'])
+                    cells(["Gene Category","Priority Index"] + ANNOVAR_FIELDS[0..-3] + ["CADD"] + (sql?["#Obs"]:[]) + ['RefCount','AltCount'])
             } }
 
             println "Priority genes for $sample are ${sample_info[sample].geneCategories.keySet()}"
@@ -176,7 +176,7 @@ new ExcelBuilder().build {
                             cells(geneCategory?:1, av.Priority_Index)
                         }
                         cells(func,gene,exonicFunc,aaChange)
-                        cells(av.values[4..-2])
+                        cells(av.values[4..-3], av.columns.CADD != null ? av.CADD: "")
                     }
                 }
 
@@ -200,8 +200,10 @@ new ExcelBuilder().build {
                           int altAllele = (variant.alts.size()==1)?1:variant.equalsAnnovar(av.Chr, av.Start.toInteger(), av.Obs)
                           cell(gt.AD[altAllele])
                       }
-                      else
+                      else {
                         System.err.println("WARNING: variant $variant.chr:$variant.pos ($variant.ref/$variant.alt) had no AD info for sample $sample at line $lineIndex")
+                        cells("","") // blank allele info
+                      }
                   }
                   else {
                     System.err.println("WARNING: variant $variant.chr:$variant.pos ($variant.ref/$variant.alt) had no genotype for sample $sample at line $lineIndex")
