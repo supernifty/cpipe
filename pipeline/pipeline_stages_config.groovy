@@ -207,7 +207,7 @@ merge_vcf = {
         exec """
                 java -Xmx3g -jar $GATK/GenomeAnalysisTK.jar
                 -T CombineVariants
-                -R $HGFA
+                -R $REF
                 -L $target_bed_file
                 ${inputs.vcf.withFlag("--variant")}
                 --out $output.vcf
@@ -643,7 +643,7 @@ reorder = {
                 I=$input.bam
                 O=$output.bam
                 VALIDATION_STRINGENCY=LENIENT
-                REFERENCE=$HGFA
+                REFERENCE=$REF
             """ 
     }
 }
