@@ -622,7 +622,7 @@ add_to_database = {
 
             echo "====> Adding variants for flaship $target_name to database"
 
-            JAVA_OPTS="-Xmx2g" $GROOVY -cp $EXCEL/excel.jar:$TOOLS/sqlite/sqlitejdbc-v056.jar $SCRIPTS/vcf_to_db.groovy 
+            JAVA_OPTS="-Xmx2g" $GROOVY -cp $GROOVY_NGS/groovy-ngs-utils.jar:$EXCEL/excel.jar:$TOOLS/sqlite/sqlitejdbc-v056.jar $SCRIPTS/vcf_to_db.groovy 
                    -v $input.vcf 
                    -a $input.csv 
                    -db $VARIANT_DB 
