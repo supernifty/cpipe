@@ -77,7 +77,7 @@ run {
                    dedup + index_bam + 
                    realignIntervals + realign + index_bam +
                    recal_count + recal + index_bam +
-                       [ call_variants, calc_coverage_stats, gatk_depth_of_coverage ]
+                       [ call_variants + call_pgx + merge_pgx, calc_coverage_stats, gatk_depth_of_coverage ]
                    + check_coverage
         ] + 
 

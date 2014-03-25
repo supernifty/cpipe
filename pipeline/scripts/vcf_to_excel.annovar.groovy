@@ -34,6 +34,9 @@ cli.with {
   si 'sample meta data file for the pipeline', args:1
   db 'Sqlite database containing known variants. If known, a column will be populated with the count of times observed.', args:1
   gc 'File listing genes and categories', args:1
+  pgx 'VCF file containing variants to treat as pharmacogenomic variants (always report)', args:1
+  bam 'BAM file for annotating coverage depth where not available from VCF files', args:1
+  pgxcov 'Coverage threshold below which a pharmocogenomic site is considered untested (15)', args: 1
 }
 opts = cli.parse(args)
 
@@ -63,6 +66,13 @@ if(!opts.si)
 if(!opts.gc)
     err "Please provide -gc option to specify the gene category file"
 
+
+def pg_variants = []
+if(opts.pgx) 
+    pg_variants = VCF.parse(opts.pgx)
+
+int pgx_coverage_threshold = opts.pgxcov ? opts.pgxcov.toInteger() : 15
+
 sample_info = new SampleInfo().parse_sample_info(opts.si)
 
 println "sample_info = $sample_info"
@@ -70,6 +80,12 @@ println "sample_info = $sample_info"
 exclude_types = opts.x ? opts.x.split(",") : []
 
 samples = opts.s.split(",")
+
+Map<String,SAM> bams = null
+if(opts.bams) {
+    bams = opts.bams.collectEntries { def bam = new SAM(it); [ bam.samples[0], bam ] }
+    println "Read ${bams.size()} BAM files for querying read depth"
+}
 
 // Read all the annovar files
 ANNOVAR_FIELDS = null
@@ -114,6 +130,8 @@ def find_vcf_variant(vcf, av, lineIndex) {
   }
 }
 
+OUTPUT_FIELDS = ["Gene Category","Priority Index"] + ANNOVAR_FIELDS[0..-3] + ["CADD"] + (sql?["#Obs"]:[]) + ['RefCount','AltCount']
+
 //
 // Now build our spreadsheet
 //
@@ -130,7 +148,7 @@ new ExcelBuilder().build {
 
             // Write out header row
             bold { row {
-                    cells(["Gene Category","Priority Index"] + ANNOVAR_FIELDS[0..-3] + ["CADD"] + (sql?["#Obs"]:[]) + ['RefCount','AltCount'])
+                    cells(OUTPUT_FIELDS)
             } }
 
             println "Priority genes for $sample are ${sample_info[sample].geneCategories.keySet()}"
@@ -216,6 +234,64 @@ new ExcelBuilder().build {
                   excelCells[4].red()
               }
               */
+            } // End Annovar variants
+
+            // Now add pharmacogenomic variants
+            for(pvx in pg_variants) {
+
+                values = OUTPUT_FIELDS.collect { "" }
+
+
+                // Check if the unfiltered VCF has the variant
+                // Note: there's an issue here about canonicalizing the variant
+                // representation. For now, it's being ignored.
+                def vx = vcf.contains(pvx)
+
+                List<Map> vepInfos = pvx.vepInfo
+                def genes = vepInfos*.SYMBOL.grep { it != null }.join(",")
+
+                def state = "Untested"
+                int depth = bams[sample].coverage(pvx.chr, pvx.pos)
+                println "Queried depth $depth at $pvx.chr:$pvx.pos"
+                // TODO: why is vx sometimes null? should always be genotyped
+                if(vx && depth >= pgx_coverage_threshold) {
+                    int allele = vx.findAlleleIndex(pvx.alleles[0])
+                    state = vx.sampleDosage(sample, allele) > 0 ? "Present" : "Absent"
+                }
+                else { // Variant not called - but is there coverage?
+                    if(depth >= pgx_coverage_threshold)
+                        state = "Absent"
+                    System.err.println "WARNING : PGX variant $pvx was not genotyped for sample $sample"
+                }
+
+                // Now set the fields that we can
+                def output = [ 
+                    'Gene Category': 1, 
+                    'Priority Index': 1, 
+                    Func: "pharma", 
+                    ExonicFunc: state,
+                    Gene: genes,
+                    dbSNP138: pvx.id,
+                    Chr: pvx.chr,
+                    Start: pvx.pos,
+                    End: pvx.pos + pvx.size(),
+                    Ref: pvx.ref,
+                    Obs: pvx.alt,
+                    OtherInfo: vx ? (vx.dosages[0] == 1 ? "het" : "hom") : ""
+                ]
+                output.each { k, v ->
+                    values[OUTPUT_FIELDS.indexOf(k)] = v 
+                }
+
+                row { 
+                    center { cells(values[0..1]) }; 
+                    cells(values[2..3]); 
+                    if(state == 'Present')
+                        red { cell(values[4]) }
+                    else
+                        cell(values[4])
+                    cells(values[5..-1]) 
+                }
             }
         }
         println "Sample $sample has ${sampleCount} / ${includeCount} of included variants"

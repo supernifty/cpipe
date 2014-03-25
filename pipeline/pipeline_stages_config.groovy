@@ -38,6 +38,11 @@ set_target_info = {
                 mkdir -p ../design;
                 cp $BASE/designs/flagships/${target_name}.bed $target_bed_file; 
                 cp $BASE/designs/flagships/${target_name}.genes.txt ../design;
+
+                if [ -e $BASE/designs/flagships/${target_name}.pgx.vcf ];
+                then
+                    cp $BASE/designs/flagships/${target_name}.pgx.vcf ../design;
+                fi
         """
     }
 
@@ -87,8 +92,8 @@ check_sample_info = {
         def files = sample_info[sample].files.fastq
         if(files.any { !file(it).name.startsWith(sample+"_")}) {
             fail report('templates/invalid_input.html') to channel: gmail, 
-                                                              subject: "FASTQ files for sample $sample have invalid file name format", 
-                                                              message: "Files $files do not start with the sample name $sample" 
+                                                           subject: "FASTQ files for sample $sample have invalid file name format", 
+                                                           message: "Files $files do not start with the sample name $sample" 
         }
 
         // Check that all the files specified for the sample exist
@@ -199,16 +204,42 @@ align_bwa = {
     }
 }
 
+merge_pgx = {
+    doc "Merge multiple VCF files into one file"
+    output.dir="variants"
+
+    if(!file("../design/${target_name}.pgx.vcf").exists()) {
+        forward input.recal.vcf
+        return
+    }
+
+    msg "Merging vcf files: " + inputs.vcf
+    exec """
+            java -Xmx3g -jar $GATK/GenomeAnalysisTK.jar
+            -T CombineVariants
+            -R $REF
+            --variant $input.recal.vcf
+            --variant $input.pgx.vcf
+            --out $output.vcf
+         """
+}
+
 merge_vcf = {
     doc "Merge multiple VCF files into one file"
     output.dir="variants"
+
+    def pgx_flag = ""
+    if(file("../design/${target_name}.pgx.vcf").exists()) {
+        pgx_flag = "-L ../design/${target_name}.pgx.vcf"
+    }
+
     produce(target_name + ".merge.vcf") {
         msg "Merging vcf files: " + inputs.vcf
         exec """
                 java -Xmx3g -jar $GATK/GenomeAnalysisTK.jar
                 -T CombineVariants
                 -R $REF
-                -L $target_bed_file
+                -L $target_bed_file $pgx_flag
                 ${inputs.vcf.withFlag("--variant")}
                 --out $output.vcf
              """
@@ -365,6 +396,38 @@ call_variants = {
     }
 }
 
+call_pgx = {
+    doc "Call Pharmacogenomic variants using GATK Unified Genotyper"
+    output.dir="variants"
+
+    var call_conf:5.0, 
+        emit_conf:5.0
+
+    if(!file("../design/${target_name}.pgx.vcf").exists())
+        return
+
+    transform("bam","bam") to("metrics","pgx.vcf") {
+        exec """
+                java -Xmx4g -jar $GATK/GenomeAnalysisTK.jar -T UnifiedGenotyper 
+                   -R $REF 
+                   -I $input.bam 
+                   -nt 4
+                   --dbsnp $DBSNP 
+                   -stand_call_conf $call_conf -stand_emit_conf $emit_conf
+                   --output_mode EMIT_ALL_SITES
+                   -dcov 1600 
+                   -l INFO 
+                   -L ../design/${target_name}.pgx.vcf
+                   -A AlleleBalance -A Coverage -A FisherStrand 
+                   -glm BOTH
+                   -metrics $output.metrics
+                   -o $output.vcf
+            ""","gatk_call_variants"
+    }
+}
+
+
+
 @filter("filter")
 filter_variants = {
     doc "Select only variants in the genomic regions defined for the $target_name target"
@@ -436,6 +499,9 @@ check_coverage = {
 }
 
 augment_condel = {
+
+    doc "Extract Condel scores from VEP annotated VCF files and add them to Annovar formatted CSV output"
+
     output.dir="variants"
     from("exome_summary.csv") filter("con") {
         exec """
@@ -506,6 +572,11 @@ vcf_to_excel = {
         succeed "No samples succeeded for target $target_name" 
     }
 
+    def pgx_flag = ""
+    if(file("../design/${target_name}.pgx.vcf").exists()) {
+        pgx_flag = "-pgx ../design/${target_name}.pgx.vcf"
+    }
+
     from(target_name+"*.exome_summary.*.csv", target_name+".*.vcf") produce(target_name + ".xlsx") {
         exec """
             JAVA_OPTS="-Xmx2g -Djava.awt.headless=true" $GROOVY 
@@ -517,7 +588,8 @@ vcf_to_excel = {
                 -db $VARIANT_DB
                 -o $output.xlsx
                 -si $sample_metadata_file
-                -gc $target_gene_file
+                -gc $target_gene_file ${pgx_flag}
+                ${inputs.bam.withFlag("-bam")}
         """
     }
 }
@@ -622,7 +694,7 @@ add_to_database = {
 
             echo "====> Adding variants for flaship $target_name to database"
 
-            JAVA_OPTS="-Xmx2g" $GROOVY -cp $EXCEL/excel.jar:$TOOLS/sqlite/sqlitejdbc-v056.jar $SCRIPTS/vcf_to_db.groovy 
+            JAVA_OPTS="-Xmx2g" $GROOVY -cp $GROOVY_NGS/groovy-ngs-utils.jar:$EXCEL/excel.jar:$TOOLS/sqlite/sqlitejdbc-v056.jar $SCRIPTS/vcf_to_db.groovy 
                    -v $input.vcf 
                    -a $input.csv 
                    -db $VARIANT_DB 
