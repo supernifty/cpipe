@@ -24,6 +24,10 @@
 #
 ####################################################################
 #
+# NOTE: these SLURM setting sare included here for reference, but
+#       backup using a node does not work because the node ip addresses
+#       are not whitelisted on the WEHI end.
+#
 #SBATCH --job-name=mgha_nightly_backup
 #SBATCH --account VR0002
 #SBATCH --mem=16384
@@ -81,7 +85,7 @@ function backup() {
     cd $BASE || err "Unable to change directory to base dir: $BASE"
 
     #echo "rsync -r -e \"ssh -i $BASE/.ssh/id_rsa\" repo production $TARGET_USER@$TARGET_IP_ADRESS:"
-    rsync --inplace -v -r -e "ssh -i $BASE/.ssh/id_rsa" $SOURCES $TARGET_USER@$TARGET_IP_ADRESS: || err "Rsync returned failure exit code"
+    rsync -v -r -e "ssh -i $BASE/.ssh/id_rsa" $SOURCES $TARGET_USER@$TARGET_IP_ADRESS: || err "Rsync returned failure exit code"
     echo
     echo "Done at "`date`
 }
