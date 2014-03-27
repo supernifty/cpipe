@@ -33,11 +33,11 @@ set_target_info = {
 
     println "Checking for target bed file : $target_bed_file"
 
-    if(!file(target_bed_file).exists()) {
+    if(!file(target_bed_file).exists() || !file(target_gene_file).exists()) {
         exec """
                 mkdir -p ../design;
                 cp $BASE/designs/flagships/${target_name}.bed $target_bed_file; 
-                cp $BASE/designs/flagships/${target_name}.genes.txt ../design;
+                cp $BASE/designs/flagships/${target_name}.genes.txt $target_gene_file
 
                 if [ -e $BASE/designs/flagships/${target_name}.pgx.vcf ];
                 then
@@ -45,6 +45,9 @@ set_target_info = {
                 fi
         """
     }
+
+    if(!file(target_gene_file).exists())
+        fail("Target gene category file $gene_file could not be located for processing sample $branch.name")
 
     if(!file(target_bed_file).exists())
         fail("Target bed file $target_bed_file could not be located for processing sample $branch.name")
