@@ -558,8 +558,12 @@ calculate_cadd_scores = {
 
 index_vcf = {
     output.dir="variants"
-    transform("vcf") to ("vcf.idx") {
-        exec "$IGVTOOLS/igvtools index $input.vcf"
+    transform("vcf","vcf") to("sort.vcf","sort.vcf.idx") {
+        exec """
+            $IGVTOOLS/igvtools sort $input.vcf $output.vcf 
+
+            $IGVTOOLS/igvtools index $output.vcf
+        """
     }
 }
 
@@ -722,3 +726,20 @@ reorder = {
             """ 
     }
 }
+
+summary_pdf = {
+    requires sample_metadata_file : "File describing meta data for pipeline run (usually, samples.txt)"
+
+    produce("${sample}.summary.pdf") {
+        exec """
+             JAVA_OPTS="-Xmx2g" $GROOVY -cp $GROOVY_NGS/groovy-ngs-utils.jar $SCRIPTS/qc_pdf.groovy 
+                -cov $input.cov.txt
+                -study $sample 
+                -meta $sample_metadata_file
+                -threshold 20 
+                -classes GOOD:95:GREEN,PASS:80:ORANGE,FAIL:0:RED 
+                -o $output.pdf
+        """
+    }
+}
+
