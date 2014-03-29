@@ -17,18 +17,11 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
-/*
-#echo "Renaming to flagship names ..."
-#for i in *.bed; do mv $i `echo $i | sed 's/^.*_//'`; done
 
-#echo "SKIPPING Renaming chromosomes ..."
-#for i in *.bed; do sed -i.bak 's/^/chr/' $i; done
+BASE="/vlsci/VR0320/shared/production/"
 
-#echo "Renaming chrMT to chrM ..."
-#for i in *.bed; do sed -i.bak 's/^chrMT/chrM/' $i; done
-*/
-
-BASE="/vlsci/VR0320/shared"
+load "../config.groovy"
+load "../pipeline_stages_config.groovy"
 
 if(!file(BASE).exists()) {
   println "="*80
@@ -67,4 +60,20 @@ rename = {
     }
 }
 
-run { "RefSeq_coding_%.bed" * [ flatten + annotate + sort + rename ] }
+extract_pgx = {
+    msg "Processing PGX variants for target $branch"
+    produce(branch.name + '.pgx.vcf') {
+        exec """
+            cat $DBSNP | JAVA_OPTS="-Xmx1g" groovy 
+                -cp $GROOVY_NGS/groovy-ngs-utils.jar
+                -e 'pgx = new File("$input.txt").readLines()*.trim(); VCF.filter { it.id in pgx }' > $output.vcf
+        """
+    }
+}
+
+run {
+      //"RefSeq_coding_%.bed" * [ flatten + annotate + sort + rename ] +
+      "%.pgx.txt" * [ extract_pgx + annotate_vep ] 
+    }
+
+
