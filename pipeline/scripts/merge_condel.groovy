@@ -21,9 +21,9 @@ import com.xlson.groovycsv.*
 import au.com.bytecode.opencsv.*
 
 // Parse command line args
-CliBuilder cli = new CliBuilder(usage: "vcf_to_excel.groovy [options]\n")
+CliBuilder cli = new CliBuilder(usage: "merge_condel.groovy [options]\n")
 cli.with {
-  i 'VCF file to convert to Excel format', args:1
+  i 'VCF file containing Condel scores', args:1
   a 'Annovar file containing annotations', args:1
   t 'Trim <integer> columns from end (different versions of Annovar put unwanted columns on the end)', args:1
   o 'Output file (*.csv)', args:1
