@@ -5,9 +5,13 @@
 #      Melbourne Genomics Health Alliance
 #
 ########################################################
+
+EMAILS="ssadedin@gmail.com"
+
 #
 # Helper functions
 function err() {
+        (
         echo
         echo "========================= ERROR =================================="
         echo
@@ -15,6 +19,10 @@ function err() {
         echo
         echo "=================================================================="
         echo
+        ) > selftest.error.log
+
+        mail -s "WARNING: Melbourne Genomics SelfTest Failure" $EMAILS  < selftest.error.log
+
         exit 1
 }
 
@@ -45,7 +53,7 @@ mkdir -p batches/selftest/data || err "Unable to create selftest batch directory
 mkdir -p batches/selftest/analysis || err "Unable to create selftest batch directory"
 
 msg "Copying test data ..."
-cp -v ./batches/na18507/data/NA18507_*.fastq.gz batches/selftest/data  || err "Unable to copy selftest data"
+cp -v ./batches/na18507/data/000000000_*.fastq.gz batches/selftest/data  || err "Unable to copy selftest data"
 cp -v ./batches/na18507/samples.selftest.txt batches/selftest/samples.txt || err "Unable to copy selftest sample file"
 
 pushd batches/selftest/analysis
@@ -57,11 +65,11 @@ msg "Running pipeline (should fail due to FastQC) ..."
 msg "Checking FastQC error detected ..."
 [ -e EPIL.xlsx ] && err "Found results spreadsheet but pipeline should have failed due to FastQC failure"
 
-msg "Success: sample NA18507 failed with FastQC error"
+msg "Success: sample 000000000 failed with FastQC error"
 
 msg "Overriding FastQC error ..."
-../../../bpipe override check_fastqc.NA18507 > check.log 2>&1
-grep -q 'NA18507.*Overridden' check.log || err "Failed to find expected text in check log"
+../../../bpipe override check_fastqc.000000000 > check.log 2>&1
+grep -q '000000000.*Overridden' check.log || err "Failed to find expected text in check log"
 
 msg "Running pipeline again ..."
 
@@ -85,4 +93,7 @@ ACTUAL_VARIANTS=`wc variants/EPIL.merge.filter.vep.vcf | awk '{print $1}'`
 msg "Success: correct number of variants observed"
 
 msg "Test succeeded"
+
+mail -s "OK: Melbourne Genomics SelfTest Successful" $EMAILS  <<! Test completed OK 
+!
 
