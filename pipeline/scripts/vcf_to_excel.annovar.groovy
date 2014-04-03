@@ -295,7 +295,7 @@ new ExcelBuilder().build {
             }
         }
         println "Sample $sample has ${sampleCount} / ${includeCount} of included variants"
-        s/*.autoFilter("A:"+(char)(65+6+samples.size()))*/.autoSize()
+        try { s/*.autoFilter("A:"+(char)(65+6+samples.size()))*/.autoSize() } catch(e) { println "WARNING: Unable to autosize columns: " + String.valueOf(e) }
         s.setColumnWidth(5,60*256) // 30 chars wide for Gene column
         s.setColumnWidth(3,30*256) // 60 chars wide for AAChange column
     }
