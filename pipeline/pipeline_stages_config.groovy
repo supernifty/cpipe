@@ -65,6 +65,19 @@ set_sample_info = {
         succeed "No files to process for sample $sample, target $target_name"
     }
 
+    // Patient specific variants are not supported yet
+    // If they are provided, we should not process the patient at all
+    check {
+        if(sample_info[sample].variantsFile?.trim()) 
+                throw new PipelineError()
+    } otherwise { 
+        succeed text """
+             Study $sample is configured with a sample specific variant file. The pipeline currently does 
+             not support sample specific variants. Please remove the variant file from the configuration
+             to allow processing.
+         """.trim().stripIndent() to channel: gmail, subject: "Invalid configuration for Study $sample"
+    }
+
     def files = sample_info[sample].files.fastq
 
     println "Processing input files ${files} for target region ${target_bed_file}"
