@@ -1,1 +1,2 @@
-000000000	000	EPIL	../data/000000000_S1_L001_R1_001.fastq.gz,../data/000000000_S1_L001_R2_001.fastq.gz	2:GABRD,KCNAB2
+Sample_ID	Batch	Cohort	Fastq_Files	Prioritised_Genes 	Sex	Sample_Type	Consanguinity	Variants_File	Pedigree_File	Ethnicity	VariantCall_Group	DNA_Concentration	DNA_Volume	DNA_Quantity	DNA_Quality	DNA_Date	Capture_Date	Sequencing_Date	Mean_Coverage	Duplicate_Percentage	Machine_ID	 Hospital_Centre	Sequencing_Contact	Pipeline_Contact
+000000000	000	EPIL	"../data/000000000_S1_L001_R1_001.fastq.gz,../data/000000000_S1_L001_R2_001.fastq.gz"	 	Male	Normal	No			Asian		30	10	650	1.8	20140324	20140404	"20140410, 20140410"	105	3	"700945, 700890"	RCH	ssadedin@gmail.com	pipeline@melbournegenomics.org.au
