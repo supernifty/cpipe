@@ -37,11 +37,9 @@ load 'config.groovy'
 load 'pipeline_stages_config.groovy'
 
 inputs "samples.txt" : """
-                        File containing at least 3 columns, the first being sample name, 
-                        the second a target region ("flagship") name, and the third a
-                        comma separated list of FastQ files for the sample.
-                        See the Melbourne Genomics development web site for the full description
-                        of the file format.
+                        File conforming to the Melbourne Genomics Sample Meta Data file
+                        format definition. See the example samples.txt provided for
+                        a minimal example of this.
                        """
 
 sample_metadata_file = args[0]
@@ -69,7 +67,7 @@ run {
         set_target_info +
         
         // The first phase is to perform alignment and variant calling for each sample
-        sample_info.keySet() * [
+        samples * [
                set_sample_info +
                    "%.gz" * [ fastqc ] + check_fastqc +
                    ~"(.*)_R[0-9][_.].*fastq.gz" * [ align_bwa + index_bam ] +
@@ -77,11 +75,11 @@ run {
                    dedup + index_bam + 
                    realignIntervals + realign + index_bam +
                    recal_count + recal + index_bam +
-                       [ call_variants + call_pgx + merge_pgx, calc_coverage_stats, gatk_depth_of_coverage ]
+                       [ call_variants + call_pgx + merge_pgx, calc_coverage_stats + summary_pdf, gatk_depth_of_coverage ]
                    + check_coverage
         ] + 
 
-        // The second phase is to merge all the variants for the target (flagship)
+        // The second phase is to merge all the variants for the target/cohort/flagship
         // and then annotate them
         merge_vcf + 
         filter_variants + 

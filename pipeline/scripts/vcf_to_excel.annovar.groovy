@@ -22,6 +22,8 @@
 /////////////////////////////////////////////////////////////////////////
 
 import groovy.sql.Sql
+import com.xlson.groovycsv.*
+import au.com.bytecode.opencsv.*
 
 // Parse command line args
 CliBuilder cli = new CliBuilder(usage: "vcf_to_excel.groovy [options]\n")
@@ -131,6 +133,7 @@ def find_vcf_variant(vcf, av, lineIndex) {
 }
 
 OUTPUT_FIELDS = ["Gene Category","Priority Index"] + ANNOVAR_FIELDS[0..-3] + ["CADD"] + (sql?["#Obs"]:[]) + ['RefCount','AltCount']
+OUTPUT_CSV_FIELDS = ANNOVAR_FIELDS + ["Gene Category","Priority Index","CADD"] + (sql?["#Obs"]:[]) + ['RefCount','AltCount']
 
 //
 // Now build our spreadsheet
@@ -144,6 +147,7 @@ new ExcelBuilder().build {
             includeCount=0
 
             // Read the CSV file entirely
+            // Sort the annovar output by Priority Index
             def annovar_csv = parseCSV(opts.a, ',').grep { it.Priority_Index.toInteger()>0 }.sort { -it.Priority_Index.toInteger() }
 
             // Write out header row
@@ -153,7 +157,12 @@ new ExcelBuilder().build {
 
             println "Priority genes for $sample are ${sample_info[sample].geneCategories.keySet()}"
 
-            // Sort the annovar output by significance
+            // We are going to write out a CSV that is identical to the original annovar output
+            // but which includes our custom fields on the end
+            // Start by writing the headers
+            def writer = new FileWriter("${sample}.annovarx.csv")
+            writer.println(OUTPUT_CSV_FIELDS.join(","))
+            CSVWriter csvWriter = new CSVWriter(writer);
 
             for(av in annovar_csv) {
                 ++lineIndex
@@ -173,6 +182,13 @@ new ExcelBuilder().build {
                 if(variant.sampleDosage(sample)==0)
                     continue
 
+                // Start by cloning existing Annovar info
+                def csv_out = []
+                csv_out.addAll(av.values)
+
+                def out_cells = { csv_out.addAll(it); cells(it)  }
+                def out_cell = { csv_out.add(it); cell(it)  }
+
                 ++sampleCount
                 def funcs = av.Func.split(";")
                 def genes = av.Gene.split(";")
@@ -191,17 +207,18 @@ new ExcelBuilder().build {
                             geneCategory = sample_info[sample].geneCategories[gene]
 
                         center {
-                            cells(geneCategory?:1, av.Priority_Index)
+                            out_cells([geneCategory?:1, av.Priority_Index])
                         }
                         cells(func,gene,exonicFunc,aaChange)
-                        cells(av.values[4..-3], av.columns.CADD != null ? av.CADD: "")
+                        cells(av.values[4..-3])
+                        out_cell(av.columns.CADD != null ? av.CADD: "")
                     }
-                }
+              }
 
               // Look up in database
               if(sql) {
                 def variant_count = sql.firstRow("select count(*) from variant_observation o, variant v where o.variant_id = v.id and v.chr = $variant.chr and v.pos = $variant.pos and v.alt = ${av.Obs}")[0]
-                cell(variant_count)
+                out_cell(variant_count)
               }
 
               // Try to annotate allele frequencies
@@ -212,21 +229,24 @@ new ExcelBuilder().build {
 
                       // Reference depth
                       if(gt.containsKey('AD')) {
-                          cell(gt.AD[0])
+                          out_cell(gt.AD[0])
 
                           // Alternate depth depends on which allele
                           int altAllele = (variant.alts.size()==1)?1:variant.equalsAnnovar(av.Chr, av.Start.toInteger(), av.Obs)
-                          cell(gt.AD[altAllele])
+                          out_cell(gt.AD[altAllele])
                       }
                       else {
                         System.err.println("WARNING: variant $variant.chr:$variant.pos ($variant.ref/$variant.alt) had no AD info for sample $sample at line $lineIndex")
-                        cells("","") // blank allele info
+                        out_cells("","") // blank allele info
                       }
                   }
                   else {
                     System.err.println("WARNING: variant $variant.chr:$variant.pos ($variant.ref/$variant.alt) had no genotype for sample $sample at line $lineIndex")
                   }
               }
+
+              // Write Annovar CSV format
+              csvWriter.writeNext(csv_out.collect { String.valueOf(it) } as String[])
         
               // TODO: check concordance between annoation sources
               /*
@@ -235,6 +255,7 @@ new ExcelBuilder().build {
               }
               */
             } // End Annovar variants
+            csvWriter.close()
 
             // Now add pharmacogenomic variants
             for(pvx in pg_variants) {
