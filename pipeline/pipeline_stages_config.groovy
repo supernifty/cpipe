@@ -740,6 +740,8 @@ summary_pdf = {
                 -classes GOOD:95:GREEN,PASS:80:ORANGE,FAIL:0:RED 
                 -o $output.pdf
         """
+
+        send text {"Sequencing Results for Study $sample"} to channel: gmail, file: output.pdf
     }
 }
 
