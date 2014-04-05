@@ -36,12 +36,6 @@ load 'config.groovy'
 // All the core pipeline stages in the pipeline
 load 'pipeline_stages_config.groovy'
 
-inputs "samples.txt" : """
-                        File conforming to the Melbourne Genomics Sample Meta Data file
-                        format definition. See the example samples.txt provided for
-                        a minimal example of this.
-                       """
-
 sample_metadata_file = args[0]
 sample_info = SampleInfo.parse_sample_info(args[0])
 
