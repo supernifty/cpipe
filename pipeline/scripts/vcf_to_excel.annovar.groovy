@@ -24,20 +24,21 @@
 import groovy.sql.Sql
 import com.xlson.groovycsv.*
 import au.com.bytecode.opencsv.*
+import org.apache.commons.cli.Option
 
 // Parse command line args
 CliBuilder cli = new CliBuilder(usage: "vcf_to_excel.groovy [options]\n")
 cli.with {
-  s 'comma separated list of samples to include', args:1
-  i 'VCF file to convert to Excel format', args:1
-  a 'Annovar file containing annotations', args:1
-  o 'Name of output file', args:1
+  s 'comma separated list of samples to include', args:1, required:true
+  i 'VCF file to convert to Excel format', args:1, required:true
+  a 'Annovar file containing annotations', args:1, required:true
+  o 'Name of output file', args:1, required:true
   x 'Comma separated list of functional types to exclude', args:1
-  si 'sample meta data file for the pipeline', args:1
+  si 'sample meta data file for the pipeline', args:1, required:true
   db 'Sqlite database containing known variants. If known, a column will be populated with the count of times observed.', args:1
-  gc 'File listing genes and categories', args:1
+  gc 'File listing genes and categories', args:1, required:true
   pgx 'VCF file containing variants to treat as pharmacogenomic variants (always report)', args:1
-  bam 'BAM file for annotating coverage depth where not available from VCF files', args:1
+  bam 'BAM file for annotating coverage depth where not available from VCF files', args: Option.UNLIMITED_VALUES
   pgxcov 'Coverage threshold below which a pharmocogenomic site is considered untested (15)', args: 1
 }
 opts = cli.parse(args)
@@ -55,19 +56,6 @@ if(!opts) {
    err "Failed to parse command line options"
 }
 args = opts.arguments()
-if(!opts.s) 
-    err "Please provide -s option to specify samples to export"
-if(!opts.i) 
-    err "Please provide -i option to specify VCF file to process"
-if(!opts.o) 
-    err "Please provide -o option to specify output file name"
-if(!opts.a)
-    err "Please provide -a option to specify Annovar annotation file"
-if(!opts.si)
-    err "Please provide -si option to specify sample meta data file"
-if(!opts.gc)
-    err "Please provide -gc option to specify the gene category file"
-
 
 def pg_variants = []
 if(opts.pgx) 
@@ -86,7 +74,10 @@ samples = opts.s.split(",")
 Map<String,SAM> bams = null
 if(opts.bams) {
     bams = opts.bams.collectEntries { def bam = new SAM(it); [ bam.samples[0], bam ] }
-    println "Read ${bams.size()} BAM files for querying read depth"
+    println "="*80
+    println "Read ${bams.size()} BAM files for querying read depth:"
+    bams.each {  println "Sample: $it.key => $it.value.samFile " }
+    println "="*80
 }
 
 // Read all the annovar files
@@ -118,22 +109,37 @@ if(opts.db) {
 // Read the gene categories
 geneCategories = new File(opts.gc).readLines()*.split('\t').collect { [it[0],it[1]] }.collectEntries()
 
-//
-// Function to find an Annovar variant in the original VCF file
-//
-def find_vcf_variant(vcf, av, lineIndex) {
-  try {
-      int pos = av.Start.toInteger()
-      int end = av.End.toInteger()
-      return vcf.find(av.Chr,pos-15,end) { variant -> variant.equalsAnnovar(av.Chr,pos,av.Obs) }
-  }
-  catch(Exception e) {
-      try { println "WARNING: unable to locate annovar variant at $lineIndex in VCF ($e)" } catch(Exception e2) { e.printStackTrace() }
-  }
-}
-
 OUTPUT_FIELDS = ["Gene Category","Priority Index"] + ANNOVAR_FIELDS[0..-3] + ["CADD"] + (sql?["#Obs"]:[]) + ['RefCount','AltCount']
 OUTPUT_CSV_FIELDS = ANNOVAR_FIELDS + ["Gene Category","Priority Index","CADD"] + (sql?["#Obs"]:[]) + ['RefCount','AltCount']
+
+query_variant_counts = { variant, allele, av, sample ->
+
+    // Look up in database
+    def target = sample_info[sample].target
+
+    // The total observations of the variant
+    def variant_count = sql.firstRow(
+            """
+            select count(*) 
+                from variant_observation o, variant v 
+                where o.variant_id = v.id and v.chr = $variant.chr and v.pos = $allele.start and v.alt = $allele.alt
+            """)[0]
+
+    def variant_count_outside_flagship = 0
+    if(variant_count>1) {
+        variant_count_outside_flagship = sql.firstRow("""
+                select count(*) 
+                from variant_observation o, variant v, sample s
+                where o.variant_id = v.id 
+                      and v.chr = $variant.chr 
+                      and v.pos = $allele.start
+                      and v.alt = $allele.alt
+                      and o.sample_id = s.id
+                      and s.cohort <> $target """)[0]
+        println "Variant $variant found $variant_count times globally, $variant_count_outside_flagship outside target $target"
+    }
+    return [ total: variant_count, other_target: variant_count_outside_flagship ]
+}
 
 //
 // Now build our spreadsheet
@@ -164,6 +170,10 @@ new ExcelBuilder().build {
             writer.println(OUTPUT_CSV_FIELDS.join(","))
             CSVWriter csvWriter = new CSVWriter(writer);
 
+            csv_out = []
+            def out_cells = { csv_out.addAll(it); cells(it)  }
+            def out_cell = { csv_out.add(it); cell(it)  }
+
             for(av in annovar_csv) {
                 ++lineIndex
                 if(lineIndex%5000==0)
@@ -172,22 +182,29 @@ new ExcelBuilder().build {
                 if(av.ExonicFunc in exclude_types)
                     continue
 
-                def variant = find_vcf_variant(vcf,av,lineIndex)
-                if(!variant) {
+                def variantInfo = vcf.findAnnovarVariant(av.Chr, av.Start, av.End, av.Obs)
+                if(!variantInfo) {
                     println "WARNING: Variant $av.Chr:$av.Start at line $lineIndex could not be found in the original VCF file"
                     continue
                 }
-                ++includeCount
-                        
-                if(variant.sampleDosage(sample)==0)
+
+                Variant variant = variantInfo.variant
+                if(variant.sampleDosage(sample, variantInfo.allele)==0)
                     continue
 
-                // Start by cloning existing Annovar info
-                def csv_out = []
-                csv_out.addAll(av.values)
+                Map variant_counts = [total: 0, other_target:0]
+                if(sql) {
+                    variant_counts = query_variant_counts(variant, variant.alleles[variantInfo.allele], av, sample)
+                    if(variant_counts.other_target>0) {
+                        println "Variant $variant excluded by presence ${variant_counts.other_target} times in other targets"
+                        continue
+                    }
+                }
+                ++includeCount
 
-                def out_cells = { csv_out.addAll(it); cells(it)  }
-                def out_cell = { csv_out.add(it); cell(it)  }
+                // Start by cloning existing Annovar info
+                csv_out = []
+                csv_out.addAll(av.values)
 
                 ++sampleCount
                 def funcs = av.Func.split(";")
@@ -215,10 +232,8 @@ new ExcelBuilder().build {
                     }
               }
 
-              // Look up in database
               if(sql) {
-                def variant_count = sql.firstRow("select count(*) from variant_observation o, variant v where o.variant_id = v.id and v.chr = $variant.chr and v.pos = $variant.pos and v.alt = ${av.Obs}")[0]
-                out_cell(variant_count)
+                  out_cell(variant_counts.total)
               }
 
               // Try to annotate allele frequencies
@@ -255,7 +270,6 @@ new ExcelBuilder().build {
               }
               */
             } // End Annovar variants
-            csvWriter.close()
 
             // Now add pharmacogenomic variants
             for(pvx in pg_variants) {
@@ -304,6 +318,8 @@ new ExcelBuilder().build {
                     values[OUTPUT_FIELDS.indexOf(k)] = v 
                 }
 
+                csv_out = []
+
                 row { 
                     center { cells(values[0..1]) }; 
                     cells(values[2..3]); 
@@ -313,7 +329,10 @@ new ExcelBuilder().build {
                         cell(values[4])
                     cells(values[5..-1]) 
                 }
+                csvWriter.writeNext( ANNOVAR_FIELDS.collect { f -> if(f in output) { String.valueOf(output[f]) } else "" } as String[] )
+
             }
+            csvWriter.close()
         }
         println "Sample $sample has ${sampleCount} / ${includeCount} of included variants"
         try { s/*.autoFilter("A:"+(char)(65+6+samples.size()))*/.autoSize() } catch(e) { println "WARNING: Unable to autosize columns: " + String.valueOf(e) }

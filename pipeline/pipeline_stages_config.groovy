@@ -69,9 +69,9 @@ set_sample_info = {
     // If they are provided, we should not process the patient at all
     check {
         if(sample_info[sample].variantsFile?.trim()) 
-                throw new PipelineError()
+                exec "false" // force failure
     } otherwise { 
-        succeed text """
+        succeed """
              Study $sample is configured with a sample specific variant file. The pipeline currently does 
              not support sample specific variants. Please remove the variant file from the configuration
              to allow processing.
@@ -244,18 +244,12 @@ merge_vcf = {
     doc "Merge multiple VCF files into one file"
     output.dir="variants"
 
-    def pgx_flag = ""
-    if(file("../design/${target_name}.pgx.vcf").exists()) {
-        pgx_flag = "-L ../design/${target_name}.pgx.vcf"
-    }
-
     produce(target_name + ".merge.vcf") {
         msg "Merging vcf files: " + inputs.vcf
         exec """
                 java -Xmx3g -jar $GATK/GenomeAnalysisTK.jar
                 -T CombineVariants
                 -R $REF
-                -L $target_bed_file $pgx_flag
                 ${inputs.vcf.withFlag("--variant")}
                 --out $output.vcf
              """
@@ -448,12 +442,18 @@ call_pgx = {
 filter_variants = {
     doc "Select only variants in the genomic regions defined for the $target_name target"
     output.dir="variants"
+
+    def pgx_flag = ""
+    if(file("../design/${target_name}.pgx.vcf").exists()) {
+        pgx_flag = "-L ../design/${target_name}.pgx.vcf"
+    }
+
     exec """
         java -Xmx2g -jar $GATK/GenomeAnalysisTK.jar 
              -R $REF
              -T SelectVariants 
              --variant $input.vcf 
-             -L $target_bed_file
+             -L $target_bed_file $pgx_flag
              -o $output.vcf 
     """
 }
@@ -493,7 +493,7 @@ check_coverage = {
     transform("cov.txt") to("cov.stats.median", "cov.stats.csv") {
 
         R {"""
-            bam.cov = read.table("$input.txt", col.names=c("chr","start","end", "gene", "offset", "cov"))
+            bam.cov = read.table("$input.cov.txt", col.names=c("chr","start","end", "gene", "offset", "cov"))
             meds = aggregate(bam.cov$cov, list(bam.cov$gene), median)
             write.csv(data.frame(Gene=meds[,1],MedianCov=meds$x), "$output.csv", quote=F, row.names=F)
             writeLines(as.character(median(bam.cov$cov)), "$output.median")
@@ -597,8 +597,11 @@ vcf_to_excel = {
         pgx_flag = "-pgx ../design/${target_name}.pgx.vcf"
     }
 
-    from(target_name+"*.exome_summary.*.csv", target_name+".*.vcf") produce(target_name + ".xlsx") {
+    def all_outputs = [target_name + ".xlsx"] + target_samples.collect { it + ".annovarx.csv" }
+    from(target_name+"*.exome_summary.*.csv", target_name+".*.vcf") produce(all_outputs) {
         exec """
+            echo "Creating $outputs.csv"
+
             JAVA_OPTS="-Xmx2g -Djava.awt.headless=true" $GROOVY 
                 -cp $SCRIPTS:$GROOVY_NGS/groovy-ngs-utils.jar:$EXCEL/excel.jar:$TOOLS/sqlite/sqlitejdbc-v056.jar $SCRIPTS/vcf_to_excel.annovar.groovy 
                 -s '${target_samples.join(",")}'
@@ -714,10 +717,11 @@ add_to_database = {
 
             echo "====> Adding variants for flaship $target_name to database"
 
-            JAVA_OPTS="-Xmx2g" $GROOVY -cp $GROOVY_NGS/groovy-ngs-utils.jar:$EXCEL/excel.jar:$TOOLS/sqlite/sqlitejdbc-v056.jar $SCRIPTS/vcf_to_db.groovy 
-                   -v $input.vcf 
+            JAVA_OPTS="-Xmx4g" $GROOVY -cp $GROOVY_NGS/groovy-ngs-utils.jar:$EXCEL/excel.jar:$TOOLS/sqlite/sqlitejdbc-v056.jar $SCRIPTS/vcf_to_db.groovy 
+                   -v $input.merge.vcf 
                    -a $input.csv 
                    -db $VARIANT_DB 
+                   -cohort $target_name
                    -b "$batch" 
 
             echo "<==== Finished adding variants for flaship $target_name to database"

@@ -21,35 +21,27 @@ import groovy.sql.Sql
 // Parse command line args
 CliBuilder cli = new CliBuilder(usage: "vcf_to_excel.groovy [options]\n")
 cli.with {
-  v 'VCF file to convert to Excel format', args:1
-  a 'Annovar file containing annotations', args:1
-  b 'Batch name or id', args:1
-  db 'Database file to use', args:1
+  v 'VCF file to convert to Excel format', args:1, required: true
+  a 'Annovar file containing annotations', args:1, required: true
+  b 'Batch name or id', args:1, required: true
+  cohort 'Cohort / target /flagship name', args:1, required: true
+  db 'Database file to use', args:1, required: true
   c 'Create the tables'
 }
 opts = cli.parse(args)
-if(!opts) {
-   cli.usage()
-   err "Failed to parse command line options"
-}
 
 // Quick and simple way to exit with a message
 err = { msg ->
   System.err.println("\nERROR: " + msg + "\n")
-  cli.usage()
   System.err.println()
   System.exit(1)
 }
 
+if(!opts) {
+   err "Failed to parse command line options"
+}
+
 args = opts.arguments()
-if(!opts.v) 
-    err "Please provide -v option to specify VCF file to process"
-if(!opts.db) 
-    err "Please provide -db option to specify the database file name"
-if(!opts.a)
-    err "Please provide -a option to specify Annovar annotation file"
-if(!opts.b)
-    err "Please provide -b option to specify the batch name"
 
 // Register driver / create database connection
 Class.forName("org.sqlite.JDBC")
@@ -63,8 +55,8 @@ if(opts.c || isNewDb) {
                 id integer primary key asc, 
                 chr text NOT NULL,
                 pos integer NOT NULL,   -- the position as specified in VCF
-                start integer NOT NULL, -- the position as specified by Annovar
-                end integer NOT NULL,   -- end position as specified by Annovar
+                start integer,          -- the start position as specified by Annovar (different to VCF)
+                end integer,            -- end position as specified by Annovar
                 ref text NOT NULL,      -- reference sequence
                 alt text NOT NULL,      -- alternate (observed) sequence
                 protein_change text,    -- protein change (where applicable)
@@ -72,6 +64,8 @@ if(opts.c || isNewDb) {
                 freq_esp float,         -- frequency in ESP (if known)
                 dbsnp_id text           -- DBSNP ID (if known)
         );
+    """,
+    """
         CREATE INDEX variant_idx ON variant (chr,pos,alt);
     """,
     """
@@ -84,23 +78,33 @@ if(opts.c || isNewDb) {
                created datetime NOT NULL,
                UNIQUE (variant_id, sample_id) ON CONFLICT ROLLBACK
         );
+   """,
+   """
         CREATE INDEX variant_observation_idx ON variant_observation (variant_id);
    """,
    """
         create table sample (
                id integer primary key asc, 
-               sampleid text NOT NULL,
+               study_id text NOT NULL,
                batch text,
+               cohort text,
                created datetime NOT NULL,
-               UNIQUE (sampleid) ON CONFLICT ROLLBACK
-        )
+               UNIQUE (study_id) ON CONFLICT ROLLBACK
+        );
+   """,
+   """
+        CREATE INDEX sample_index ON sample (study_id);
    """
   ]
   tables.each { sql.execute(it) }
-  println "Created ${tables.size()} tables"
+  println "Created ${tables.size()} tables / indexes "
 }
 
-exclude_types = opts.x ? opts.x.split(",") : []
+if(sql) {
+    sql.execute("PRAGMA synchronous = 0;")
+    sql.execute("PRAGMA journal_mode = WAL;")
+    sql.execute("BEGIN TRANSACTION;")
+}
 
 // Read all the annovar fields
 ANNOVAR_FIELDS = null
@@ -115,101 +119,87 @@ println "Annovar fields are " + ANNOVAR_FIELDS
 VCFIndex vcf = new VCFIndex(opts.v)
 samples = vcf.headerVCF.samples
 
-//
-// Function to find an Annovar variant in the original VCF file
-//
-def find_vcf_variant(vcf, av, lineIndex) {
-  try {    
-      int pos = av.Start.toInteger()
-      int end = av.End.toInteger()
-      return vcf.find(av.Chr,pos-10,end) { variant -> variant.equalsAnnovar(av.Chr,pos,av.Obs) }
-  }
-  catch(Exception e) {
-      try { println "WARNING: unable to locate annovar variant at $lineIndex in VCF ($e)" } catch(Exception e2) { e.printStackTrace() }
-  }
+add_variant_to_db = { variant, allele, av, dosage, sample_row ->
+
+    def variant_row = sql.firstRow("select * from variant where chr=$variant.chr and pos=$allele.start and alt=$allele.alt")
+    if(variant_row == null) {
+        sql.execute(""" insert into variant (id,chr,pos,start,end,ref,alt,protein_change,freq_1000g, freq_esp, dbsnp_id) values (NULL, $variant.chr, $allele.start, ${av?.Start?.toInteger()}, ${av?.End?.toInteger()}, ${variant.ref}, $allele.alt, ${av?.AAChange}, ${av?av["1000g2010nov_ALL"]:null},${av?av["ESP5400_ALL"]:null}, ${av?.dbSNP138}) """)
+        variant_row = sql.firstRow("select * from variant where chr=$variant.chr and pos=$allele.start and alt=$allele.alt")
+    }
+
+    def gt = variant.sampleGenoType(sample_row.study_id)
+
+    def variant_obs = sql.firstRow("select * from variant_observation where sample_id = ${sample_row.id} and variant_id = ${variant_row.id}")
+    if(!variant_obs) {
+        sql.execute("""
+                insert into variant_observation (id,variant_id,sample_id,qual,dosage, created) 
+                            values (NULL, $variant_row.id, ${sample_row.id}, ${gt?.GQ?.toDouble()}, ${dosage}, datetime('now'))
+        """)
+        return false // variant did not already exist
+    }
+    else
+        return true // variant already existed in database
 }
 
 for(sample in samples) {
+
+    def sample_row = sql.firstRow("select * from sample where study_id = $sample")
+    if(!sample_row) {
+        sample_row = sql.execute("""
+            insert into sample (id, study_id, batch, cohort, created) values (NULL, $sample, ${opts.b}, ${opts.cohort}, datetime('now'))
+        """)
+        sample_row = sql.firstRow("select * from sample where study_id = $sample")
+    }
 
     lineIndex = 0
     sampleCount = 0
     includeCount=0
     existingCount=0
     annovar_csv = ExcelCategory.parseCSV("", opts.a, ',')
-    for(av in annovar_csv) {
-        ++lineIndex
-        if(lineIndex%5000==0)
-            println new Date().toString() + "\tProcessed $lineIndex lines"
+    ProgressCounter.withProgress { 
+        for(av in annovar_csv) {
+            ++lineIndex
+            if(lineIndex%5000==0)
+                println new Date().toString() + "\tProcessed $lineIndex lines"
 
-        if(av.ExonicFunc in exclude_types)
-            continue
-
-        def variant = find_vcf_variant(vcf,av,lineIndex)
-        if(!variant) {
-            println "WARNING: Variant $av.Chr:$av.Start at line $lineIndex could not be found in the original VCF file"
-            continue
-        }
-
-
-        ++includeCount
-                
-        if(variant.sampleDosage(sample)==0)
-            continue
-
-        def gt = variant.sampleGenoType(sample)
-
-        ++sampleCount
-        def funcs = av.Func.split(";")
-        def genes = av.Gene.split(";")
-        [funcs,genes].transpose().each { funcGene ->
-            (func,gene) = funcGene
-            def aaChange = av.AAChange
-            if(gene.indexOf("(")>=0) {
-                def geneParts = (gene =~ /(.*)\((.*)\)/)[0]
-                gene = geneParts[1].toString()
-                aaChange = geneParts[2].toString()
+            def variantInfo = vcf.findAnnovarVariant(av.Chr, av.Start, av.End, av.Obs)
+            if(!variantInfo) {
+                println "WARNING: Variant $av.Chr:$av.Start at line $lineIndex could not be found in the original VCF file"
+                continue
             }
-            def exonicFunc = func=="splicing"?"":av.ExonicFunc
-            // cells(func,gene,exonicFunc,aaChange)
-            // cells(av.values[4..-1])
-        }
 
-        def sample_row = sql.firstRow("select * from sample where sampleid = $sample")
-        if(!sample_row) {
-            sample_row = sql.execute("insert into sample (id, sampleid, batch, created) values (NULL, $sample, ${opts.b},datetime('now'))")
-            sample_row = sql.firstRow("select * from sample where sampleid = $sample")
-        }
+            ++includeCount
 
-        def variant_row = sql.firstRow("select * from variant where chr=$variant.chr and pos=$variant.pos and alt=$av.Obs")
-        if(variant_row) {
-                //println "Variant $variant.chr:$variant.pos is already known"
-        }
-        else {
-            variant_row = sql.execute("""
-                insert into variant (id,chr,pos,start,end,ref,alt,protein_change,freq_1000g, freq_esp, dbsnp_id) 
-                       values (NULL, $variant.chr, $variant.pos, ${av.Start.toInteger()}, ${av.End.toInteger()}, 
-                              $av.Ref, $av.Obs, $av.AAChange, 
-                              ${av["1000g2010nov_ALL"]},${av["ESP5400_ALL"]}, $av.dbSNP138)
-            """)
-            variant_row = sql.firstRow("select * from variant where chr=$variant.chr and pos=$variant.pos and alt=$av.Obs")
-        }
+            Variant variant = variantInfo.variant
+                    
+            int dosage = variant.sampleDosage(sample, variantInfo.allele)
+            if(dosage==0)  // Sample doesn't have the variant: some other sample in the cohort must have it
+                continue
 
-        variant_obs = sql.firstRow("select * from variant_observation where sample_id = ${sample_row.id} and variant_id = ${variant_row.id}")
-        if(!variant_obs) {
-            sql.execute("""
-                    insert into variant_observation (id,variant_id,sample_id,qual,dosage, created) 
-                                values (NULL, $variant_row.id, $sample_row.id, ${gt.GQ.toDouble()}, ${variant.sampleDosage(sample)}, datetime('now'))
-            """)
+           ++sampleCount
+            if(add_variant_to_db(variant,variant.alleles[variantInfo.allele],av,dosage, sample_row)) {
+                existingCount++
+            }
+            count()
         }
-        else
-            existingCount++
-
     }
-    println "Sample $sample has ${sampleCount} / ${includeCount} of included variants"
+
+    println "=" * 80
+    println "Now including variants not annotated by Annovar"
+    
+    VCF vcfFile = VCF.parse(opts.v) { variant ->
+        variant.alleles.eachWithIndex { allele, index ->
+            int dosage = variant.sampleDosage(sample, index)
+            add_variant_to_db(variant, allele, null, dosage, sample_row)
+        }
+    }
+
+    println "Sample $sample has ${sampleCount} / ${includeCount} of included Annovar variants"
     if(existingCount>0) {
         println "WARNING: sample $sample has $existingCount variants that were already registered in the database"
         println "WARNING: this sample may have been re-processed or re-sequenced."
     }
 }
+sql.execute("COMMIT;")
 sql.close()
 
