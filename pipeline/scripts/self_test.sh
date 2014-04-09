@@ -60,7 +60,7 @@ pushd batches/selftest/analysis
 
 msg "Running pipeline (should fail due to FastQC) ..."
 
-../../../bpipe run ../../../pipeline/pipeline.groovy ../samples.txt > output.log
+../../../bpipe run -p VARIANT_DB=variants.selftest.db ../../../pipeline/pipeline.groovy ../samples.txt > output.log
 
 msg "Checking FastQC error detected ..."
 [ -e EPIL.xlsx ] && err "Found results spreadsheet but pipeline should have failed due to FastQC failure"
@@ -73,7 +73,7 @@ grep -q '000000000.*Overridden' check.log || err "Failed to find expected text i
 
 msg "Running pipeline again ..."
 
-../../../bpipe run ../../../pipeline/pipeline.groovy ../samples.txt > output2.log 2>&1
+../../../bpipe run -p VARIANT_DB=variants.selftest.db ../../../pipeline/pipeline.groovy ../samples.txt > output2.log 2>&1
 
 [ -e EPIL.xlsx ] || err "Failed to find epilepsy result spreadsheet"
 [ -e EPIL.qc.xlsx ] || err "Failed to find epilepsy QC  spreadsheet"

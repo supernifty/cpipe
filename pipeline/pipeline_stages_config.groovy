@@ -514,6 +514,25 @@ check_coverage = {
     }
 }
 
+check_karyotype = {
+    doc "Compare the inferred sex of the sample to the inferred karyotype from the sequencing data"
+
+    def karyotype_file = sample + '.summary.karyotype.tsv'
+    check {
+        exec """
+            [ `grep 'Sex' $karyotype_file | cut -f 2` == `grep 'Inferred Sex' $karyotype_file | cut -f 2` ]
+        """
+    }
+    otherwise {
+        // It may seem odd to call this a success, but what we mean by it is that
+        // Bpipe should not fail the whole pipeline, merely this branch of it
+        succeed report('templates/sample_failure.html') to channel: gmail, 
+                                                           median: medianCov, 
+                                                           file: karyotype_file,
+                                                           subject:"Sample $sample has a different sex than inferred from sequencing data"
+     }
+}
+
 augment_condel = {
 
     doc "Extract Condel scores from VEP annotated VCF files and add them to Annovar formatted CSV output"
@@ -747,7 +766,7 @@ reorder = {
 summary_pdf = {
     requires sample_metadata_file : "File describing meta data for pipeline run (usually, samples.txt)"
 
-    produce("${sample}.summary.pdf") {
+    produce("${sample}.summary.pdf","${sample}.summary.karyotype.tsv") {
         exec """
              JAVA_OPTS="-Xmx2g" $GROOVY -cp $GROOVY_NGS/groovy-ngs-utils.jar $SCRIPTS/qc_pdf.groovy 
                 -cov $input.cov.txt
@@ -755,10 +774,21 @@ summary_pdf = {
                 -meta $sample_metadata_file
                 -threshold 20 
                 -classes GOOD:95:GREEN,PASS:80:ORANGE,FAIL:0:RED 
+                -exome $EXOME_TARGET
+                -bam $input.bam
                 -o $output.pdf
         """
 
+        branch.karyotype = output.tsv
+
         send text {"Sequencing Results for Study $sample"} to channel: gmail, file: output.pdf
+    }
+}
+
+provenance_report = {
+    branch.sample = branch.name
+    produce(sample + ".provenance.pdf") {
+        send report("scripts/provenance_report.groovy") to file: output.pdf
     }
 }
 

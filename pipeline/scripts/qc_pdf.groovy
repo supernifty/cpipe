@@ -25,10 +25,12 @@ CliBuilder cli = new CliBuilder(usage: "qc_pdf.groovy <options>")
 
 cli.with { 
     cov "Coverage file from Bedtools", args:1, required:true
+    bam "Final aligment of sample reads", args:1, required:true
     study "ID of study for which this QC report is being generated", args:1, required: true
     meta "Meta data for the sample to produce the QC report for", args:1, required:true
     threshold "Coverage threshold for signalling a region as having satisfactory coverage", args:1, required: true
     classes "Percentages of bases and corresponding classes of regions in the form: GOOD:95:GREEN,PASS:80:ORANGE,FAIL:0:RED", args:1, required:true
+    exome "BED file containing target regions for the whole exome", args:1, required: true
     o    "Output file name (PDF format)", args: 1, required:true
 }
 
@@ -72,6 +74,19 @@ catch(Exception e) {
 println "Percentage thresholds are: $classes"
 
 println "Meta info = $meta"
+
+
+/////////////////////////////////////////////////////////////////////////
+//
+// Compute Karyotype
+//
+/////////////////////////////////////////////////////////////////////////    
+BED exomeBed = new BED(opts.exome).load()
+SAM sam = new SAM(opts.bam)
+SexKaryotyper karyotyper = new SexKaryotyper(sam, exomeBed) 
+Utils.time("Running Karyotyping") { 
+    karyotyper.run()
+}
 
 /////////////////////////////////////////////////////////////////////////
 //
@@ -126,7 +141,6 @@ new PDF().document(opts.o) {
 
   title("Sequencing Summary Report for Study $opts.study")
 
-
   bold { p("Summary Data") }
 
   def hd = { text -> bg("#eeeeee") { bold { cell(text) } } }
@@ -134,6 +148,14 @@ new PDF().document(opts.o) {
     hd("Batch"); cell(meta.batch);
     hd("Study ID"); cell(meta.sample);
     hd("Sex"); cell(meta.sex);
+
+    hd("Inferred Sex"); 
+    if(meta.sex != karyotyper.sex) {
+        color("red") { cell(karyotyper.sex.name()) }
+    }
+    else
+        cell(karyotyper.sex.name()) 
+
     hd("Disease Cohort"); cell(meta.target);
     hd("Hospital / Institution"); cell(meta.institution);
     hd("Ethnicity"); cell(meta.ethnicity);
@@ -175,3 +197,13 @@ new PDF().document(opts.o) {
     }
   }
 }
+
+// Write out the karyotyping statistics for later reference
+new File(opts.o.replaceAll('.pdf','.karyotype.tsv')).text = [
+        'Sex' : meta.sex,
+        'Inferred Sex' : karyotyper.sex.name(),
+        'xCoverage' : karyotyper.xCoverage.mean,
+        'yCoverage' : karyotyper.yCoverage.mean,
+        'autosomeCoverage' : karyotyper.autosomeCoverage.mean
+    ].collect { [it.key, String.valueOf(it.value)].join('\t') }.join('\n') 
+
