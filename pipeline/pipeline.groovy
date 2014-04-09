@@ -71,6 +71,7 @@ run {
                    recal_count + recal + index_bam +
                        [ call_variants + call_pgx + merge_pgx, calc_coverage_stats + summary_pdf, gatk_depth_of_coverage ]
                    + check_coverage
+                   + check_karyotype
         ] + 
 
         // The second phase is to merge all the variants for the target/cohort/flagship
@@ -85,7 +86,10 @@ run {
         ]
    ] + 
 
-   // The final phase is to produce the output spreadsheet, 1 per target (flagship)
-   targets * [ set_target_info +  vcf_to_excel ]
+   // The 3rd phase is to produce the output spreadsheet, 1 per target (flagship)
+   targets * [ set_target_info +  vcf_to_excel ] +
+
+   // And then finally write the provenance report (1 per sample)
+   samples * [ provenance_report ]
 }
 

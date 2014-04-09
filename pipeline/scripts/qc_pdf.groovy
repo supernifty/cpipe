@@ -30,7 +30,7 @@ cli.with {
     meta "Meta data for the sample to produce the QC report for", args:1, required:true
     threshold "Coverage threshold for signalling a region as having satisfactory coverage", args:1, required: true
     classes "Percentages of bases and corresponding classes of regions in the form: GOOD:95:GREEN,PASS:80:ORANGE,FAIL:0:RED", args:1, required:true
-    exome "BED file containing target regions for the whole exome", required: true
+    exome "BED file containing target regions for the whole exome", args:1, required: true
     o    "Output file name (PDF format)", args: 1, required:true
 }
 
@@ -81,9 +81,9 @@ println "Meta info = $meta"
 // Compute Karyotype
 //
 /////////////////////////////////////////////////////////////////////////    
-BED exomeBed = new BED(opts.bed).load()
+BED exomeBed = new BED(opts.exome).load()
 SAM sam = new SAM(opts.bam)
-SexKaryotyper karyotyper = new SexKaryotyper(sam, bed) 
+SexKaryotyper karyotyper = new SexKaryotyper(sam, exomeBed) 
 Utils.time("Running Karyotyping") { 
     karyotyper.run()
 }
@@ -141,7 +141,6 @@ new PDF().document(opts.o) {
 
   title("Sequencing Summary Report for Study $opts.study")
 
-
   bold { p("Summary Data") }
 
   def hd = { text -> bg("#eeeeee") { bold { cell(text) } } }
@@ -198,3 +197,13 @@ new PDF().document(opts.o) {
     }
   }
 }
+
+// Write out the karyotyping statistics for later reference
+new File(opts.o.replaceAll('.pdf','.karyotype.tsv')).text = [
+        'Sex' : meta.sex,
+        'Inferred Sex' : karyotyper.sex.name(),
+        'xCoverage' : karyotyper.xCoverage.mean,
+        'yCoverage' : karyotyper.yCoverage.mean,
+        'autosomeCoverage' : karyotyper.autosomeCoverage.mean
+    ].collect { [it.key, String.valueOf(it.value)].join('\t') }.join('\n') 
+
