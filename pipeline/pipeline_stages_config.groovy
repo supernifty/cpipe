@@ -515,15 +515,15 @@ check_coverage = {
 }
 
 check_karyotype = {
+
     doc "Compare the inferred sex of the sample to the inferred karyotype from the sequencing data"
 
     def karyotype_file = sample + '.summary.karyotype.tsv'
     check {
         exec """
-            [ `grep 'Sex' $karyotype_file | cut -f 2` == `grep 'Inferred Sex' $karyotype_file | cut -f 2` ]
+            [ `grep '^Sex' $karyotype_file | cut -f 2` == `grep 'Inferred Sex' $karyotype_file | cut -f 2` ]
         """
-    }
-    otherwise {
+    } otherwise {
         // It may seem odd to call this a success, but what we mean by it is that
         // Bpipe should not fail the whole pipeline, merely this branch of it
         succeed report('templates/sample_failure.html') to channel: gmail, 
