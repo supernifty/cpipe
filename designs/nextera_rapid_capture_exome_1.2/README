@@ -1,0 +1,17 @@
+Nextera v1.2 Target Region BED File
+====================================
+
+The Nextera v1.2 probe regions file was downloaded from Illumina at the following URL on 11/4/2014:
+
+http://supportres.illumina.com/documents/documentation/chemistry_documentation/samplepreps_nextera/nexterarapidcapture/nexterarapidcapture_exome_targetedregions_v1.2.bed
+
+The link can be accessed via the Illumina support download page:
+
+    https://support.illumina.com/sequencing/sequencing_kits/nextera_rapid_capture_exome_kit/downloads.ilmn
+
+NOTE: the target_regions.bed file is the same as the nexterarapidcapture_exome_targetedregions_v1.2.bed file, 
+but it has the genes for each region annotated using the command:
+
+    groovy   -cp ~/mg/production/tools/groovy-ngs-utils/1.0/groovy-ngs-utils.jar ../../pipeline/scripts/annotate_genes.groovy -r ~/mg/production/tools/annovar/humandb/hg19_refGene.txt  nexterarapidcapture_exome_targetedregions_v1.2.bed  > target_regions.bed
+
+Simon Sadedin, 12/4/2014
