@@ -95,6 +95,12 @@ check_tools = {
         msg "Unable to locate data for CADD annotations: CADD scores will not be included"
         ENABLE_CADD = false
     }
+
+    produce("revision.txt") {
+        exec """
+            git describe --always > $output.txt || true
+        """
+    }
 }
 
 check_sample_info = {
@@ -788,7 +794,7 @@ summary_pdf = {
 provenance_report = {
     branch.sample = branch.name
     produce(sample + ".provenance.pdf") {
-        send report("scripts/provenance_report.groovy") to file: output.pdf
+       send report("scripts/provenance_report.groovy") to file: output.pdf
     }
 }
 
