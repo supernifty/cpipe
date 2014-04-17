@@ -109,13 +109,15 @@ ProgressCounter.withProgress {
     if(gene != currentGene) {
       if(stats != null) {
         def geneSummary = [
-              gene: gene, 
+              gene: currentGene, 
               fracOK: totalOK / (float)totalBP,
               median: stats.median
             ]
 
         geneReport.add(geneSummary)
       }
+      totalOK = 0
+      totalBP = 0
       stats = new CoverageStats(1000) 
       currentGene = gene
     }
@@ -190,9 +192,14 @@ new PDF().document(opts.o) {
         }
 
         // Color depends on class
-        def clazz = classes.find { geneSummary.fracOK*100 > it[1] }
-        color(clazz[2]) {
-          cell(clazz[0])
+        def clazz = classes.find { geneSummary.fracOK*100 >= it[1] }
+        if(clazz != null) {
+            color(clazz[2]) {
+              cell(clazz[0])
+            }
+        }
+        else {
+            color("RED") { cell("FAIL (*)") } // Less than any provided category, assume fail
         }
     }
   }
