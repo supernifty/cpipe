@@ -68,6 +68,11 @@ GOLD_STANDARD_INDELS="$REFBASE/Mills_and_1000G_gold_standard.indels.hg19.vcf"
 //
 ///////////////////////////////////////////////////////////////////////
 
+// Names for targeted disease genes - each one must have a BED file 
+// in design/flagships. If you are targeting the whole exome,
+// use the covered regions for the exome (see examples in designs)
+DISEASE_COHORTS="AML,CMT,CS,EPIL,CRC"
+
 // This is only used for setting read group information in the
 // BAM files
 PLATFORM="illumina"
