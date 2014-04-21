@@ -30,8 +30,8 @@ import org.apache.commons.cli.Option
 CliBuilder cli = new CliBuilder(usage: "vcf_to_excel.groovy [options]\n")
 cli.with {
   s 'comma separated list of samples to include', args:1, required:true
-  i 'VCF file to convert to Excel format', args:1, required:true
-  a 'Annovar file containing annotations', args:1, required:true
+  vcf 'VCF file to convert to Excel format', args: Option.UNLIMITED_VALUES, required:true
+  a 'Annovar file containing annotations', args: Option.UNLIMITED_VALUES, required:true
   o 'Name of output file', args:1, required:true
   x 'Comma separated list of functional types to exclude', args:1
   si 'sample meta data file for the pipeline', args:1, required:true
@@ -40,6 +40,7 @@ cli.with {
   pgx 'VCF file containing variants to treat as pharmacogenomic variants (always report)', args:1
   bam 'BAM file for annotating coverage depth where not available from VCF files', args: Option.UNLIMITED_VALUES
   pgxcov 'Coverage threshold below which a pharmocogenomic site is considered untested (15)', args: 1
+  annox 'Directory to send Annovar style per-sample summaries to', args: 1, required: true
 }
 opts = cli.parse(args)
 
@@ -80,24 +81,17 @@ if(opts.bams) {
     println "="*80
 }
 
-// Read all the annovar files
+// Read the header from the first annovar file to find out the column names
 ANNOVAR_FIELDS = null
-new File(opts.a).withReader { r -> ANNOVAR_FIELDS = r.readLine().split(",") as List }
-
+new File(opts.as[0]).withReader { r -> ANNOVAR_FIELDS = r.readLine().split(",") as List }
 // Not all the fields have headers (why?)
 if(!("Qual" in ANNOVAR_FIELDS))
     ANNOVAR_FIELDS += ["Qual","Depth"]
 
 println "Annovar fields are " + ANNOVAR_FIELDS
 
-// Parse the VCF. It is assumed that all the samples to be exported are included in the VCF
-VCFIndex vcf = new VCFIndex(opts.i)
-
-//println "Loaded ${vcf.variants.size()} variants from VCF file"
-
-missing_samples = samples.grep { !(it in vcf.headerVCF.samples) }
-if(missing_samples)
-    err "The following samples were not found in the VCF file provided: ${missing_samples.join(',')}"
+// Then read all the annovar files
+println "Processing ${opts.as.size()} Annovar files"
 
 // connect to database, if specified
 sql = null
@@ -112,6 +106,10 @@ geneCategories = new File(opts.gc).readLines()*.split('\t').collect { [it[0],it[
 OUTPUT_FIELDS = ["Gene Category","Priority Index"] + ANNOVAR_FIELDS[0..-3] + ["CADD"] + (sql?["#Obs"]:[]) + ['RefCount','AltCount']
 OUTPUT_CSV_FIELDS = ANNOVAR_FIELDS + ["Gene Category","Priority Index","CADD"] + (sql?["#Obs"]:[]) + ['RefCount','AltCount']
 
+//
+// Utility function: Query database to find out how many times a variant has
+// been observed a) within the cohort, b) outside the cohort
+//
 query_variant_counts = { variant, allele, av, sample ->
 
     // Look up in database
@@ -154,7 +152,19 @@ new ExcelBuilder().build {
 
             // Read the CSV file entirely
             // Sort the annovar output by Priority Index
-            def annovar_csv = parseCSV(opts.a, ',').grep { it.Priority_Index.toInteger()>0 }.sort { -it.Priority_Index.toInteger() }
+            String samplePrefix = sample+"."
+            String annovarName = opts.as.find{new File(it).name.startsWith(samplePrefix)}
+            if(annovarName == null)
+                err "The following samples did not have an Annovar file provided: $sample in Annovar files:\n${opts.as.join('\n')}"
+
+            def annovar_csv = parseCSV(annovarName,',').grep { it.Priority_Index.toInteger()>0 }.sort { -it.Priority_Index.toInteger() }
+
+            // Parse the VCF. It is assumed that all the samples to be exported are included in the VCF
+            String vcfName = opts.vcfs.find { new File(it).name.startsWith(samplePrefix) }
+            if(vcfName == null)
+                err "The following samples were not found in the VCF file provided: ${sample}"
+
+            VCFIndex vcf = new VCFIndex(vcfName)
 
             // Write out header row
             bold { row {
@@ -166,7 +176,7 @@ new ExcelBuilder().build {
             // We are going to write out a CSV that is identical to the original annovar output
             // but which includes our custom fields on the end
             // Start by writing the headers
-            def writer = new FileWriter("${sample}.annovarx.csv")
+            def writer = new FileWriter("${opts.annox}/${sample}.annovarx.csv")
             writer.println(OUTPUT_CSV_FIELDS.join(","))
             CSVWriter csvWriter = new CSVWriter(writer);
 
