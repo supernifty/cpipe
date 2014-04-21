@@ -4,22 +4,13 @@ si = sample_info[sample]
 
 // Pull out the output files that are for this sample specifically
 println "Searching for sample $sample in output files"
-
-// Check path 1/000000000/EPIL for sample 000000000 NO
-sampleFiles = outputGraph.findAllOutputsBy { print ("Check path $it.branchPath for sample $sample "); 
+sampleFiles = outputGraph.findAllOutputsBy { 
     def branchParts = it.branchPath.split("/")
-    if(branchParts.contains(sample)|| branchParts[-1]==si.target) {
-        println "YES"; return true
-    }
-    else {
-        println "NO"; return false
-    }
+    return (branchParts.contains(sample)|| branchParts[-1]==si.target) 
 }
 
 // Pull out the output files that are for this target region (flagship/cohort)
 targetFiles = outputGraph.findAllOutputsBy { it.branchPath.split("/").contains(si.target) }
-
-println "There are ${sampleFiles.size()} files for the sample"
 
 files = [
     rawbam: sampleFiles.grep { it.stageName == "align_bwa" },
@@ -29,10 +20,6 @@ files = [
     summary: sampleFiles.grep { it.stageName == "summary_pdf" && it.outputFile.name.endsWith(".pdf") }
 ].collectEntries { key, fs -> [ key, fs.unique { it.outputFile.absolutePath }[0] ] }
 
-println "Files are $files"
-
-
-//[p].collect { it.tools.split(",") }.flatten()*.trim().unique().collect { it.split(":") }.collectEntries { [ it[0], it[1]] }
 tools = sampleFiles.grep { it.tools }                   // Only files with tools
                    .collect { it.tools.split("\n") }    // A single file has multiple tools -> split/ flatten
                    .flatten()*.trim()*.replaceAll(',$','')*.replaceAll('^,','') // remove leading or trailing commas
