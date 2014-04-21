@@ -55,6 +55,10 @@ run {
     // Check the basic sample information first
     check_sample_info + check_tools +
 
+    // Create a single BED that contains all the regions we want to call
+    // variants in
+    create_combined_target + 
+
     // For each target (flagship) we run the main pipeline in parallel
     targets * [
 
@@ -69,27 +73,39 @@ run {
                    dedup + index_bam + 
                    realignIntervals + realign + index_bam +
                    recal_count + recal + index_bam +
-                       [ call_variants + call_pgx + merge_pgx, calc_coverage_stats + summary_pdf, gatk_depth_of_coverage ]
+                       [
+                         call_variants + call_pgx + merge_pgx +
+                            filter_variants + 
+                            annotate_vep + index_vcf +
+                            annovar_summarize_refgene +
+                         [add_to_database, augment_condel + annotate_significance, calculate_cadd_scores] + augment_cadd, 
+                         calc_coverage_stats + summary_pdf, 
+                         gatk_depth_of_coverage 
+                       ]
                    + check_coverage
                    + check_karyotype
         ] + 
 
         // The second phase is to merge all the variants for the target/cohort/flagship
         // and then annotate them
-        merge_vcf + 
-        filter_variants + 
-        annotate_vep + index_vcf +
-        [
-          annovar_summarize_refgene + 
-            [augment_condel + annotate_significance, calculate_cadd_scores] + augment_cadd + add_to_database, 
+        // merge_vcf + 
+        // filter_variants + 
+        // annotate_vep + index_vcf +
+        //[
+          // annovar_summarize_refgene + 
+          /*  [augment_condel + annotate_significance, calculate_cadd_scores] + augment_cadd  + */
+        //     add_to_database, 
             qc_excel_report
-        ]
+        //]
    ] + 
 
    // The 3rd phase is to produce the output spreadsheet, 1 per target (flagship)
    targets * [ set_target_info +  vcf_to_excel ] +
 
    // And then finally write the provenance report (1 per sample)
-   samples * [ provenance_report ]
+   samples * [ provenance_report ] +
+   
+   // And report on similarity between samples
+   sample_similarity_report
 }
 

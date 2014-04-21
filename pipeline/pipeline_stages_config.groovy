@@ -153,6 +153,31 @@ check_sample_info = {
     }
 }
 
+create_combined_target = {
+
+    // Construct the region for variant calling from 
+    //
+    //   a) all of the disease cohort BED files
+    //   b) the EXOME target regions
+    //
+    // This way we avoid calling variants over the entire genome, but still
+    // include everything of interest
+    String diseaseBeds = DISEASE_COHORTS.split(",")*.trim().collect { it+".bed"}.join(",")
+
+    output.dir = "../design"
+
+    produce("combined_target_regions.bed") {
+        exec """
+            cat $BASE/designs/flagships/{$diseaseBeds} $EXOME_TARGET | 
+                cut -f 1,2,3 | 
+                $BEDTOOLS/bin/bedtools sort | 
+                $BEDTOOLS/bin/bedtools merge > $output.bed
+        """
+
+        branch.COMBINED_TARGET = output.bed
+    }
+}
+
 fastqc = {
     doc "Run FASTQC to generate QC metrics for raw reads"
     output.dir = "fastqc"
@@ -166,8 +191,16 @@ check_fastqc = {
     doc "Search for any failures in FastQC output and abort further processing if they are found"
 
     check {
+
+       // NOTE: we remove per-base-sequence content and
+       // per-base-gc-content from examination because Nextera
+       // appears to contain natural biases that flag QC failures 
+       // here.
        exec """
-           grep -q 'FAIL' fastqc/${sample}_*fastqc/summary.txt && exit 1
+           cat "fastqc/${sample}_*fastqc/summary.txt" |
+               grep -v "Per base sequence content" |
+               grep -v "Per base GC content" |
+               grep -q 'FAIL' && exit 1
 
            exit 0
        ""","local"
@@ -210,7 +243,7 @@ align_bwa = {
         
     branch.lane = lanes[0]
 
-    def outputFile = sample + "_" + lane + ".bam"
+    def outputFile = sample + "_" + Hash.sha1(inputs.gz*.toString().join(",")) + "_" + lane + ".bam"
     produce(outputFile) {
         //    Note: the results are filtered with flag 0x100 because bwa mem includes multiple 
         //    secondary alignments for each read, which upsets downstream tools such as 
@@ -231,7 +264,7 @@ merge_pgx = {
     output.dir="variants"
 
     if(!file("../design/${target_name}.pgx.vcf").exists()) {
-        forward input.recal.vcf
+        forward input.recal.vcf.toString() // workaround for Bpipe bug
         return
     }
 
@@ -284,16 +317,14 @@ merge_bams = {
         }
         else {
             msg "Merging $inputs.bam size=${inputs.bam.size()}"
-            filter("merge") {
-                exec """
-                    java -Xmx2g -jar $PICARD_HOME/lib/MergeSamFiles.jar
-                        ${inputs.bam.withFlag("INPUT=")}
-                        VALIDATION_STRINGENCY=LENIENT
-                        ASSUME_SORTED=true
-                        CREATE_INDEX=true
-                        OUTPUT=$output.bam
-                 """, "merge"
-            }
+            exec """
+                java -Xmx2g -jar $PICARD_HOME/lib/MergeSamFiles.jar
+                    ${inputs.bam.withFlag("INPUT=")}
+                    VALIDATION_STRINGENCY=LENIENT
+                    ASSUME_SORTED=true
+                    CREATE_INDEX=true
+                    OUTPUT=$output.bam
+             """, "merge"
         }
     }
 }
@@ -404,6 +435,7 @@ call_variants = {
                    -stand_call_conf $call_conf -stand_emit_conf $emit_conf
                    -dcov 1600 
                    -l INFO 
+                   -L $COMBINED_TARGET
                    -A AlleleBalance -A Coverage -A FisherStrand 
                    -glm BOTH
                    -metrics $output.metrics
@@ -441,8 +473,6 @@ call_pgx = {
             ""","gatk_call_variants"
     }
 }
-
-
 
 @filter("filter")
 filter_variants = {
@@ -484,9 +514,11 @@ annotate_vep = {
 calc_coverage_stats = {
     doc "Calculate coverage across a target region using Bedtools"
     output.dir="qc"
-    transform("bam") to(file(target_bed_file).name+".cov.txt") {
+    transform("bam","bam") to(file(target_bed_file).name+".cov.txt","ontarget.txt") {
         exec """
           $BEDTOOLS/bin/coverageBed -d  -abam $input.bam -b $target_bed_file > $output.txt
+
+          $SAMTOOLS/samtools view -L $COMBINED_TARGET $input.bam | wc | awk '{ print \$1 }' > $output2.txt
         """
     }
 }
@@ -524,7 +556,7 @@ check_karyotype = {
 
     doc "Compare the inferred sex of the sample to the inferred karyotype from the sequencing data"
 
-    def karyotype_file = sample + '.summary.karyotype.tsv'
+    def karyotype_file = "results/" + sample + '.summary.karyotype.tsv'
     check {
         exec """
             [ `grep '^Sex' $karyotype_file | cut -f 2` == `grep 'Inferred Sex' $karyotype_file | cut -f 2` ]
@@ -578,11 +610,12 @@ augment_cadd = {
 
 calculate_cadd_scores = {
 
-    doc "Compute CADD scores"
+    doc "Compute CADD scores by running Annovar annotation"
 
     if(!ENABLE_CADD) 
         return
 
+    output.dir="variants"
     exec """
         $ANNOVAR/annotate_variation.pl
         $input.av 
@@ -612,7 +645,7 @@ vcf_to_excel = {
     requires sample_metadata_file : "File describing meta data for pipeline run (usually, samples.txt)"
 
     check {
-        exec "ls variants/${target_name}.*.exome_summary.*.csv > /dev/null 2>&1"
+        exec "ls qc/${target_name}.qc.xlsx > /dev/null 2>&1"
     } otherwise { 
         succeed "No samples succeeded for target $target_name" 
     }
@@ -622,21 +655,24 @@ vcf_to_excel = {
         pgx_flag = "-pgx ../design/${target_name}.pgx.vcf"
     }
 
+    output.dir="results"
+
     def all_outputs = [target_name + ".xlsx"] + target_samples.collect { it + ".annovarx.csv" }
-    from(target_name+"*.exome_summary.*.csv", target_name+".*.vcf") produce(all_outputs) {
+    from("*.exome_summary.*.csv", "*.vcf") produce(all_outputs) {
         exec """
             echo "Creating $outputs.csv"
 
             JAVA_OPTS="-Xmx2g -Djava.awt.headless=true" $GROOVY 
                 -cp $SCRIPTS:$GROOVY_NGS/groovy-ngs-utils.jar:$EXCEL/excel.jar:$TOOLS/sqlite/sqlitejdbc-v056.jar $SCRIPTS/vcf_to_excel.annovar.groovy 
                 -s '${target_samples.join(",")}'
-                -a $input.csv 
-                -i $input.vcf
+                ${inputs.csv.withFlag("-a")}
+                ${inputs.vcf.withFlag("-vcf")}
                 -x "synonymous SNV"
                 -db $VARIANT_DB
                 -o $output.xlsx
                 -si $sample_metadata_file
                 -gc $target_gene_file ${pgx_flag}
+                -annox $output.dir
                 ${inputs.bam.withFlag("-bam")}
         """
     }
@@ -691,6 +727,8 @@ qc_excel_report = {
     var LOW_COVERAGE_THRESHOLD : 15,
         LOW_COVERAGE_WIDTH : 1
 
+    output.dir="results"
+
     def samples = sample_info.grep { it.value.target == target_name }.collect { it.value.sample }
     from("*.cov.txt", "*.dedup.metrics") produce(target_name + ".qc.xlsx") {
             exec """
@@ -742,17 +780,17 @@ add_to_database = {
 
             echo "====> Adding variants for flaship $target_name to database"
 
-            JAVA_OPTS="-Xmx4g" $GROOVY -cp $GROOVY_NGS/groovy-ngs-utils.jar:$EXCEL/excel.jar:$TOOLS/sqlite/sqlitejdbc-v056.jar $SCRIPTS/vcf_to_db.groovy 
-                   -v $input.merge.vcf 
+            JAVA_OPTS="-Xmx24g" $GROOVY -cp $GROOVY_NGS/groovy-ngs-utils.jar:$EXCEL/excel.jar:$TOOLS/sqlite/sqlitejdbc-v056.jar $SCRIPTS/vcf_to_db.groovy 
+                   -v $input.recal.vcf 
                    -a $input.csv 
                    -db $VARIANT_DB 
                    -cohort $target_name
-                   -b "$batch" 
+                   -b "$batch"
 
             echo "<==== Finished adding variants for flaship $target_name to database"
 
             echo "Variants from $input.vcf were added to database $VARIANT_DB on ${new Date()}" > $output.txt
-        """
+        """, "add_to_database"
     }
 }
 
@@ -770,12 +808,17 @@ reorder = {
 }
 
 summary_pdf = {
+
     requires sample_metadata_file : "File describing meta data for pipeline run (usually, samples.txt)"
+
+    output.dir="results"
 
     produce("${sample}.summary.pdf","${sample}.summary.karyotype.tsv") {
         exec """
-             JAVA_OPTS="-Xmx2g" $GROOVY -cp $GROOVY_NGS/groovy-ngs-utils.jar $SCRIPTS/qc_pdf.groovy 
+             JAVA_OPTS="-Xmx3g" $GROOVY -cp $GROOVY_NGS/groovy-ngs-utils.jar $SCRIPTS/qc_pdf.groovy 
                 -cov $input.cov.txt
+                -ontarget $input.ontarget.txt
+                -metrics $input.metrics
                 -study $sample 
                 -meta $sample_metadata_file
                 -threshold 20 
@@ -788,6 +831,33 @@ summary_pdf = {
         branch.karyotype = output.tsv
 
         send text {"Sequencing Results for Study $sample"} to channel: gmail, file: output.pdf
+    }
+}
+
+sample_similarity_report = {
+
+    doc "Create a report indicating the difference in count of variants for each combination of samples"
+
+    output.dir = "qc"
+
+    produce("similarity_report.txt") {
+        exec """
+            (
+                for i in ${samples.join(' ')} ;
+                do  
+                    for j in ${samples.join(' ')} ;
+                    do 
+                        if [ "$i" != "$j" ]; then
+                            printf "$i\\t$j\\t"; 
+
+                            JAVA_OPTS=-Xmx1g $GROOVY -cp $GROOVY_NGS/groovy-ngs-utils.jar $SCRIPTS/vcf_diff.groovy 
+                                    -vcf variants/\$i.merge.dedup.realign.recal.vcf 
+                                    -vcf variants/\$j.merge.dedup.realign.recal.vcf | wc | awk '{ print \$1 }'; echo ; 
+                        fi
+                    done; 
+                done
+            ) > $output.txt
+        """
     }
 }
 

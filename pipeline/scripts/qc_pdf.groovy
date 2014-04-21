@@ -25,6 +25,8 @@ CliBuilder cli = new CliBuilder(usage: "qc_pdf.groovy <options>")
 
 cli.with { 
     cov "Coverage file from Bedtools", args:1, required:true
+    ontarget "file containing count of on target reads", args: 1
+    metrics "metrics output from Picard", args: 1
     bam "Final aligment of sample reads", args:1, required:true
     study "ID of study for which this QC report is being generated", args:1, required: true
     meta "Meta data for the sample to produce the QC report for", args:1, required:true
@@ -53,6 +55,22 @@ if(!new File(opts.meta).exists())
 Map samples = SampleInfo.parse_sample_info(opts.meta)
 if(!samples.containsKey(opts.study))
   err "The provided meta data file ($opts.meta) did not contain meta information for study $opts.study"
+
+String onTarget = "Unknown"
+String totalReads = "Unknown"
+if(opts.ontarget) {
+    int onTargetCount = new File(opts.ontarget).text.toInteger()
+    if(opts.metrics) {
+        Map metrics = PicardMetrics.parse(opts.metrics)
+        int totalCount = metrics.READ_PAIRS_EXAMINED.toInteger() * 2
+        float onTargetPerc = ((float)onTargetCount / ((float)totalCount))
+        onTarget = String.format("%2.1f",onTargetPerc)
+        totalReads = (metrics.READ_PAIRS_EXAMINED.toInteger())*2
+    }
+    else {
+        onTarget = String.valueOf(onTargetCount)
+    }
+}
 
 SampleInfo meta = samples[opts.study]
 
@@ -173,8 +191,10 @@ new PDF().document(opts.o) {
   bold { p("Coverage Summary") }
   table(cols:2,padding:4) {
     hd("Reported Mean Coverage"); cell(meta.meanCoverage);
-    hd("Observed Mean Coverage"); cell(String.format("%2.1f",allGeneStats.mean));
+    hd("Observed Mean Coverage"); cell(String.format("%2.2f",allGeneStats.mean));
     hd("Observed Median Coverage"); cell(allGeneStats.median);
+    hd("Total Reads"); cell(totalReads);
+    hd("Fraction on Target"); cell(onTarget);
   }
 
   br()
