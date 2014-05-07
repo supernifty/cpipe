@@ -645,7 +645,7 @@ vcf_to_excel = {
     requires sample_metadata_file : "File describing meta data for pipeline run (usually, samples.txt)"
 
     check {
-        exec "ls qc/${target_name}.qc.xlsx > /dev/null 2>&1"
+        exec "ls results/${target_name}.qc.xlsx > /dev/null 2>&1"
     } otherwise { 
         succeed "No samples succeeded for target $target_name" 
     }
@@ -863,6 +863,7 @@ sample_similarity_report = {
 
 provenance_report = {
     branch.sample = branch.name
+    output.dir = "results"
     produce(sample + ".provenance.pdf") {
        send report("scripts/provenance_report.groovy") to file: output.pdf
     }
