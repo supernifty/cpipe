@@ -181,6 +181,10 @@ new ExcelBuilder().build {
             CSVWriter csvWriter = new CSVWriter(writer);
 
             csv_out = []
+
+            // We are going to simultaneously write out the Excel file and the Database export file
+            // at the same time. To make sure both are written the same, encapsulate it in
+            // these two functions that will write both with one call.
             def out_cells = { csv_out.addAll(it); cells(it)  }
             def out_cell = { csv_out.add(it); cell(it)  }
 
@@ -322,7 +326,7 @@ new ExcelBuilder().build {
                     End: pvx.pos + pvx.size(),
                     Ref: pvx.ref,
                     Obs: pvx.alt,
-                    OtherInfo: vx ? (vx.dosages[0] == 1 ? "het" : "hom") : ""
+                    Otherinfo: vx ? (vx.dosages[0] == 1 ? "het" : "hom") : ""
                 ]
                 output.each { k, v ->
                     values[OUTPUT_FIELDS.indexOf(k)] = v 
