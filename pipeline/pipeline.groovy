@@ -84,19 +84,7 @@ run {
                        ]
                    + check_coverage
                    + check_karyotype
-        ] + 
-
-        // The second phase is to merge all the variants for the target/cohort/flagship
-        // and then annotate them
-        // merge_vcf + 
-        // filter_variants + 
-        // annotate_vep + index_vcf +
-        //[
-          // annovar_summarize_refgene + 
-          /*  [augment_condel + annotate_significance, calculate_cadd_scores] + augment_cadd  + */
-        //     add_to_database, 
-            qc_excel_report
-        //]
+        ] + qc_excel_report
    ] + 
 
    // The 3rd phase is to produce the output spreadsheet, 1 per target (flagship)
