@@ -206,6 +206,10 @@ new PDF().document(opts.o) {
     } }
 
     for(geneSummary in geneReport) {
+
+        if(geneSummary.gene.startsWith("Intergenic"))
+            continue
+
         cell(geneSummary.gene)
         align("center") {
           cells(String.format("%2.1f%%",100*geneSummary.fracOK), geneSummary.median)
