@@ -33,6 +33,7 @@ cli.with {
     threshold "Coverage threshold for signalling a region as having satisfactory coverage", args:1, required: true
     classes "Percentages of bases and corresponding classes of regions in the form: GOOD:95:GREEN,PASS:80:ORANGE,FAIL:0:RED", args:1, required:true
     exome "BED file containing target regions for the whole exome", args:1, required: true
+    gc "Gene categories indicating the categories of genes in the cohort / target / flagship", args:1, required:true
     o    "Output file name (PDF format)", args: 1, required:true
 }
 
@@ -56,6 +57,18 @@ Map samples = SampleInfo.parse_sample_info(opts.meta)
 if(!samples.containsKey(opts.study))
   err "The provided meta data file ($opts.meta) did not contain meta information for study $opts.study"
 
+SampleInfo meta = samples[opts.study]
+
+// Read the gene categories for the target / cohort / flagship
+geneCategories = new File(opts.gc).readLines()*.split('\t').collect { [it[0],it[1]] }.collectEntries()
+
+// Update gene categories with sample specific data
+if(meta.geneCategories) {
+    meta.geneCategories.each { gene, category ->
+        geneCategories[gene] = category
+    }
+}
+
 String onTarget = "Unknown"
 String totalReads = "Unknown"
 if(opts.ontarget) {
@@ -71,8 +84,6 @@ if(opts.ontarget) {
         onTarget = String.valueOf(onTargetCount)
     }
 }
-
-SampleInfo meta = samples[opts.study]
 
 /////////////////////////////////////////////////////////////////////////
 //
@@ -108,7 +119,7 @@ Utils.time("Running Karyotyping") {
 
 /////////////////////////////////////////////////////////////////////////
 //
-// Calculate Statistics
+// Calculate Coverage Statistics
 //
 /////////////////////////////////////////////////////////////////////////    
 CoverageStats stats = null
@@ -129,14 +140,22 @@ ProgressCounter.withProgress {
         def geneSummary = [
               gene: currentGene, 
               fracOK: totalOK / (float)totalBP,
-              median: stats.median
+              totalOK: totalOK,
+              totalBP: totalBP,
+              median: stats.median,
+              stats: stats
             ]
 
         geneReport.add(geneSummary)
       }
-      totalOK = 0
-      totalBP = 0
-      stats = new CoverageStats(1000) 
+      
+      def prev = geneReport.find { it.gene == gene }
+      if(prev) { 
+        totalOK = prev.totalOK; totalBP = prev.totalBP; stats = prev.stats; 
+        geneReport.removeAll { it.gene == gene }
+      } else {
+          totalOK = 0; totalBP = 0; stats = new CoverageStats(1000) 
+      }
       currentGene = gene
     }
     if(cov > coverageThreshold) 
@@ -148,6 +167,11 @@ ProgressCounter.withProgress {
     ++totalBP
     count()
   }
+}
+
+// Sort the gene report by category
+if(geneCategories) {
+    geneReport.sort { geneCategories[it.gene] }
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -202,7 +226,7 @@ new PDF().document(opts.o) {
   bold { p("Gene Summary") }
   table {
     bg("#eeeeee") { head {
-      cells("Gene", "Perc > ${coverageThreshold}X","Median", "OK?")
+      cells("Gene", "Category", "Perc > ${coverageThreshold}X","Median", "OK?")
     } }
 
     for(geneSummary in geneReport) {
@@ -211,6 +235,7 @@ new PDF().document(opts.o) {
             continue
 
         cell(geneSummary.gene)
+        cell(geneCategories[geneSummary.gene]?:"")
         align("center") {
           cells(String.format("%2.1f%%",100*geneSummary.fracOK), geneSummary.median)
         }
