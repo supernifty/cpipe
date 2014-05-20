@@ -313,6 +313,10 @@ new ExcelBuilder().build {
                     System.err.println "WARNING : PGX variant $pvx was not genotyped for sample $sample"
                 }
 
+                // Convert to annovar form since we are using Annovar annotations in the 
+                // rest of the report
+                def annovarVx = vx ? vx.toAnnovar() : pvx.toAnnovar()
+
                 // Now set the fields that we can
                 def output = [ 
                     'Gene Category': 1, 
@@ -324,8 +328,8 @@ new ExcelBuilder().build {
                     Chr: pvx.chr,
                     Start: pvx.pos,
                     End: pvx.pos + pvx.size(),
-                    Ref: pvx.ref,
-                    Obs: pvx.alt,
+                    Ref: annovarVx.ref,
+                    Obs: annovarVx.obs,
                     Otherinfo: vx ? (vx.dosages[0] == 1 ? "het" : "hom") : ""
                 ]
                 output.each { k, v ->
