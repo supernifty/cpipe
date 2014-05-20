@@ -824,6 +824,7 @@ summary_pdf = {
                 -threshold 20 
                 -classes GOOD:95:GREEN,PASS:80:ORANGE,FAIL:0:RED 
                 -exome $EXOME_TARGET
+                -gc $target_gene_file ${pgx_flag}
                 -bam $input.bam
                 -o $output.pdf
         """
