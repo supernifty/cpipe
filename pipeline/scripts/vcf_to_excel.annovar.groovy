@@ -103,8 +103,18 @@ if(opts.db) {
 // Read the gene categories
 geneCategories = new File(opts.gc).readLines()*.split('\t').collect { [it[0],it[1]] }.collectEntries()
 
+// Original column order
 OUTPUT_FIELDS = ["Gene Category","Priority Index"] + ANNOVAR_FIELDS[0..-3] + ["CADD"] + (sql?["#Obs"]:[]) + ['RefCount','AltCount']
-OUTPUT_CSV_FIELDS = ANNOVAR_FIELDS + ["Gene Category","Priority Index","CADD"] + (sql?["#Obs"]:[]) + ['RefCount','AltCount']
+
+// Order preferred if clinicians need to review output directly
+// OUTPUT_FIELDS = ["Func", "Gene", "ExonicFunc", "AAChange", "Gene Category", "Priority Index", "Condel", "Conserved", "ESP5400_ALL", "1000g2010nov_ALL", "dbSNP138", "AVSIFT", "LJB_PhyloP", "LJB_PhyloP_Pred", "LJB_SIFT", "LJB_SIFT_Pred", "LJB_PolyPhen2", "LJB_PolyPhen2_Pred", "LJB_LRT", "LJB_LRT_Pred", "LJB_MutationTaster", "LJB_MutationTaster_Pred", "LJB_GERP++", "SegDup", "Chr", "Start", "End", "Ref", "Obs", "Otherinfo", "Qual", "Depth", "#Obs", "RefCount", "AltCount", "CADD"]
+
+OUTPUT_CSV_FIELDS = ANNOVAR_FIELDS[0..-5] + ["Gene Category","Priority Index","CADD"] + (sql?["#Obs"]:[]) + ['RefCount','AltCount']
+
+OUTPUT_CSV_FIELDS = ["Func","Gene","ExonicFunc","AAChange","Conserved","SegDup","ESP5400_ALL","1000g2010nov_ALL","dbSNP138","AVSIFT","LJB_PhyloP","LJB_PhyloP_Pred","LJB_SIFT","LJB_SIFT_Pred","LJB_PolyPhen2","LJB_PolyPhen2_Pred","LJB_LRT","LJB_LRT_Pred","LJB_MutationTaster","LJB_MutationTaster_Pred","LJB_GERP++","Chr","Start","End","Ref","Obs","Otherinfo","Qual","Depth","Condel","Priority_Index","CADD","Gene Category","Priority Index","CADD","#Obs","RefCount","AltCount"]
+
+
+CENTERED_COLUMNS = ["Gene Category", "Priority Index", "1000g2010nov_ALL","ESP5400_ALL", "LJB_PhyloP_Pred","LJB_SIFT_Pred","LJB_PolyPhen2","LJB_PolyPhen2_Pred"]
 
 //
 // Utility function: Query database to find out how many times a variant has
@@ -140,11 +150,73 @@ query_variant_counts = { variant, allele, av, sample ->
 }
 
 //
-// Now build our spreadsheet
+// Utility function to collect information about a variant into the columns
+// required for export.
+//
+collectOutputValues = { lineIndex, funcGene, variant, sample, variant_counts, av ->
+
+    // Build up values for the row in a map with the column name as the key
+    def outputValues = [:]
+
+    (func,gene) = funcGene
+    def aaChange = av.AAChange
+    if(gene.indexOf("(")>=0) {
+        def geneParts = (gene =~ /(.*)\((.*)\)/)[0]
+        gene = geneParts[1].toString()
+        aaChange = geneParts[2].toString()
+    }
+    outputValues.AAChange = aaChange
+    outputValues.ExonicFunc = func=="splicing"?"":av.ExonicFunc
+
+    def geneCategory = geneCategories[gene]
+    if(sample_info[sample].geneCategories[gene])
+        geneCategory = sample_info[sample].geneCategories[gene]
+
+    outputValues["Gene Category"] = geneCategory?:1
+    outputValues["Priority Index"] = outputValues["Priority_Index"] = av.Priority_Index
+    outputValues["Gene"] = gene
+    outputValues["Func"] = func
+
+    for(i in 4..(av.values.size()-3)) {
+        outputValues[ANNOVAR_FIELDS[i]] = av.values[i]
+    }
+    outputValues.CADD = av.columns.CADD != null ? av.CADD: ""
+
+    if(sql) {
+        outputValues["#Obs"] = variant_counts.total
+    }
+
+    outputValues.RefCount=outputValues.AltCount="";
+    if(!variant) 
+        return outputValues // Cannot annotate allele depths for this variant
+
+    // Try to annotate allele frequencies
+    def gt = variant.sampleGenoType(sample)
+    if(gt) {
+        // Reference depth
+        if(gt.containsKey('AD')) {
+            outputValues.RefCount=gt.AD[0]
+
+            // Alternate depth depends on which allele
+            int altAllele = (variant.alts.size()==1)?1:variant.equalsAnnovar(av.Chr, av.Start.toInteger(), av.Obs)
+            outputValues.AltCount = gt.AD[altAllele]
+        }
+        else {
+          System.err.println("WARNING: variant $variant.chr:$variant.pos ($variant.ref/$variant.alt) had no AD info for sample $sample at line $lineIndex")
+        }
+    }
+    else {
+      System.err.println("WARNING: variant $variant.chr:$variant.pos ($variant.ref/$variant.alt) had no genotype for sample $sample at line $lineIndex")
+    }
+    return outputValues
+}
+
+//
+// Now build our spreadsheet, and export CSV in the same loop
 //
 new ExcelBuilder().build {
 
-    for(sample in samples) {
+    for(sample in samples) { // one sample per spreadsheet tab
         def s = sheet(sample) { 
             lineIndex = 0
             sampleCount = 0
@@ -179,15 +251,6 @@ new ExcelBuilder().build {
             def writer = new FileWriter("${opts.annox}/${sample}.annovarx.csv")
             writer.println(OUTPUT_CSV_FIELDS.join(","))
             CSVWriter csvWriter = new CSVWriter(writer);
-
-            csv_out = []
-
-            // We are going to simultaneously write out the Excel file and the Database export file
-            // at the same time. To make sure both are written the same, encapsulate it in
-            // these two functions that will write both with one call.
-            def out_cells = { csv_out.addAll(it); cells(it)  }
-            def out_cell = { csv_out.add(it); cell(it)  }
-
             for(av in annovar_csv) {
                 ++lineIndex
                 if(lineIndex%5000==0)
@@ -216,80 +279,37 @@ new ExcelBuilder().build {
                 }
                 ++includeCount
 
-                // Start by cloning existing Annovar info
-                csv_out = []
-                csv_out.addAll(av.values)
-
                 ++sampleCount
                 def funcs = av.Func.split(";")
                 def genes = av.Gene.split(";")
+
                 [funcs,genes].transpose().each { funcGene ->
+                    
+                    def outputValues = collectOutputValues(lineIndex, funcGene, variant, sample, variant_counts, av)
+
+                    // Write the row into the spreadsheet
                     row {
-                        (func,gene) = funcGene
-                        def aaChange = av.AAChange
-                        if(gene.indexOf("(")>=0) {
-                            def geneParts = (gene =~ /(.*)\((.*)\)/)[0]
-                            gene = geneParts[1].toString()
-                            aaChange = geneParts[2].toString()
+                        OUTPUT_FIELDS.each { fieldName ->
+                            if(fieldName in CENTERED_COLUMNS) { 
+                                cell(outputValues[fieldName]) 
+                            }
+                            else {
+                                cell(outputValues[fieldName]) 
+                            }
                         }
-                        def exonicFunc = func=="splicing"?"":av.ExonicFunc
-                        def geneCategory = geneCategories[gene]
-                        if(sample_info[sample].geneCategories[gene])
-                            geneCategory = sample_info[sample].geneCategories[gene]
-
-                        center {
-                            out_cells([geneCategory?:1, av.Priority_Index])
-                        }
-                        cells(func,gene,exonicFunc,aaChange)
-                        cells(av.values[4..-3])
-                        out_cell(av.columns.CADD != null ? av.CADD: "")
-                    }
-              }
-
-              if(sql) {
-                  out_cell(variant_counts.total)
-              }
-
-              // Try to annotate allele frequencies
-              if(variant) {
-
-                  def gt = variant.sampleGenoType(sample)
-                  if(gt) {
-
-                      // Reference depth
-                      if(gt.containsKey('AD')) {
-                          out_cell(gt.AD[0])
-
-                          // Alternate depth depends on which allele
-                          int altAllele = (variant.alts.size()==1)?1:variant.equalsAnnovar(av.Chr, av.Start.toInteger(), av.Obs)
-                          out_cell(gt.AD[altAllele])
-                      }
-                      else {
-                        System.err.println("WARNING: variant $variant.chr:$variant.pos ($variant.ref/$variant.alt) had no AD info for sample $sample at line $lineIndex")
-                        out_cells("","") // blank allele info
-                      }
                   }
-                  else {
-                    System.err.println("WARNING: variant $variant.chr:$variant.pos ($variant.ref/$variant.alt) had no genotype for sample $sample at line $lineIndex")
-                  }
-              }
 
-              // Write Annovar CSV format
-              csvWriter.writeNext(csv_out.collect { String.valueOf(it) } as String[])
-        
-              // TODO: check concordance between annoation sources
-              /*
-              if(av.AA_Match == "False") {
-                  excelCells[4].red()
+                  // Write Annovar CSV format
+                  csvWriter.writeNext( OUTPUT_CSV_FIELDS.collect { fieldName ->
+                    outputValues[fieldName] == null ? "" : outputValues[fieldName]
+                  } as String[])
               }
-              */
             } // End Annovar variants
 
             // Now add pharmacogenomic variants
             for(pvx in pg_variants) {
 
                 values = OUTPUT_FIELDS.collect { "" }
-
 
                 // Check if the unfiltered VCF has the variant
                 // Note: there's an issue here about canonicalizing the variant
@@ -301,7 +321,7 @@ new ExcelBuilder().build {
 
                 def state = "Untested"
                 int depth = bams[sample].coverage(pvx.chr, pvx.pos)
-                println "Queried depth $depth at $pvx.chr:$pvx.pos"
+                // println "Queried depth $depth at $pvx.chr:$pvx.pos"
                 // TODO: why is vx sometimes null? should always be genotyped
                 if(vx && depth >= pgx_coverage_threshold) {
                     int allele = vx.findAlleleIndex(pvx.alleles[0])
@@ -337,25 +357,32 @@ new ExcelBuilder().build {
                 }
 
                 csv_out = []
-
+                nvlcell = { cell(it == null ? "" : it ) }
                 row { 
-                    center { cells(values[0..1]) }; 
-                    cells(values[2..3]); 
-                    if(state == 'Present')
-                        red { cell(values[4]) }
-                    else
-                        cell(values[4])
-                    cells(values[5..-1]) 
+                    OUTPUT_FIELDS.each { fieldName ->
+                        //println "Export $fieldName = ${outputValues[fieldName]}"
+                        if(fieldName in CENTERED_COLUMNS) { 
+                            center { nvlcell(output[fieldName]) } 
+                        }
+                        else
+                        if(fieldName == "ExonicFunc" && state == 'Present') {
+                            red {nvlcell(output[fieldName])}  
+                        }
+                        else {
+                            nvlcell(output[fieldName]) 
+                        }
+                    }
                 }
-                csvWriter.writeNext( ANNOVAR_FIELDS.collect { f -> if(f in output) { String.valueOf(output[f]) } else "" } as String[] )
+                csvWriter.writeNext( ANNOVAR_FIELDS.collect { f -> if(output[f] != null) { String.valueOf(output[f]) } else "" } as String[] )
 
             }
             csvWriter.close()
         }
         println "Sample $sample has ${sampleCount} / ${includeCount} of included variants"
         try { s/*.autoFilter("A:"+(char)(65+6+samples.size()))*/.autoSize() } catch(e) { println "WARNING: Unable to autosize columns: " + String.valueOf(e) }
-        s.setColumnWidth(5,60*256) // 30 chars wide for Gene column
-        s.setColumnWidth(3,30*256) // 60 chars wide for AAChange column
+        s.setColumnWidth(OUTPUT_FIELDS.indexOf("Gene"),60*256) // 30 chars wide for Gene column
+        s.setColumnWidth(OUTPUT_FIELDS.indexOf("AAChange"),30*256) // 60 chars wide for AAChange column
+        s.setColumnWidth(OUTPUT_FIELDS.indexOf("Gene Category"),14*256) // 60 chars wide for AAChange column
     }
 
     sheet("README") {
@@ -365,7 +392,7 @@ new ExcelBuilder().build {
         row { cell("Gene").bold(); cell("The gene affected. A mutation may occur on multiple rows if more than one gene or transcript is affected") }
         row { cell("ESP5400").bold(); cell("Frequency of allele in ESP project (5400 exomes)") }
         row { cell("1000g2010nov_ALL").bold(); cell("Frequency of allele in 1000 Genomes project 2010 Nov release") }
-        row { cell("LJB_XXX").bold(); cell("DBNSFP annotations indicating predictions of pathenogenicity") }
+        row { cell("LJB_XXX").bold(); cell("DBNSFP annotations indicating predictions of pathogenicity") }
         row { cell(""); cell("Numeric: 0 = low impact, 1.0 = high impact") }
         row { cell(""); cell("D=Damaging") }
         row { cell(""); cell("P=Probably Damaging") }
