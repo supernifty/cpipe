@@ -3,10 +3,25 @@
 ####################################################################################
 #
 # Melbourne Genomics Pipeline Annotation Script
+#
+# Author: Simon Sadedin, MCRI
+#         Members of Melbourne Genomics
+#
+# Copyright Melbourne Genomics Health Alliance members. All rights reserved.
+#
+# DISTRIBUTION:
+#
+# This source code should not be distributed to a third party without prior
+# approval of the Melbourne Genomics Health Alliance steering committee (via
+# Natalie Thorne - natalie.thorne@melbournegenomics.org.au).
+#
+####################################################################################
+#
+# Purpose:
 # 
 # This script adds annotations to an Annovar output to rate the
-# clinical significance and category. These rules are defined
-# by the Bioinformatics working group and are currently 
+# clinical significance of each variant as a "priority index". These rules are 
+# defined by the Bioinformatics working group and are currently 
 # specified as follows:
 #
 #     (1)     Index 1 - rare missense
@@ -18,9 +33,13 @@
 #     (4)     Index 4 - truncating
 #             Out of frame indel (non-recurrent*), nonsense, splice site +/-2bp
 #
+#     NOTE: these rules were updated 27/5/2014:
+#
+#             - include 'very rare' variants <0.0005 MAF in cat 2,3
+#             - include truncating variants into priority 1 if rare (but not novel)
+#
 # Author:   Simon Sadedin, simon.sadedin@mcri.edu.au
 # Date:     23/1/2014
-# License:  TBD
 #
 ####################################################################################
 
@@ -38,8 +57,11 @@ class Annovar:
     # Column names of Annovar file
     columns = []
 
-    # Default MAF threshold
+    # Default MAF threshold for considering a variant 'rare'
     MAF_THRESHOLD = 0.01
+
+    # Default MAF threshold for considering a variant 'very rare'
+    MAF_THRESHOLD_VERY_RARE = 0.0005
 
     # Default Condel Threshold
     CONDEL_THRESHOLD = 0.7
@@ -58,17 +80,17 @@ class Annovar:
     def __init__(self, line):
         self.line = line
 
-    def category(self):
+    def priority(self):
         """
             Main logic describing how to map any given variant to a clinical significance
-            category. See the main header for the definition of these categories.
+            priority index. See the main header for the definition of these categories.
 
             Note: unknown categories are returned as 9 - that is, extremely high.
         """
 
         if self.is_missense():
            if self.is_rare():
-               if self.is_novel():
+               if self.is_novel() or self.is_very_rare():
                    if self.is_conserved():
                        return 3 # Missense, novel and conserved => category 3
                    else:
@@ -79,7 +101,16 @@ class Annovar:
                return 0 # Missense but not even rare => no category
 
         elif self.is_truncating():
-            return 4
+            # From Natalie, 27/5/2014:
+            # With regard to priority 4 truncating variants:
+            #  novel should stay in priority 4
+            #  rare should be priority 1
+            if self.is_novel():
+                return 4
+            elif self.is_rare():
+                return 1
+            else:
+                return 0
 
         elif self.ExonicFunc in ["synonymous SNV", "unknown"]:
             return 0
@@ -98,20 +129,22 @@ class Annovar:
         # Return true iff at least one database has the variant at > the MAF_THRESHOLD
         return not any(map(lambda f: self.maf_value(f)>self.MAF_THRESHOLD, self.POPULATION_FREQ_FIELDS))
 
+    def is_very_rare(self):
+        # Return true iff at least one database has the variant at > the MAF_THRESHOLD_VERY_RARE
+        return not any(map(lambda f: self.maf_value(f)>self.MAF_THRESHOLD_VERY_RARE, self.POPULATION_FREQ_FIELDS))
+
     def is_novel(self):
         # return true iff the variant has no MAF in any database AND no DBSNP ID
         return not any(map(lambda f: self.maf_value(f) > 0.0, self.POPULATION_FREQ_FIELDS)) and self.dbSNP138 == ""
 
     def is_conserved(self):
-        # At the moment, interpret this as Condel > 0.7 OR  Conserved != ""
-        if self.Conserved:
-            return True
-
+        # Clarification 27/5/2014:
+        # ONLY if condel score is missing, then it can categorised as a 3 if CONSERVED by Annovar
         condel_str = self.Condel 
         if condel_str != "":
             return float(condel_str) >= 0.7
         else:
-            return False
+            return self.Conserved != ""
 
     @staticmethod
     def init_columns(cols):
@@ -162,6 +195,7 @@ def main():
     
         if is_header:
             is_header = False
+            # Note: Annovar does not seem to provide Qual and Depth headings itself
             if "Qual" not in line:
                 line = line + ["Qual"]
             
@@ -170,7 +204,6 @@ def main():
     
             Annovar.init_columns(line)
     
-            # Note: Annovar does not seem to provide Qual and Depth headings itself
             header_out.writerow(Annovar.columns + ["Priority_Index"])
             sys.stdout.flush()
             output = csv.writer(sys.stdout, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
@@ -181,7 +214,7 @@ def main():
         while len(line)<len(Annovar.columns):
                 line.append("")
           
-        output.writerow(line + [av.category()])
+        output.writerow(line + [av.priority()])
     
 if __name__ == "__main__":    
     main()
