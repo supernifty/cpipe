@@ -27,6 +27,9 @@ tools = sampleFiles.grep { it.tools }                   // Only files with tools
                    .collect { it.split(":") }           // Split the tool:version for each tool 
                    .collectEntries {  [it[0], it[1]] }  // Create a map of tool => version from above split
 
+// Read the version of the pipeline from the version file in the root directory
+pipelineVersion = new File(BASE,"version.txt").text.trim()
+
 new PDF().document(outputFile.absolutePath) {
 
     title "Provenance Report for Study $sample"
@@ -36,7 +39,7 @@ new PDF().document(outputFile.absolutePath) {
 
     table(cols:2, padding:4) {
         head { cells("Property","Value") }
-        cells("Version", new File("revision.txt").text )
+        cells("Version", pipelineVersion + " / " + new File("revision.txt").text )
         cells("Revision Date", "git log -1 --format=%cd".execute().text)
         cells("Run By", System.properties["user.name"])
         cells("Date", (new Date()).toString())
