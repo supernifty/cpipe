@@ -1,0 +1,55 @@
+==================================================
+
+Melbourne Genomics Demonstration Project Pipeline
+
+Version 0.9.1 Release Notes
+
+==================================================
+
+
+    adding lovd export script into pipeline
+
+    added script for importing to LOVD as part of pipeline
+
+    use new sample meta data format
+
+    do not exclude variants that are observed in AML patients (tumor samples)
+
+    print more info when sample / fastq mismatch occurs
+
+    Change CMT genes etc priority 2 based on feedback from Natalie / Ivan
+
+    updated rules for calculating priority index:
+        - allow very rare variants into priority 2 and priority 3 (MAF < 0.0005)
+        - allow truncating variants into priority 1 if they are rare
+
+    Added script for making official releases, support for tracking human-readable 
+    version of pipeline, display of version in provenance report
+
+    fix genes appearing twice when overlapping, sort by category and include in the report
+
+    fix annotation of phx indels to be in annovar format, consistent with 
+    rest of variants
+
+    move provenance report to results directory
+
+    ignore intergenic regions in producing QC summary
+
+    fix het / hom appearing in incorrect column of pgx variants
+
+    removed genes based on out of date CCDS versions - some of them were pointing to hg18 gene definitions
+    added new gene tiers ( *not final* )
+
+    - added fraction of reads on target and total number of reads to QC pdf
+    - fixed variants called on too narrow target (exome target instead of
+      exome + disease cohort target), or too wide target (whole genome, causing
+      milliions of variants to get called, weighing down pipeline)
+    - fixed Annovar conversion dropping variants for non-primary samples, causing
+      missed variants in output report (moved annovar from annotating merged VCF
+      to annotating each sample's individual VCF separately)
+
+    Remove spurious printouts, clean up a bit
+
+    add known disease cohorts to config.groovy
+
+    fix incorrect statistics report in QC pdf
