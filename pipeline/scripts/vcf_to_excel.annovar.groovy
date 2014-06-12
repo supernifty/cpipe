@@ -64,7 +64,7 @@ if(opts.pgx)
 
 int pgx_coverage_threshold = opts.pgxcov ? opts.pgxcov.toInteger() : 15
 
-sample_info = new SampleInfo().parse_sample_info(opts.si)
+sample_info = SampleInfo.parse_mg_sample_info(opts.si)
 
 println "sample_info = $sample_info"
 
@@ -104,10 +104,10 @@ if(opts.db) {
 geneCategories = new File(opts.gc).readLines()*.split('\t').collect { [it[0],it[1]] }.collectEntries()
 
 // Original column order
-OUTPUT_FIELDS = ["Gene Category","Priority Index"] + ANNOVAR_FIELDS[0..-3] + ["CADD"] + (sql?["#Obs"]:[]) + ['RefCount','AltCount']
+//OUTPUT_FIELDS = ["Gene Category","Priority Index"] + ANNOVAR_FIELDS[0..-3] + ["CADD"] + (sql?["#Obs"]:[]) + ['RefCount','AltCount']
 
 // Order preferred if clinicians need to review output directly
-// OUTPUT_FIELDS = ["Func", "Gene", "ExonicFunc", "AAChange", "Gene Category", "Priority Index", "Condel", "Conserved", "ESP5400_ALL", "1000g2010nov_ALL", "dbSNP138", "AVSIFT", "LJB_PhyloP", "LJB_PhyloP_Pred", "LJB_SIFT", "LJB_SIFT_Pred", "LJB_PolyPhen2", "LJB_PolyPhen2_Pred", "LJB_LRT", "LJB_LRT_Pred", "LJB_MutationTaster", "LJB_MutationTaster_Pred", "LJB_GERP++", "SegDup", "Chr", "Start", "End", "Ref", "Obs", "Otherinfo", "Qual", "Depth", "#Obs", "RefCount", "AltCount", "CADD"]
+OUTPUT_FIELDS = ["Func", "Gene", "ExonicFunc", "AAChange", "Gene Category", "Priority Index", "Condel", "Conserved", "ESP5400_ALL", "1000g2010nov_ALL", "dbSNP138", "AVSIFT", "LJB_PhyloP", "LJB_PhyloP_Pred", "LJB_SIFT", "LJB_SIFT_Pred", "LJB_PolyPhen2", "LJB_PolyPhen2_Pred", "LJB_LRT", "LJB_LRT_Pred", "LJB_MutationTaster", "LJB_MutationTaster_Pred", "LJB_GERP++", "SegDup", "Chr", "Start", "End", "Ref", "Obs", "Otherinfo", "Qual", "Depth", "#Obs", "RefCount", "AltCount", "CADD"]
 
 OUTPUT_CSV_FIELDS = ANNOVAR_FIELDS[0..-5] + ["Gene Category","Priority Index","CADD"] + (sql?["#Obs"]:[]) + ['RefCount','AltCount']
 
@@ -143,8 +143,12 @@ query_variant_counts = { variant, allele, av, sample ->
                       and v.pos = $allele.start
                       and v.alt = $allele.alt
                       and o.sample_id = s.id
-                      and s.cohort <> $target """)[0]
-        println "Variant $variant found $variant_count times globally, $variant_count_outside_flagship outside target $target"
+                      and s.cohort <> $target
+                      and s.cohort <> 'AML'
+                """)[0] // NOTE: AML excluded explicitly as a special case 
+                        // because it includes tumor samples
+
+        println "Variant $variant found $variant_count times globally, $variant_count_outside_flagship outside target $target / AML"
     }
     return [ total: variant_count, other_target: variant_count_outside_flagship ]
 }
@@ -291,7 +295,7 @@ new ExcelBuilder().build {
                     row {
                         OUTPUT_FIELDS.each { fieldName ->
                             if(fieldName in CENTERED_COLUMNS) { 
-                                cell(outputValues[fieldName]) 
+                                center {cell(outputValues[fieldName])}
                             }
                             else {
                                 cell(outputValues[fieldName]) 
