@@ -37,7 +37,7 @@ load 'config.groovy'
 load 'pipeline_stages_config.groovy'
 
 sample_metadata_file = args[0]
-sample_info = SampleInfo.parse_sample_info(args[0])
+sample_info = SampleInfo.parse_mg_sample_info(args[0])
 
 // We are specifying that each analysis takes place inside a fixed file structure
 // where the parent directory is named according to the batch name. Thus we
