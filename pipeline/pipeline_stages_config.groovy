@@ -872,6 +872,7 @@ provenance_report = {
 }
 
 annovar_to_lovd = {
+    branch.sample = branch.name
     output.dir="results/lovd"
     produce(sample +"_LOVD") {
         exec """
