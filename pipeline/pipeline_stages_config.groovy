@@ -113,6 +113,7 @@ check_sample_info = {
         // Check that FASTQ files begin with the sample name followed by underscore
         def files = sample_info[sample].files.fastq
         if(files.any { !file(it).name.startsWith(sample+"_")}) {
+            files.each { println "FASTQ: $it | sample=$sample" }
             fail report('templates/invalid_input.html') to channel: gmail, 
                                                            subject: "FASTQ files for sample $sample have invalid file name format", 
                                                            message: "Files $files do not start with the sample name $sample" 
@@ -867,6 +868,15 @@ provenance_report = {
     output.dir = "results"
     produce(sample + ".provenance.pdf") {
        send report("scripts/provenance_report.groovy") to file: output.pdf
+    }
+}
+
+annovar_to_lovd = {
+    output.dir="results/lovd"
+    produce(sample +"_LOVD") {
+        exec """
+            python scripts/annovar2LOVD.py --csv $input.annovarx.csv --meta $sample_metadata_file --outdir results/lovd
+        """
     }
 }
 
