@@ -1,0 +1,6 @@
+Loading genes from RefGene database ...
+Finished.
+Processed 180 in 0.149 seconds @ 1200 per second
+WARNING: regions annotated incorrectly - total size: 38281
+WARNING: The following 12 genes were added based on UCSC annotations:
+[KMT2A, FLT3, IDH2, TP53, CEBPA, DNMT3A, IDH1, ASXL1, KIT, TET2, NPM1, PHF6]

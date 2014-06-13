@@ -1,0 +1,6 @@
+Loading genes from RefGene database ...
+Finished.
+Processed 790 in 0.560 seconds @ 1408.1996434938 per second
+WARNING: regions annotated incorrectly - total size: 118277
+WARNING: The following 54 genes were added based on UCSC annotations:
+[PLEKHG5, MFN2, YARS, NGF, LMNA, NTRK1, INSRR, MPZ, DHTKD1, EGR2, HK1, SBF2, IGHMBP2, MTMR2, WNK1, FGD4, MARS, KIF5A, TRPV4, HSPB8, ATL1, SPTLC2, FBLN5, LITAF, AARS, KARS, GAN, PMP22, CTDP1, DNM2, PRX, MED25, DCTN1, PLA2G6, SBF1, TFG, RAB7A, CCT5, FAM134B, HSPB3, HINT1, HARS, SH3TC2, FIG4, GARS, HSPB1, GDAP1, NDRG1, SPTLC1, IKBKAP, LRSAM1, GJB1, ATP7A, PRPS1]

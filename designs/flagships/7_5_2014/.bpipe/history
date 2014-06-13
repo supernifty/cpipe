@@ -1,0 +1,1 @@
+13793	bpipe run /vlsci/VR0193/ssadedin//mg/production/pipeline/scripts/reformat_bed_files.groovy raw/MelbourneGenomics-CCDS-AML-20140507.bed raw/MelbourneGenomics-CCDS-CMT-20140507.bed raw/MelbourneGenomics-CCDS-CRC-20140507.bed raw/MelbourneGenomics-CCDS-CS-20140507.bed raw/MelbourneGenomics-CCDS-EPIL-20140507.bed

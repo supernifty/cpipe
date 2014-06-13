@@ -1,0 +1,191 @@
+
+####################################################################################################
+# Starting pipeline at Sun Mar 23 12:52:29 EST 2014
+# Input files:  [raw/RefSeq_coding_AML.bed, raw/RefSeq_coding_CMT.bed, raw/RefSeq_coding_CRC.bed, raw/RefSeq_coding_CS.bed, raw/RefSeq_coding_EPIL.bed, EPIL.pgx.txt]
+# Output Log:  .bpipe/logs/24886.log
+
+####################################################################################################
+# Starting pipeline at Sun Mar 23 12:54:42 EST 2014
+# Input files:  [raw/RefSeq_coding_AML.bed, raw/RefSeq_coding_CMT.bed, raw/RefSeq_coding_CRC.bed, raw/RefSeq_coding_CS.bed, raw/RefSeq_coding_EPIL.bed, EPIL.pgx.txt]
+# Output Log:  .bpipe/logs/25007.log
+# Stage flatten [AML]
+# Stage flatten [CRC]
+# Stage flatten [EPIL]
+# Stage flatten [CS]
+# Stage flatten [CMT]
+echo "Flattening and removing nonstandard chromosomes ...";          sortBed -i raw/RefSeq_coding_AML.bed | bedtools merge -nms -i - | sed 's/;.*$//' | grep -v '^chr[0-9]_' > RefSeq_coding_AML.flatten.bed
+echo "Flattening and removing nonstandard chromosomes ...";          sortBed -i raw/RefSeq_coding_CS.bed | bedtools merge -nms -i - | sed 's/;.*$//' | grep -v '^chr[0-9]_' > RefSeq_coding_CS.flatten.bed
+echo "Flattening and removing nonstandard chromosomes ...";          sortBed -i raw/RefSeq_coding_CMT.bed | bedtools merge -nms -i - | sed 's/;.*$//' | grep -v '^chr[0-9]_' > RefSeq_coding_CMT.flatten.bed
+echo "Flattening and removing nonstandard chromosomes ...";          sortBed -i raw/RefSeq_coding_EPIL.bed | bedtools merge -nms -i - | sed 's/;.*$//' | grep -v '^chr[0-9]_' > RefSeq_coding_EPIL.flatten.bed
+echo "Flattening and removing nonstandard chromosomes ...";          sortBed -i raw/RefSeq_coding_CRC.bed | bedtools merge -nms -i - | sed 's/;.*$//' | grep -v '^chr[0-9]_' > RefSeq_coding_CRC.flatten.bed
+
+
+####################################################################################################
+# Starting pipeline at Sun Mar 23 12:55:30 EST 2014
+# Input files:  [raw/RefSeq_coding_AML.bed, raw/RefSeq_coding_CMT.bed, raw/RefSeq_coding_CRC.bed, raw/RefSeq_coding_CS.bed, raw/RefSeq_coding_EPIL.bed, EPIL.pgx.txt]
+# Output Log:  .bpipe/logs/25080.log
+# Stage flatten [AML]
+# Stage flatten [CRC]
+# Stage flatten [CMT]
+# Stage flatten [EPIL]
+# Stage flatten [CS]
+echo "Flattening and removing nonstandard chromosomes ...";          sortBed -i raw/RefSeq_coding_AML.bed | bedtools merge -nms -i - | sed 's/;.*$//' | grep -v '^chr[0-9]_' > RefSeq_coding_AML.flatten.bed
+echo "Flattening and removing nonstandard chromosomes ...";          sortBed -i raw/RefSeq_coding_EPIL.bed | bedtools merge -nms -i - | sed 's/;.*$//' | grep -v '^chr[0-9]_' > RefSeq_coding_EPIL.flatten.bed
+echo "Flattening and removing nonstandard chromosomes ...";          sortBed -i raw/RefSeq_coding_CS.bed | bedtools merge -nms -i - | sed 's/;.*$//' | grep -v '^chr[0-9]_' > RefSeq_coding_CS.flatten.bed
+echo "Flattening and removing nonstandard chromosomes ...";          sortBed -i raw/RefSeq_coding_CMT.bed | bedtools merge -nms -i - | sed 's/;.*$//' | grep -v '^chr[0-9]_' > RefSeq_coding_CMT.flatten.bed
+echo "Flattening and removing nonstandard chromosomes ...";          sortBed -i raw/RefSeq_coding_CRC.bed | bedtools merge -nms -i - | sed 's/;.*$//' | grep -v '^chr[0-9]_' > RefSeq_coding_CRC.flatten.bed
+
+
+####################################################################################################
+# Starting pipeline at Sun Mar 23 12:56:02 EST 2014
+# Input files:  [raw/RefSeq_coding_AML.bed, raw/RefSeq_coding_CMT.bed, raw/RefSeq_coding_CRC.bed, raw/RefSeq_coding_CS.bed, raw/RefSeq_coding_EPIL.bed, EPIL.pgx.txt]
+# Output Log:  .bpipe/logs/25154.log
+# Stage extract_pgx [EPIL]
+cat $DBSNP | groovy  -cp $GROOVY_NGS/groovy-ngs-utils.jar                 -e 'pgx = new File("EPIL.pgx.txt").readLines()*.trim(); VCF.filter { it.id in pgx }' > EPIL.pgx.vcf
+
+
+####################################################################################################
+# Starting pipeline at Sun Mar 23 12:56:53 EST 2014
+# Input files:  [raw/RefSeq_coding_AML.bed, raw/RefSeq_coding_CMT.bed, raw/RefSeq_coding_CRC.bed, raw/RefSeq_coding_CS.bed, raw/RefSeq_coding_EPIL.bed, EPIL.pgx.txt]
+# Output Log:  .bpipe/logs/25223.log
+# Stage extract_pgx [EPIL]
+cat /vlsci/VR0320/shared/production/hg19/dbsnp_132.hg19.vcf | groovy  -cp /vlsci/VR0320/shared/production/tools/groovy-ngs-utils/1.0/groovy-ngs-utils.jar                 -e 'pgx = new File("EPIL.pgx.txt").readLines()*.trim(); VCF.filter { it.id in pgx }' > EPIL.pgx.vcf
+
+
+####################################################################################################
+# Starting pipeline at Sun Mar 23 12:58:12 EST 2014
+# Input files:  [raw/RefSeq_coding_AML.bed, raw/RefSeq_coding_CMT.bed, raw/RefSeq_coding_CRC.bed, raw/RefSeq_coding_CS.bed, raw/RefSeq_coding_EPIL.bed, EPIL.pgx.txt]
+# Output Log:  .bpipe/logs/25296.log
+# Stage extract_pgx [EPIL]
+cat /vlsci/VR0320/shared/production/hg19/dbsnp_132.hg19.vcf | groovy  -cp /vlsci/VR0320/shared/production/tools/groovy-ngs-utils/1.0/groovy-ngs-utils.jar                 -e 'pgx = new File("EPIL.pgx.txt").readLines()*.trim(); VCF.filter { it.id in pgx }' > EPIL.pgx.vcf
+
+
+####################################################################################################
+# Starting pipeline at Sun Mar 23 13:01:15 EST 2014
+# Input files:  [raw/RefSeq_coding_AML.bed, raw/RefSeq_coding_CMT.bed, raw/RefSeq_coding_CRC.bed, raw/RefSeq_coding_CS.bed, raw/RefSeq_coding_EPIL.bed, EPIL.pgx.txt]
+# Output Log:  .bpipe/logs/25461.log
+# Stage extract_pgx [EPIL]
+cat /vlsci/VR0320/shared/production/hg19/dbsnp_132.hg19.vcf | JAVA_OPTS="-Xmx1g" groovy                  -cp /vlsci/VR0320/shared/production/tools/groovy-ngs-utils/1.0/groovy-ngs-utils.jar                 -e 'pgx = new File("EPIL.pgx.txt").readLines()*.trim(); VCF.filter { it.id in pgx }' > EPIL.pgx.vcf
+# Stage annotate_vep [EPIL]
+PERL5LIB="/vlsci/VR0320/shared/production/tools/condel/24-1-2013"         perl /vlsci/VR0320/shared/production/tools/vep/74/variant_effect_predictor.pl --cache --dir /vlsci/VR0320/shared/production/tools/vep/vep_cache              -i EPIL.pgx.vcf              --vcf -o variants/EPIL.pgx.vep.vcf              -species human              --canonical --per_gene --protein              --sift=b --polyphen=b             --symbol hgnc --force_overwrite --hgvs  --maf_1kg --maf_esp --pubmed             --plugin Condel,/vlsci/VR0320/shared/production/tools/condel/24-1-2013/config,s
+
+
+####################################################################################################
+# Starting pipeline at Fri Jun 13 16:38:41 EST 2014
+# Input files:  [raw_13_06_2014/MelbourneGenomics-CCDS-AML-20140611.bed, raw_13_06_2014/MelbourneGenomics-CCDS-CMT-20140611.bed, raw_13_06_2014/MelbourneGenomics-CCDS-CRC-20140611.bed, raw_13_06_2014/MelbourneGenomics-CCDS-CS-20140611.bed, raw_13_06_2014/MelbourneGenomics-CCDS-EPIL-20140611.bed]
+# Output Log:  .bpipe/logs/27835.log
+# Stage flatten [CS]
+# Stage flatten [EPIL]
+# Stage flatten [CMT]
+# Stage flatten [AML]
+# Stage flatten [CRC]
+echo "Flattening and removing nonstandard chromosomes ...";          sortBed -i raw_13_06_2014/MelbourneGenomics-CCDS-CMT-20140611.bed | bedtools merge -nms -i - | sed 's/;.*$//' | grep -v '^chr[0-9]_' > MelbourneGenomics-CCDS-CMT-20140611.flatten.bed
+echo "Flattening and removing nonstandard chromosomes ...";          sortBed -i raw_13_06_2014/MelbourneGenomics-CCDS-AML-20140611.bed | bedtools merge -nms -i - | sed 's/;.*$//' | grep -v '^chr[0-9]_' > MelbourneGenomics-CCDS-AML-20140611.flatten.bed
+echo "Flattening and removing nonstandard chromosomes ...";          sortBed -i raw_13_06_2014/MelbourneGenomics-CCDS-EPIL-20140611.bed | bedtools merge -nms -i - | sed 's/;.*$//' | grep -v '^chr[0-9]_' > MelbourneGenomics-CCDS-EPIL-20140611.flatten.bed
+echo "Flattening and removing nonstandard chromosomes ...";          sortBed -i raw_13_06_2014/MelbourneGenomics-CCDS-CRC-20140611.bed | bedtools merge -nms -i - | sed 's/;.*$//' | grep -v '^chr[0-9]_' > MelbourneGenomics-CCDS-CRC-20140611.flatten.bed
+echo "Flattening and removing nonstandard chromosomes ...";          sortBed -i raw_13_06_2014/MelbourneGenomics-CCDS-CS-20140611.bed | bedtools merge -nms -i - | sed 's/;.*$//' | grep -v '^chr[0-9]_' > MelbourneGenomics-CCDS-CS-20140611.flatten.bed
+
+
+####################################################################################################
+# Starting pipeline at Fri Jun 13 16:39:53 EST 2014
+# Input files:  [raw_13_06_2014/MelbourneGenomics-CCDS-AML-20140611.bed, raw_13_06_2014/MelbourneGenomics-CCDS-CMT-20140611.bed, raw_13_06_2014/MelbourneGenomics-CCDS-CRC-20140611.bed, raw_13_06_2014/MelbourneGenomics-CCDS-CS-20140611.bed, raw_13_06_2014/MelbourneGenomics-CCDS-EPIL-20140611.bed]
+# Output Log:  .bpipe/logs/28398.log
+# Stage flatten [CS]
+# Stage flatten [CRC]
+# Stage flatten [EPIL]
+# Stage flatten [CMT]
+# Stage flatten [AML]
+echo "Flattening and removing nonstandard chromosomes ...";          sortBed -i raw_13_06_2014/MelbourneGenomics-CCDS-EPIL-20140611.bed | bedtools merge -nms -i - | sed 's/;.*$//' | grep -v '^chr[0-9]_' > MelbourneGenomics-CCDS-EPIL-20140611.flatten.bed
+echo "Flattening and removing nonstandard chromosomes ...";          sortBed -i raw_13_06_2014/MelbourneGenomics-CCDS-AML-20140611.bed | bedtools merge -nms -i - | sed 's/;.*$//' | grep -v '^chr[0-9]_' > MelbourneGenomics-CCDS-AML-20140611.flatten.bed
+echo "Flattening and removing nonstandard chromosomes ...";          sortBed -i raw_13_06_2014/MelbourneGenomics-CCDS-CS-20140611.bed | bedtools merge -nms -i - | sed 's/;.*$//' | grep -v '^chr[0-9]_' > MelbourneGenomics-CCDS-CS-20140611.flatten.bed
+echo "Flattening and removing nonstandard chromosomes ...";          sortBed -i raw_13_06_2014/MelbourneGenomics-CCDS-CRC-20140611.bed | bedtools merge -nms -i - | sed 's/;.*$//' | grep -v '^chr[0-9]_' > MelbourneGenomics-CCDS-CRC-20140611.flatten.bed
+echo "Flattening and removing nonstandard chromosomes ...";          sortBed -i raw_13_06_2014/MelbourneGenomics-CCDS-CMT-20140611.bed | bedtools merge -nms -i - | sed 's/;.*$//' | grep -v '^chr[0-9]_' > MelbourneGenomics-CCDS-CMT-20140611.flatten.bed
+
+
+####################################################################################################
+# Starting pipeline at Fri Jun 13 16:44:04 EST 2014
+# Input files:  [raw_13_06_2014/MelbourneGenomics-CCDS-AML-20140611.bed, raw_13_06_2014/MelbourneGenomics-CCDS-CMT-20140611.bed, raw_13_06_2014/MelbourneGenomics-CCDS-CRC-20140611.bed, raw_13_06_2014/MelbourneGenomics-CCDS-CS-20140611.bed, raw_13_06_2014/MelbourneGenomics-CCDS-EPIL-20140611.bed]
+# Output Log:  .bpipe/logs/29566.log
+# Stage flatten [CS]
+# Stage flatten [CRC]
+# Stage flatten [CMT]
+# Stage flatten [EPIL]
+# Stage flatten [AML]
+echo "Flattening and removing nonstandard chromosomes ...";          sortBed -i raw_13_06_2014/MelbourneGenomics-CCDS-CMT-20140611.bed | bedtools merge -nms -i - | sed 's/;.*$//' | grep -v '^chr[0-9]_' > MelbourneGenomics-CCDS-CMT-20140611.flatten.bed
+echo "Flattening and removing nonstandard chromosomes ...";          sortBed -i raw_13_06_2014/MelbourneGenomics-CCDS-AML-20140611.bed | bedtools merge -nms -i - | sed 's/;.*$//' | grep -v '^chr[0-9]_' > MelbourneGenomics-CCDS-AML-20140611.flatten.bed
+echo "Flattening and removing nonstandard chromosomes ...";          sortBed -i raw_13_06_2014/MelbourneGenomics-CCDS-EPIL-20140611.bed | bedtools merge -nms -i - | sed 's/;.*$//' | grep -v '^chr[0-9]_' > MelbourneGenomics-CCDS-EPIL-20140611.flatten.bed
+echo "Flattening and removing nonstandard chromosomes ...";          sortBed -i raw_13_06_2014/MelbourneGenomics-CCDS-CRC-20140611.bed | bedtools merge -nms -i - | sed 's/;.*$//' | grep -v '^chr[0-9]_' > MelbourneGenomics-CCDS-CRC-20140611.flatten.bed
+echo "Flattening and removing nonstandard chromosomes ...";          sortBed -i raw_13_06_2014/MelbourneGenomics-CCDS-CS-20140611.bed | bedtools merge -nms -i - | sed 's/;.*$//' | grep -v '^chr[0-9]_' > MelbourneGenomics-CCDS-CS-20140611.flatten.bed
+# Stage annotate [EPIL]
+# Stage annotate [CMT]
+# Stage annotate [AML]
+# Stage annotate [CRC]
+echo "Annotating genes ...";          JAVA_OPTS="-Xmx1g" /vlsci/VR0320/shared/production/tools/groovy/2.1.1/bin/groovy /vlsci/VR0320/shared/production/pipeline/scripts/annotate_genes.groovy -r /vlsci/VR0320/shared/production/tools/annovar/humandb/hg19_refGene.txt MelbourneGenomics-CCDS-EPIL-20140611.flatten.bed > MelbourneGenomics-CCDS-EPIL-20140611.flatten.annotate.bed
+echo "Annotating genes ...";          JAVA_OPTS="-Xmx1g" /vlsci/VR0320/shared/production/tools/groovy/2.1.1/bin/groovy /vlsci/VR0320/shared/production/pipeline/scripts/annotate_genes.groovy -r /vlsci/VR0320/shared/production/tools/annovar/humandb/hg19_refGene.txt MelbourneGenomics-CCDS-CMT-20140611.flatten.bed > MelbourneGenomics-CCDS-CMT-20140611.flatten.annotate.bed
+echo "Annotating genes ...";          JAVA_OPTS="-Xmx1g" /vlsci/VR0320/shared/production/tools/groovy/2.1.1/bin/groovy /vlsci/VR0320/shared/production/pipeline/scripts/annotate_genes.groovy -r /vlsci/VR0320/shared/production/tools/annovar/humandb/hg19_refGene.txt MelbourneGenomics-CCDS-AML-20140611.flatten.bed > MelbourneGenomics-CCDS-AML-20140611.flatten.annotate.bed
+echo "Annotating genes ...";          JAVA_OPTS="-Xmx1g" /vlsci/VR0320/shared/production/tools/groovy/2.1.1/bin/groovy /vlsci/VR0320/shared/production/pipeline/scripts/annotate_genes.groovy -r /vlsci/VR0320/shared/production/tools/annovar/humandb/hg19_refGene.txt MelbourneGenomics-CCDS-CRC-20140611.flatten.bed > MelbourneGenomics-CCDS-CRC-20140611.flatten.annotate.bed
+# Stage annotate [CS]
+echo "Annotating genes ...";          JAVA_OPTS="-Xmx1g" /vlsci/VR0320/shared/production/tools/groovy/2.1.1/bin/groovy /vlsci/VR0320/shared/production/pipeline/scripts/annotate_genes.groovy -r /vlsci/VR0320/shared/production/tools/annovar/humandb/hg19_refGene.txt MelbourneGenomics-CCDS-CS-20140611.flatten.bed > MelbourneGenomics-CCDS-CS-20140611.flatten.annotate.bed
+
+
+####################################################################################################
+# Starting pipeline at Fri Jun 13 16:50:52 EST 2014
+# Input files:  [raw_13_06_2014/MelbourneGenomics-CCDS-AML-20140611.bed, raw_13_06_2014/MelbourneGenomics-CCDS-CMT-20140611.bed, raw_13_06_2014/MelbourneGenomics-CCDS-CRC-20140611.bed, raw_13_06_2014/MelbourneGenomics-CCDS-CS-20140611.bed, raw_13_06_2014/MelbourneGenomics-CCDS-EPIL-20140611.bed]
+# Output Log:  .bpipe/logs/31402.log
+# Stage flatten [CRC]
+# Stage flatten [AML]
+# Stage flatten [CS]
+# Stage flatten [CMT]
+# Stage flatten [EPIL]
+# Stage annotate [CMT]
+# Stage annotate [CRC]
+# Stage annotate [EPIL]
+# Stage annotate [CS]
+# Stage annotate [AML]
+echo "Annotating genes ...";          JAVA_OPTS="-Xmx1g" /vlsci/VR0320/shared/production/tools/groovy/2.1.1/bin/groovy /vlsci/VR0320/shared/production/pipeline/scripts/annotate_genes.groovy -r /vlsci/VR0320/shared/production/tools/annovar/humandb/hg19_refGene.txt MelbourneGenomics-CCDS-CMT-20140611.flatten.bed > MelbourneGenomics-CCDS-CMT-20140611.flatten.annotate.bed
+echo "Annotating genes ...";          JAVA_OPTS="-Xmx1g" /vlsci/VR0320/shared/production/tools/groovy/2.1.1/bin/groovy /vlsci/VR0320/shared/production/pipeline/scripts/annotate_genes.groovy -r /vlsci/VR0320/shared/production/tools/annovar/humandb/hg19_refGene.txt MelbourneGenomics-CCDS-CS-20140611.flatten.bed > MelbourneGenomics-CCDS-CS-20140611.flatten.annotate.bed
+echo "Annotating genes ...";          JAVA_OPTS="-Xmx1g" /vlsci/VR0320/shared/production/tools/groovy/2.1.1/bin/groovy /vlsci/VR0320/shared/production/pipeline/scripts/annotate_genes.groovy -r /vlsci/VR0320/shared/production/tools/annovar/humandb/hg19_refGene.txt MelbourneGenomics-CCDS-CRC-20140611.flatten.bed > MelbourneGenomics-CCDS-CRC-20140611.flatten.annotate.bed
+echo "Annotating genes ...";          JAVA_OPTS="-Xmx1g" /vlsci/VR0320/shared/production/tools/groovy/2.1.1/bin/groovy /vlsci/VR0320/shared/production/pipeline/scripts/annotate_genes.groovy -r /vlsci/VR0320/shared/production/tools/annovar/humandb/hg19_refGene.txt MelbourneGenomics-CCDS-EPIL-20140611.flatten.bed > MelbourneGenomics-CCDS-EPIL-20140611.flatten.annotate.bed
+echo "Annotating genes ...";          JAVA_OPTS="-Xmx1g" /vlsci/VR0320/shared/production/tools/groovy/2.1.1/bin/groovy /vlsci/VR0320/shared/production/pipeline/scripts/annotate_genes.groovy -r /vlsci/VR0320/shared/production/tools/annovar/humandb/hg19_refGene.txt MelbourneGenomics-CCDS-AML-20140611.flatten.bed > MelbourneGenomics-CCDS-AML-20140611.flatten.annotate.bed
+
+
+####################################################################################################
+# Starting pipeline at Fri Jun 13 16:54:55 EST 2014
+# Input files:  [raw_13_06_2014/MelbourneGenomics-CCDS-AML-20140611.bed, raw_13_06_2014/MelbourneGenomics-CCDS-CMT-20140611.bed, raw_13_06_2014/MelbourneGenomics-CCDS-CRC-20140611.bed, raw_13_06_2014/MelbourneGenomics-CCDS-CS-20140611.bed, raw_13_06_2014/MelbourneGenomics-CCDS-EPIL-20140611.bed]
+# Output Log:  .bpipe/logs/32573.log
+# Stage flatten [CS]
+# Stage flatten [CRC]
+# Stage flatten [CMT]
+# Stage flatten [EPIL]
+# Stage flatten [AML]
+# Stage annotate [CS]
+# Stage annotate [CMT]
+# Stage annotate [EPIL]
+# Stage annotate [AML]
+# Stage annotate [CRC]
+echo "Annotating genes ...";          JAVA_OPTS="-Xmx1g" /vlsci/VR0320/shared/production/tools/groovy/2.1.1/bin/groovy /vlsci/VR0320/shared/production/pipeline/scripts/annotate_genes.groovy -r /vlsci/VR0320/shared/production/tools/annovar/humandb/hg19_refGene.txt MelbourneGenomics-CCDS-CS-20140611.flatten.bed > MelbourneGenomics-CCDS-CS-20140611.flatten.annotate.bed
+echo "Annotating genes ...";          JAVA_OPTS="-Xmx1g" /vlsci/VR0320/shared/production/tools/groovy/2.1.1/bin/groovy /vlsci/VR0320/shared/production/pipeline/scripts/annotate_genes.groovy -r /vlsci/VR0320/shared/production/tools/annovar/humandb/hg19_refGene.txt MelbourneGenomics-CCDS-CMT-20140611.flatten.bed > MelbourneGenomics-CCDS-CMT-20140611.flatten.annotate.bed
+echo "Annotating genes ...";          JAVA_OPTS="-Xmx1g" /vlsci/VR0320/shared/production/tools/groovy/2.1.1/bin/groovy /vlsci/VR0320/shared/production/pipeline/scripts/annotate_genes.groovy -r /vlsci/VR0320/shared/production/tools/annovar/humandb/hg19_refGene.txt MelbourneGenomics-CCDS-EPIL-20140611.flatten.bed > MelbourneGenomics-CCDS-EPIL-20140611.flatten.annotate.bed
+echo "Annotating genes ...";          JAVA_OPTS="-Xmx1g" /vlsci/VR0320/shared/production/tools/groovy/2.1.1/bin/groovy /vlsci/VR0320/shared/production/pipeline/scripts/annotate_genes.groovy -r /vlsci/VR0320/shared/production/tools/annovar/humandb/hg19_refGene.txt MelbourneGenomics-CCDS-AML-20140611.flatten.bed > MelbourneGenomics-CCDS-AML-20140611.flatten.annotate.bed
+echo "Annotating genes ...";          JAVA_OPTS="-Xmx1g" /vlsci/VR0320/shared/production/tools/groovy/2.1.1/bin/groovy /vlsci/VR0320/shared/production/pipeline/scripts/annotate_genes.groovy -r /vlsci/VR0320/shared/production/tools/annovar/humandb/hg19_refGene.txt MelbourneGenomics-CCDS-CRC-20140611.flatten.bed > MelbourneGenomics-CCDS-CRC-20140611.flatten.annotate.bed
+# Stage sort [CRC]
+# Stage sort [CMT]
+echo "Sorting ...";          /vlsci/VR0320/shared/production/tools/IGVTools/2.3.6/igvtools.lowmem sort MelbourneGenomics-CCDS-CRC-20140611.flatten.annotate.bed MelbourneGenomics-CCDS-CRC-20140611.flatten.annotate.sort.bed
+echo "Sorting ...";          /vlsci/VR0320/shared/production/tools/IGVTools/2.3.6/igvtools.lowmem sort MelbourneGenomics-CCDS-CMT-20140611.flatten.annotate.bed MelbourneGenomics-CCDS-CMT-20140611.flatten.annotate.sort.bed
+# Stage sort [AML]
+echo "Sorting ...";          /vlsci/VR0320/shared/production/tools/IGVTools/2.3.6/igvtools.lowmem sort MelbourneGenomics-CCDS-AML-20140611.flatten.annotate.bed MelbourneGenomics-CCDS-AML-20140611.flatten.annotate.sort.bed
+# Stage sort [EPIL]
+echo "Sorting ...";          /vlsci/VR0320/shared/production/tools/IGVTools/2.3.6/igvtools.lowmem sort MelbourneGenomics-CCDS-EPIL-20140611.flatten.annotate.bed MelbourneGenomics-CCDS-EPIL-20140611.flatten.annotate.sort.bed
+# Stage rename [CRC]
+cp MelbourneGenomics-CCDS-CRC-20140611.flatten.annotate.sort.bed CRC.bed
+# Stage rename [CMT]
+cp MelbourneGenomics-CCDS-CMT-20140611.flatten.annotate.sort.bed CMT.bed
+# Stage rename [AML]
+cp MelbourneGenomics-CCDS-AML-20140611.flatten.annotate.sort.bed AML.bed
+# Stage rename [EPIL]
+cp MelbourneGenomics-CCDS-EPIL-20140611.flatten.annotate.sort.bed EPIL.bed
+# Stage sort [CS]
+echo "Sorting ...";          /vlsci/VR0320/shared/production/tools/IGVTools/2.3.6/igvtools.lowmem sort MelbourneGenomics-CCDS-CS-20140611.flatten.annotate.bed MelbourneGenomics-CCDS-CS-20140611.flatten.annotate.sort.bed
+# Stage rename [CS]
+cp MelbourneGenomics-CCDS-CS-20140611.flatten.annotate.sort.bed CS.bed
+
