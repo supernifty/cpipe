@@ -1,0 +1,17 @@
+==================================================
+
+Melbourne Genomics Demonstration Project Pipeline
+
+Version 0.9.2 Release Notes
+
+==================================================
+
+    Updated bed files and tiers to 20140611 version: 
+      - HD gene removed from the EPIL flagship. 
+      - All AML and CMT now tier 2 (clinical). 
+      - Epilepsy and CRC - all previously tier 1, now tier 2. 
+      - All previously tier 2 now tier 1. 
+      - New CS exclusion genes added
+
+
+    update to Bpipe - includes fixes for files not cleaned up in some situations
