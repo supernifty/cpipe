@@ -1,0 +1,6 @@
+Loading genes from RefGene database ...
+Finished.
+Processed 418 in 0.311 seconds @ 1339.7435897436 per second
+WARNING: regions annotated incorrectly - total size: 76640
+WARNING: The following 35 genes were added based on UCSC annotations:
+[MUTYH, TOE1, AKR1C4, BMPR1A, PTEN, POLE, MLH3, GREM1, UACA, BLM, AXIN1, CDH1, NUDT7, TP53, FLCN, AXIN2, TWSG1, SMAD4, STK11, ZNF490, POLD1, EPCAM, MSH2, MSH6, PRADC1, CHEK2, TGFBR2, MLH1, MRPL3, APC, PMS2, PSPH, PRSS37, GALNT12, TGFBR1]

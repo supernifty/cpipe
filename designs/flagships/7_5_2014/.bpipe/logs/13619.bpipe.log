@@ -1,0 +1,846 @@
+bpipe.Runner	INFO	|8:05:31 Starting 
+bpipe.Runner	INFO	|8:05:31 OS: Linux (2.6.32-358.18.1.el6.x86_64) Java: 1.7.0_25 Vendor: Oracle Corporation 
+bpipe.Runner	INFO	|8:05:31 Initializing plugins ... 
+bpipe.Config	INFO	|8:05:31 No plugins directory found: /hsm/VR0320/shared/production/designs/flagships/7_5_2014/.bpipe/plugins 
+bpipe.Runner	INFO	|8:05:31 Reading user config ...  
+bpipe.Config	INFO	|8:05:31 No configuration file found in same dir as pipeline file 
+bpipe.Config	INFO	|8:05:31 No local configuration file found 
+bpipe.Utils	INFO	|8:05:32 Read config from /vlsci/VR0193/ssadedin/bpipe-0.9.8.6_beta_4/bin/../bpipe.config executed in 0.588 seconds 
+bpipe.Utils	INFO	|8:05:32 Read config from /vlsci/VR0193/ssadedin/.bpipeconfig executed in 0.598 seconds 
+bpipe.Config	INFO	|8:05:32 Merging home config file 
+bpipe.Config	INFO	|8:05:32 Default executor is slurm 
+bpipe.Utils	INFO	|8:05:32 Read user config executed in 0.859 seconds 
+bpipe.Runner	INFO	|8:05:32 Loading tool database ...  
+bpipe.Runner	INFO	|8:05:32 No CLI parameters specified 
+bpipe.ToolDatabase	INFO	|8:05:32 Loading tool database from user configuration 
+bpipe.Concurrency	INFO	|8:05:32 Creating thread pool with 32 threads to execute parallel pipelines 
+bpipe.Tool	INFO	|8:05:32 Configured meta data about tool samtools 
+bpipe.Tool	INFO	|8:05:32 Configured meta data about tool bwa 
+bpipe.Tool	INFO	|8:05:32 Configured meta data about tool bowtie 
+bpipe.Tool	INFO	|8:05:32 Configured meta data about tool fastqc 
+bpipe.Tool	INFO	|8:05:32 Configured meta data about tool coverageBed 
+bpipe.Tool	INFO	|8:05:32 Configured meta data about tool fastx_clipper 
+bpipe.Tool	INFO	|8:05:32 Configured meta data about tool convert2annovar.pl 
+bpipe.Tool	INFO	|8:05:32 Configured meta data about tool summarize_annovar.pl 
+bpipe.Tool	INFO	|8:05:32 Configured meta data about tool bowtie2 
+bpipe.Tool	INFO	|8:05:32 Configured meta data about tool GenomeAnalysisTK 
+bpipe.Tool	INFO	|8:05:32 Configured meta data about tool MarkDuplicates 
+bpipe.Tool	INFO	|8:05:32 Configured meta data about tool signalp 
+bpipe.Tool	INFO	|8:05:32 Configured meta data about tool variant_effect_predictor.pl 
+bpipe.Tool	INFO	|8:05:32 Configured meta data about tool igvtools 
+bpipe.Tool	INFO	|8:05:32 Configured meta data about tool ls 
+bpipe.Runner	INFO	|8:05:32 Parsing script ...  
+bpipe.Runner	INFO	|8:05:32 Run ...  
+bpipe.Pipeline	INFO	|8:05:32 Evaluating library file /hsm/VR0320/shared/production/pipeline/scripts/../config.groovy 
+bpipe.Pipeline	INFO	|8:05:32 Evaluating library file /hsm/VR0320/shared/production/pipeline/scripts/../pipeline_stages_config.groovy 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable set_target_info 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable set_sample_info 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable check_tools 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable check_sample_info 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable create_combined_target 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable fastqc 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable check_fastqc 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable align_bwa 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable merge_pgx 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable merge_vcf 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable merge_bams 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable index_bam 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable realignIntervals 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable realign 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable dedup 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable recal_count 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable recal 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable call_variants 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable call_pgx 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable filter_variants 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable annotate_vep 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable calc_coverage_stats 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable check_coverage 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable check_karyotype 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable augment_condel 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable augment_cadd 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable calculate_cadd_scores 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable index_vcf 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable vcf_to_excel 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable plot_coverage 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable gatk_depth_of_coverage 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable qc_excel_report 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable annotate_significance 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable annovar_summarize_refgene 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable add_to_database 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable reorder 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable summary_pdf 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable sample_similarity_report 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable provenance_report 
+bpipe.Pipeline	INFO	|8:05:33 Running with input [raw/MelbourneGenomics-CCDS-AML-20140507.bed, raw/MelbourneGenomics-CCDS-CMT-20140507.bed, raw/MelbourneGenomics-CCDS-CRC-20140507.bed, raw/MelbourneGenomics-CCDS-CS-20140507.bed, raw/MelbourneGenomics-CCDS-EPIL-20140507.bed] 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable set_target_info 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable set_sample_info 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable check_tools 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable check_sample_info 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable create_combined_target 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable fastqc 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable check_fastqc 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable align_bwa 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable merge_pgx 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable merge_vcf 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable merge_bams 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable index_bam 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable realignIntervals 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable realign 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable dedup 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable recal_count 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable recal 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable call_variants 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable call_pgx 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable filter_variants 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable annotate_vep 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable calc_coverage_stats 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable check_coverage 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable check_karyotype 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable augment_condel 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable augment_cadd 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable calculate_cadd_scores 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable index_vcf 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable vcf_to_excel 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable plot_coverage 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable gatk_depth_of_coverage 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable qc_excel_report 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable annotate_significance 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable annovar_summarize_refgene 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable add_to_database 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable reorder 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable summary_pdf 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable sample_similarity_report 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable provenance_report 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable flatten 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable annotate 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable sort 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable rename 
+bpipe.PipelineCategory	INFO	|8:05:33 Found closure variable extract_pgx 
+bpipe.Pipeline	INFO	|8:05:33 Evaluating library file /vlsci/VR0193/ssadedin/bpipes/0_defaults.groovy 
+bpipe.Pipeline	INFO	|8:05:33 Evaluating library file /vlsci/VR0193/ssadedin/bpipes/PipelineStages.groovy 
+bpipe.Pipeline	INFO	|8:05:34 Evaluating library file /vlsci/VR0193/ssadedin/bpipes/splazers.groovy 
+bpipe.Pipeline	INFO	|8:05:34 Evaluating library file /vlsci/VR0193/ssadedin/bpipes/xhmm.groovy 
+bpipe.Pipeline	INFO	|8:05:34 Skip loading /hsm/VR0320/shared/production/pipeline/config.groovy (already loaded) 
+bpipe.Pipeline	INFO	|8:05:34 Skip loading /hsm/VR0320/shared/production/pipeline/pipeline_stages_config.groovy (already loaded) 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable align_bwa 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable align_bowtie 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable align_subread 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable align_eland 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable align_novoalign 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable merge_bams 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable merge_vcf 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable extract_unmapped 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable remove_duplicates 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable count_variants 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable sort_to_bam 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable reorder 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable index_bam 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable picard_index_bam 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable count_covariates 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable recalibrate_bam 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable recalibrate_bam_old 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable call_variants 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable call_variants_par 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable annotate_variants 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable compute_variant_set 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable local_realign 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable local_realign_chr 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable filter_variants_by_depth 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable filter_variants_by_min_depth 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable add_default_read_group 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable calc_exon_coverage 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable calc_coverage_stats 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable plot_coverage 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable annotate_gatk 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable gatk_call_variants 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable gatk_call_trio_variants 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable variant_recalibration 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable apply_calibration 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable calculate_coverage_stats 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable convert_annovar 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable rank_variants 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable calc_bam_stats 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable coverage_histogram 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable filter_exclusive_variants 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable filter_bad_child_variants 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable scanma 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable snpeff_vcf_to_bed 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable vcf_to_bed 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable extract_bam_bed 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable extract_bam_regions 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable create_variant_bam_chr 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable extract_bam_regions2 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable annotate 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable fastqc 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable summarize_fastqc 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable merge_annovar_csv 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable merge_vcf_chr 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable calculate_insert_size_metrics 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable pindel 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable pindel2vcf 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable samtools_call_trio_variants 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable snpeff_annotate 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable denovogear 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable vcf_to_excel 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable polymutt_glf 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable polymutt_prep 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable polymutt 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable soap_indel 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable cnvnator 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable filter_vcf 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable agrf_illumina_parse_info 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable splazers 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable splazers_um 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable gatk_depth_of_coverage 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable find_extreme_gc_content 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable xhmm_mean_center 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable xhmm_merge_coverage 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable xhmm_pca 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable xhmm_normalize 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable xhmm_filter_normalized 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable xhmm_filter_orig 
+bpipe.PipelineCategory	INFO	|8:05:34 Found closure variable xhmm_discover 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: BPIPE_NO_EXTERNAL_STAGES 
+bpipe.Pipeline	INFO	|8:05:34 External reference BPIPE_NO_EXTERNAL_STAGES is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: target_regions 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: SPLAZERS 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: NICE_PIPELINE 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: MAXTHREADS 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: MAXJAVAGIGS 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: HG19 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: HGFA 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: ALNARGS 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: SEQDIR 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: GATK 
+bpipe.Pipeline	INFO	|8:05:34 External reference GATK is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: EXONS_BED_FILE 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: TMP_DIR 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: SCRIPTS 
+bpipe.Pipeline	INFO	|8:05:34 External reference SCRIPTS is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: SNPEFF_HOME 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: DENOVOGEAR_HOME 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: POLYMUTT 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: SOAPINDEL 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: SAMTOOLS_HYBRID 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: CNVNATOR 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: align_bwa 
+bpipe.Pipeline	INFO	|8:05:34 External reference align_bwa is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: align_bowtie 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: align_subread 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: align_eland 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: align_novoalign 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: merge_bams 
+bpipe.Pipeline	INFO	|8:05:34 External reference merge_bams is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: merge_vcf 
+bpipe.Pipeline	INFO	|8:05:34 External reference merge_vcf is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: extract_unmapped 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: remove_duplicates 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: count_variants 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: sort_to_bam 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: reorder 
+bpipe.Pipeline	INFO	|8:05:34 External reference reorder is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: index_bam 
+bpipe.Pipeline	INFO	|8:05:34 External reference index_bam is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: picard_index_bam 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: count_covariates 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: recalibrate_bam 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: recalibrate_bam_old 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: call_variants 
+bpipe.Pipeline	INFO	|8:05:34 External reference call_variants is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: call_variants_par 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: annotate_variants 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: compute_variant_set 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: local_realign 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: local_realign_chr 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: filter_variants_by_depth 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: filter_variants_by_min_depth 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: add_default_read_group 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: calc_exon_coverage 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: calc_coverage_stats 
+bpipe.Pipeline	INFO	|8:05:34 External reference calc_coverage_stats is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: plot_coverage 
+bpipe.Pipeline	INFO	|8:05:34 External reference plot_coverage is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: annotate_gatk 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: gatk_call_variants 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: gatk_call_trio_variants 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: variant_recalibration 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: apply_calibration 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: calculate_coverage_stats 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: convert_annovar 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: rank_variants 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: calc_bam_stats 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: coverage_histogram 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: filter_exclusive_variants 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: filter_bad_child_variants 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: scanma 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: snpeff_vcf_to_bed 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: VCF_BED_PADDING 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: vcf_to_bed 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: extract_bam_bed 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: extract_bam_regions 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: create_variant_bam_chr 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: extract_bam_regions2 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: annotate 
+bpipe.Pipeline	INFO	|8:05:34 External reference annotate is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: fastqc 
+bpipe.Pipeline	INFO	|8:05:34 External reference fastqc is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: summarize_fastqc 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: merge_annovar_csv 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: merge_vcf_chr 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: calculate_insert_size_metrics 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: pindel 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: pindel2vcf 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: samtools_call_trio_variants 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: snpeff_annotate 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: denovogear 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: vcf_to_excel 
+bpipe.Pipeline	INFO	|8:05:34 External reference vcf_to_excel is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: polymutt_glf 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: polymutt_prep 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: polymutt 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: soap_indel 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: cnvnator 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: filter_vcf 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: agrf_illumina_parse_info 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: splazers 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: splazers_um 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: XHMM 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: gatk_depth_of_coverage 
+bpipe.Pipeline	INFO	|8:05:34 External reference gatk_depth_of_coverage is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: find_extreme_gc_content 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: xhmm_mean_center 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: xhmm_merge_coverage 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: xhmm_pca 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: xhmm_normalize 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: xhmm_filter_normalized 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: xhmm_filter_orig 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: xhmm_discover 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: BPIPE_NO_EXTERNAL_STAGES 
+bpipe.Pipeline	INFO	|8:05:34 External reference BPIPE_NO_EXTERNAL_STAGES is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: target_regions 
+bpipe.Pipeline	INFO	|8:05:34 External reference target_regions is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: SPLAZERS 
+bpipe.Pipeline	INFO	|8:05:34 External reference SPLAZERS is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: NICE_PIPELINE 
+bpipe.Pipeline	INFO	|8:05:34 External reference NICE_PIPELINE is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: MAXTHREADS 
+bpipe.Pipeline	INFO	|8:05:34 External reference MAXTHREADS is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: MAXJAVAGIGS 
+bpipe.Pipeline	INFO	|8:05:34 External reference MAXJAVAGIGS is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: HG19 
+bpipe.Pipeline	INFO	|8:05:34 External reference HG19 is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: HGFA 
+bpipe.Pipeline	INFO	|8:05:34 External reference HGFA is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: ALNARGS 
+bpipe.Pipeline	INFO	|8:05:34 External reference ALNARGS is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: SEQDIR 
+bpipe.Pipeline	INFO	|8:05:34 External reference SEQDIR is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: GATK 
+bpipe.Pipeline	INFO	|8:05:34 External reference GATK is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: EXONS_BED_FILE 
+bpipe.Pipeline	INFO	|8:05:34 External reference EXONS_BED_FILE is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: TMP_DIR 
+bpipe.Pipeline	INFO	|8:05:34 External reference TMP_DIR is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: SCRIPTS 
+bpipe.Pipeline	INFO	|8:05:34 External reference SCRIPTS is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: SNPEFF_HOME 
+bpipe.Pipeline	INFO	|8:05:34 External reference SNPEFF_HOME is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: DENOVOGEAR_HOME 
+bpipe.Pipeline	INFO	|8:05:34 External reference DENOVOGEAR_HOME is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: POLYMUTT 
+bpipe.Pipeline	INFO	|8:05:34 External reference POLYMUTT is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: SOAPINDEL 
+bpipe.Pipeline	INFO	|8:05:34 External reference SOAPINDEL is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: SAMTOOLS_HYBRID 
+bpipe.Pipeline	INFO	|8:05:34 External reference SAMTOOLS_HYBRID is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: CNVNATOR 
+bpipe.Pipeline	INFO	|8:05:34 External reference CNVNATOR is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: align_bwa 
+bpipe.Pipeline	INFO	|8:05:34 External reference align_bwa is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: align_bowtie 
+bpipe.Pipeline	INFO	|8:05:34 External reference align_bowtie is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: align_subread 
+bpipe.Pipeline	INFO	|8:05:34 External reference align_subread is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: align_eland 
+bpipe.Pipeline	INFO	|8:05:34 External reference align_eland is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: align_novoalign 
+bpipe.Pipeline	INFO	|8:05:34 External reference align_novoalign is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: merge_bams 
+bpipe.Pipeline	INFO	|8:05:34 External reference merge_bams is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: merge_vcf 
+bpipe.Pipeline	INFO	|8:05:34 External reference merge_vcf is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: extract_unmapped 
+bpipe.Pipeline	INFO	|8:05:34 External reference extract_unmapped is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: remove_duplicates 
+bpipe.Pipeline	INFO	|8:05:34 External reference remove_duplicates is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: count_variants 
+bpipe.Pipeline	INFO	|8:05:34 External reference count_variants is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: sort_to_bam 
+bpipe.Pipeline	INFO	|8:05:34 External reference sort_to_bam is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: reorder 
+bpipe.Pipeline	INFO	|8:05:34 External reference reorder is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: index_bam 
+bpipe.Pipeline	INFO	|8:05:34 External reference index_bam is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: picard_index_bam 
+bpipe.Pipeline	INFO	|8:05:34 External reference picard_index_bam is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: count_covariates 
+bpipe.Pipeline	INFO	|8:05:34 External reference count_covariates is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: recalibrate_bam 
+bpipe.Pipeline	INFO	|8:05:34 External reference recalibrate_bam is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: recalibrate_bam_old 
+bpipe.Pipeline	INFO	|8:05:34 External reference recalibrate_bam_old is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: call_variants 
+bpipe.Pipeline	INFO	|8:05:34 External reference call_variants is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: call_variants_par 
+bpipe.Pipeline	INFO	|8:05:34 External reference call_variants_par is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: annotate_variants 
+bpipe.Pipeline	INFO	|8:05:34 External reference annotate_variants is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: compute_variant_set 
+bpipe.Pipeline	INFO	|8:05:34 External reference compute_variant_set is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: local_realign 
+bpipe.Pipeline	INFO	|8:05:34 External reference local_realign is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: local_realign_chr 
+bpipe.Pipeline	INFO	|8:05:34 External reference local_realign_chr is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: filter_variants_by_depth 
+bpipe.Pipeline	INFO	|8:05:34 External reference filter_variants_by_depth is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: filter_variants_by_min_depth 
+bpipe.Pipeline	INFO	|8:05:34 External reference filter_variants_by_min_depth is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: add_default_read_group 
+bpipe.Pipeline	INFO	|8:05:34 External reference add_default_read_group is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: calc_exon_coverage 
+bpipe.Pipeline	INFO	|8:05:34 External reference calc_exon_coverage is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: calc_coverage_stats 
+bpipe.Pipeline	INFO	|8:05:34 External reference calc_coverage_stats is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: plot_coverage 
+bpipe.Pipeline	INFO	|8:05:34 External reference plot_coverage is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: annotate_gatk 
+bpipe.Pipeline	INFO	|8:05:34 External reference annotate_gatk is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: gatk_call_variants 
+bpipe.Pipeline	INFO	|8:05:34 External reference gatk_call_variants is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: gatk_call_trio_variants 
+bpipe.Pipeline	INFO	|8:05:34 External reference gatk_call_trio_variants is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: variant_recalibration 
+bpipe.Pipeline	INFO	|8:05:34 External reference variant_recalibration is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: apply_calibration 
+bpipe.Pipeline	INFO	|8:05:34 External reference apply_calibration is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: calculate_coverage_stats 
+bpipe.Pipeline	INFO	|8:05:34 External reference calculate_coverage_stats is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: convert_annovar 
+bpipe.Pipeline	INFO	|8:05:34 External reference convert_annovar is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: rank_variants 
+bpipe.Pipeline	INFO	|8:05:34 External reference rank_variants is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: calc_bam_stats 
+bpipe.Pipeline	INFO	|8:05:34 External reference calc_bam_stats is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: coverage_histogram 
+bpipe.Pipeline	INFO	|8:05:34 External reference coverage_histogram is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: filter_exclusive_variants 
+bpipe.Pipeline	INFO	|8:05:34 External reference filter_exclusive_variants is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: filter_bad_child_variants 
+bpipe.Pipeline	INFO	|8:05:34 External reference filter_bad_child_variants is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: scanma 
+bpipe.Pipeline	INFO	|8:05:34 External reference scanma is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: snpeff_vcf_to_bed 
+bpipe.Pipeline	INFO	|8:05:34 External reference snpeff_vcf_to_bed is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: VCF_BED_PADDING 
+bpipe.Pipeline	INFO	|8:05:34 External reference VCF_BED_PADDING is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: vcf_to_bed 
+bpipe.Pipeline	INFO	|8:05:34 External reference vcf_to_bed is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: extract_bam_bed 
+bpipe.Pipeline	INFO	|8:05:34 External reference extract_bam_bed is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: extract_bam_regions 
+bpipe.Pipeline	INFO	|8:05:34 External reference extract_bam_regions is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: create_variant_bam_chr 
+bpipe.Pipeline	INFO	|8:05:34 External reference create_variant_bam_chr is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: extract_bam_regions2 
+bpipe.Pipeline	INFO	|8:05:34 External reference extract_bam_regions2 is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: annotate 
+bpipe.Pipeline	INFO	|8:05:34 External reference annotate is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: fastqc 
+bpipe.Pipeline	INFO	|8:05:34 External reference fastqc is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: summarize_fastqc 
+bpipe.Pipeline	INFO	|8:05:34 External reference summarize_fastqc is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: merge_annovar_csv 
+bpipe.Pipeline	INFO	|8:05:34 External reference merge_annovar_csv is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: merge_vcf_chr 
+bpipe.Pipeline	INFO	|8:05:34 External reference merge_vcf_chr is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: calculate_insert_size_metrics 
+bpipe.Pipeline	INFO	|8:05:34 External reference calculate_insert_size_metrics is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: pindel 
+bpipe.Pipeline	INFO	|8:05:34 External reference pindel is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: pindel2vcf 
+bpipe.Pipeline	INFO	|8:05:34 External reference pindel2vcf is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: samtools_call_trio_variants 
+bpipe.Pipeline	INFO	|8:05:34 External reference samtools_call_trio_variants is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: snpeff_annotate 
+bpipe.Pipeline	INFO	|8:05:34 External reference snpeff_annotate is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: denovogear 
+bpipe.Pipeline	INFO	|8:05:34 External reference denovogear is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: vcf_to_excel 
+bpipe.Pipeline	INFO	|8:05:34 External reference vcf_to_excel is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: polymutt_glf 
+bpipe.Pipeline	INFO	|8:05:34 External reference polymutt_glf is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: polymutt_prep 
+bpipe.Pipeline	INFO	|8:05:34 External reference polymutt_prep is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: polymutt 
+bpipe.Pipeline	INFO	|8:05:34 External reference polymutt is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: soap_indel 
+bpipe.Pipeline	INFO	|8:05:34 External reference soap_indel is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: cnvnator 
+bpipe.Pipeline	INFO	|8:05:34 External reference cnvnator is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: filter_vcf 
+bpipe.Pipeline	INFO	|8:05:34 External reference filter_vcf is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: agrf_illumina_parse_info 
+bpipe.Pipeline	INFO	|8:05:34 External reference agrf_illumina_parse_info is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: splazers 
+bpipe.Pipeline	INFO	|8:05:34 External reference splazers is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: splazers_um 
+bpipe.Pipeline	INFO	|8:05:34 External reference splazers_um is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: XHMM 
+bpipe.Pipeline	INFO	|8:05:34 External reference XHMM is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: gatk_depth_of_coverage 
+bpipe.Pipeline	INFO	|8:05:34 External reference gatk_depth_of_coverage is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: find_extreme_gc_content 
+bpipe.Pipeline	INFO	|8:05:34 External reference find_extreme_gc_content is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: xhmm_mean_center 
+bpipe.Pipeline	INFO	|8:05:34 External reference xhmm_mean_center is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: xhmm_merge_coverage 
+bpipe.Pipeline	INFO	|8:05:34 External reference xhmm_merge_coverage is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: xhmm_pca 
+bpipe.Pipeline	INFO	|8:05:34 External reference xhmm_pca is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: xhmm_normalize 
+bpipe.Pipeline	INFO	|8:05:34 External reference xhmm_normalize is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: xhmm_filter_normalized 
+bpipe.Pipeline	INFO	|8:05:34 External reference xhmm_filter_normalized is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: xhmm_filter_orig 
+bpipe.Pipeline	INFO	|8:05:34 External reference xhmm_filter_orig is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: xhmm_discover 
+bpipe.Pipeline	INFO	|8:05:34 External reference xhmm_discover is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: args 
+bpipe.Pipeline	INFO	|8:05:34 External reference args is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: BASE 
+bpipe.Pipeline	INFO	|8:05:34 External reference BASE is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: TMPDIR 
+bpipe.Pipeline	INFO	|8:05:34 External reference TMPDIR is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: REFBASE 
+bpipe.Pipeline	INFO	|8:05:34 External reference REFBASE is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: REF 
+bpipe.Pipeline	INFO	|8:05:34 External reference REF is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: DBSNP 
+bpipe.Pipeline	INFO	|8:05:34 External reference DBSNP is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: GOLD_STANDARD_INDELS 
+bpipe.Pipeline	INFO	|8:05:34 External reference GOLD_STANDARD_INDELS is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: DISEASE_COHORTS 
+bpipe.Pipeline	INFO	|8:05:34 External reference DISEASE_COHORTS is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: PLATFORM 
+bpipe.Pipeline	INFO	|8:05:34 External reference PLATFORM is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: TOOLS 
+bpipe.Pipeline	INFO	|8:05:34 External reference TOOLS is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: MEDIAN_COVERAGE_THRESHOLD 
+bpipe.Pipeline	INFO	|8:05:34 External reference MEDIAN_COVERAGE_THRESHOLD is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: PICARD_HOME 
+bpipe.Pipeline	INFO	|8:05:34 External reference PICARD_HOME is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: ANNOVAR 
+bpipe.Pipeline	INFO	|8:05:34 External reference ANNOVAR is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: EXCEL 
+bpipe.Pipeline	INFO	|8:05:34 External reference EXCEL is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: BEDTOOLS 
+bpipe.Pipeline	INFO	|8:05:34 External reference BEDTOOLS is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: SAMTOOLS 
+bpipe.Pipeline	INFO	|8:05:34 External reference SAMTOOLS is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: FASTQC 
+bpipe.Pipeline	INFO	|8:05:34 External reference FASTQC is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: GROOVY_NGS 
+bpipe.Pipeline	INFO	|8:05:34 External reference GROOVY_NGS is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: VEP_VERSION 
+bpipe.Pipeline	INFO	|8:05:34 External reference VEP_VERSION is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: VEP 
+bpipe.Pipeline	INFO	|8:05:34 External reference VEP is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: IGVTOOLS 
+bpipe.Pipeline	INFO	|8:05:34 External reference IGVTOOLS is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: BWA 
+bpipe.Pipeline	INFO	|8:05:34 External reference BWA is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: EXOME_TARGET 
+bpipe.Pipeline	INFO	|8:05:34 External reference EXOME_TARGET is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: CONDEL 
+bpipe.Pipeline	INFO	|8:05:34 External reference CONDEL is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: VARIANT_DB 
+bpipe.Pipeline	INFO	|8:05:34 External reference VARIANT_DB is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: GROOVY 
+bpipe.Pipeline	INFO	|8:05:34 External reference GROOVY is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: ENABLE_CADD 
+bpipe.Pipeline	INFO	|8:05:34 External reference ENABLE_CADD is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: set_target_info 
+bpipe.Pipeline	INFO	|8:05:34 External reference set_target_info is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: set_sample_info 
+bpipe.Pipeline	INFO	|8:05:34 External reference set_sample_info is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: check_tools 
+bpipe.Pipeline	INFO	|8:05:34 External reference check_tools is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: check_sample_info 
+bpipe.Pipeline	INFO	|8:05:34 External reference check_sample_info is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: create_combined_target 
+bpipe.Pipeline	INFO	|8:05:34 External reference create_combined_target is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: check_fastqc 
+bpipe.Pipeline	INFO	|8:05:34 External reference check_fastqc is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: merge_pgx 
+bpipe.Pipeline	INFO	|8:05:34 External reference merge_pgx is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: realignIntervals 
+bpipe.Pipeline	INFO	|8:05:34 External reference realignIntervals is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: realign 
+bpipe.Pipeline	INFO	|8:05:34 External reference realign is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: dedup 
+bpipe.Pipeline	INFO	|8:05:34 External reference dedup is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: recal_count 
+bpipe.Pipeline	INFO	|8:05:34 External reference recal_count is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: recal 
+bpipe.Pipeline	INFO	|8:05:34 External reference recal is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: call_pgx 
+bpipe.Pipeline	INFO	|8:05:34 External reference call_pgx is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: filter_variants 
+bpipe.Pipeline	INFO	|8:05:34 External reference filter_variants is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: annotate_vep 
+bpipe.Pipeline	INFO	|8:05:34 External reference annotate_vep is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: check_coverage 
+bpipe.Pipeline	INFO	|8:05:34 External reference check_coverage is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: check_karyotype 
+bpipe.Pipeline	INFO	|8:05:34 External reference check_karyotype is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: augment_condel 
+bpipe.Pipeline	INFO	|8:05:34 External reference augment_condel is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: augment_cadd 
+bpipe.Pipeline	INFO	|8:05:34 External reference augment_cadd is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: calculate_cadd_scores 
+bpipe.Pipeline	INFO	|8:05:34 External reference calculate_cadd_scores is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: index_vcf 
+bpipe.Pipeline	INFO	|8:05:34 External reference index_vcf is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: qc_excel_report 
+bpipe.Pipeline	INFO	|8:05:34 External reference qc_excel_report is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: annotate_significance 
+bpipe.Pipeline	INFO	|8:05:34 External reference annotate_significance is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: annovar_summarize_refgene 
+bpipe.Pipeline	INFO	|8:05:34 External reference annovar_summarize_refgene is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: add_to_database 
+bpipe.Pipeline	INFO	|8:05:34 External reference add_to_database is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: summary_pdf 
+bpipe.Pipeline	INFO	|8:05:34 External reference summary_pdf is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: sample_similarity_report 
+bpipe.Pipeline	INFO	|8:05:34 External reference sample_similarity_report is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: provenance_report 
+bpipe.Pipeline	INFO	|8:05:34 External reference provenance_report is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: flatten 
+bpipe.Pipeline	INFO	|8:05:34 External reference flatten is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: sort 
+bpipe.Pipeline	INFO	|8:05:34 External reference sort is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: rename 
+bpipe.Pipeline	INFO	|8:05:34 External reference rename is overridden by local reference 
+bpipe.Pipeline	INFO	|8:05:34 Loaded external reference: extract_pgx 
+bpipe.Pipeline	INFO	|8:05:34 External reference extract_pgx is overridden by local reference 
+bpipe.DefinePipelineCategory	INFO	|8:05:34 multiply on input null with pattern MelbourneGenomics-CCDS-%-*.bed 
+bpipe.InputSplitter	INFO	|8:05:34 Found * pattern at [25], hash at [] and % at [23] 
+bpipe.InputSplitter	INFO	|8:05:34 Sorted: [23, 25] 
+bpipe.InputSplitter	INFO	|8:05:34 % groups are at [0] 
+bpipe.InputSplitter	INFO	|8:05:34 Result is [pattern:MelbourneGenomics-CCDS-(.*?)-(.*?)\.bed, splits:[0]] 
+bpipe.DefinePipelineCategory	INFO	|8:05:34 Processing segment 1501402077 
+bpipe.PipelineCategory	INFO	|8:05:34 Joiners for pipeline 1287429402 = [bpipe.PipelineCategory$_plus_closure1@72ee3d51, bpipe.PipelineCategory$_plus_closure1@76fbcbc9, bpipe.PipelineCategory$_plus_closure1@d003626] 
+bpipe.Pipeline	INFO	|8:05:34 Running segment with inputs [raw/MelbourneGenomics-CCDS-AML-20140507.bed, raw/MelbourneGenomics-CCDS-CMT-20140507.bed, raw/MelbourneGenomics-CCDS-CRC-20140507.bed, raw/MelbourneGenomics-CCDS-CS-20140507.bed, raw/MelbourneGenomics-CCDS-EPIL-20140507.bed] 
+bpipe.Dependencies	INFO	|8:05:34 Checking [raw/MelbourneGenomics-CCDS-AML-20140507.bed, raw/MelbourneGenomics-CCDS-CMT-20140507.bed, raw/MelbourneGenomics-CCDS-CRC-20140507.bed, raw/MelbourneGenomics-CCDS-CS-20140507.bed, raw/MelbourneGenomics-CCDS-EPIL-20140507.bed] 
+bpipe.Utils	INFO	|8:05:34 Output folder scan (concurrency=5) executed in 0.003 seconds 
+bpipe.Dependencies	INFO	|8:05:34  Checking file raw/MelbourneGenomics-CCDS-AML-20140507.bed 
+bpipe.Dependencies	INFO	|8:05:34  Checking file raw/MelbourneGenomics-CCDS-CMT-20140507.bed 
+bpipe.Dependencies	INFO	|8:05:34  Checking file raw/MelbourneGenomics-CCDS-CRC-20140507.bed 
+bpipe.Dependencies	INFO	|8:05:34  Checking file raw/MelbourneGenomics-CCDS-CS-20140507.bed 
+bpipe.Dependencies	INFO	|8:05:34  Checking file raw/MelbourneGenomics-CCDS-EPIL-20140507.bed 
+bpipe.PipelineCategory	INFO	|8:05:34 multiply on input [raw/MelbourneGenomics-CCDS-AML-20140507.bed, raw/MelbourneGenomics-CCDS-CMT-20140507.bed, raw/MelbourneGenomics-CCDS-CRC-20140507.bed, raw/MelbourneGenomics-CCDS-CS-20140507.bed, raw/MelbourneGenomics-CCDS-EPIL-20140507.bed] with pattern MelbourneGenomics-CCDS-%-*.bed 
+bpipe.InputSplitter	INFO	|8:05:34 Found * pattern at [25], hash at [] and % at [23] 
+bpipe.InputSplitter	INFO	|8:05:34 Sorted: [23, 25] 
+bpipe.InputSplitter	INFO	|8:05:34 % groups are at [0] 
+bpipe.InputSplitter	INFO	|8:05:34 Result is [pattern:MelbourneGenomics-CCDS-(.*?)-(.*?)\.bed, splits:[0]] 
+bpipe.PipelineCategory	INFO	|8:05:34 Created pipeline stage 51619513 for parallel block 
+bpipe.PipelineCategory	INFO	|8:05:34 Processing segment 218117670 
+bpipe.PipelineCategory	INFO	|8:05:34 Creating pipeline to run parallel segment AML with files [raw/MelbourneGenomics-CCDS-AML-20140507.bed] 
+bpipe.PipelineCategory	INFO	|8:05:34 Creating pipeline to run parallel segment CMT with files [raw/MelbourneGenomics-CCDS-CMT-20140507.bed] 
+bpipe.PipelineCategory	INFO	|8:05:34 Creating pipeline to run parallel segment CRC with files [raw/MelbourneGenomics-CCDS-CRC-20140507.bed] 
+bpipe.PipelineCategory	INFO	|8:05:34 Creating pipeline to run parallel segment CS with files [raw/MelbourneGenomics-CCDS-CS-20140507.bed] 
+bpipe.PipelineCategory	INFO	|8:05:34 Creating pipeline to run parallel segment EPIL with files [raw/MelbourneGenomics-CCDS-EPIL-20140507.bed] 
+bpipe.Concurrency	INFO	|8:05:34 Waiting for 5 parallel stages to complete (pool.active=5 pool.tasks=5) 
+bpipe.PipelineContext	INFO	|8:05:34 Setting output [raw/MelbourneGenomics-CCDS-CS-20140507.bed] on context 267571351 in thread 20 
+bpipe.PipelineContext	INFO	|8:05:34 Setting output [raw/MelbourneGenomics-CCDS-EPIL-20140507.bed] on context 1462476678 in thread 21 
+bpipe.PipelineContext	INFO	|8:05:34 Setting output [raw/MelbourneGenomics-CCDS-CRC-20140507.bed] on context 1895187231 in thread 19 
+bpipe.PipelineContext	INFO	|8:05:34 Setting output [raw/MelbourneGenomics-CCDS-CMT-20140507.bed] on context 240939439 in thread 18 
+bpipe.PipelineContext	INFO	|8:05:34 Setting output [raw/MelbourneGenomics-CCDS-AML-20140507.bed] on context 1037045327 in thread 17 
+bpipe.PipelineContext	INFO	|8:05:34 Using previously set output: [raw/MelbourneGenomics-CCDS-EPIL-20140507.bed] 
+bpipe.PipelineContext	INFO	|8:05:34 Using previously set output: [raw/MelbourneGenomics-CCDS-AML-20140507.bed] 
+bpipe.PipelineContext	INFO	|8:05:34 Using previously set output: [raw/MelbourneGenomics-CCDS-CRC-20140507.bed] 
+bpipe.PipelineContext	INFO	|8:05:34 Using previously set output: [raw/MelbourneGenomics-CCDS-CMT-20140507.bed] 
+bpipe.PipelineContext	INFO	|8:05:34 Using previously set output: [raw/MelbourneGenomics-CCDS-CS-20140507.bed] 
+bpipe.PipelineCategory	INFO	|8:05:35 Adding dummy prior stage for thread 17 with outputs : raw/MelbourneGenomics-CCDS-AML-20140507.bed 
+bpipe.PipelineCategory	INFO	|8:05:35 Adding dummy prior stage for thread 21 with outputs : raw/MelbourneGenomics-CCDS-EPIL-20140507.bed 
+bpipe.PipelineCategory	INFO	|8:05:35 Adding dummy prior stage for thread 20 with outputs : raw/MelbourneGenomics-CCDS-CS-20140507.bed 
+bpipe.PipelineCategory	INFO	|8:05:35 Adding dummy prior stage for thread 18 with outputs : raw/MelbourneGenomics-CCDS-CMT-20140507.bed 
+bpipe.PipelineCategory	INFO	|8:05:35 Adding dummy prior stage for thread 19 with outputs : raw/MelbourneGenomics-CCDS-CRC-20140507.bed 
+bpipe.Pipeline	INFO	|8:05:35 Running segment with inputs [raw/MelbourneGenomics-CCDS-AML-20140507.bed] 
+bpipe.Pipeline	INFO	|8:05:35 Running segment with inputs [raw/MelbourneGenomics-CCDS-EPIL-20140507.bed] 
+bpipe.Pipeline	INFO	|8:05:35 Running segment with inputs [raw/MelbourneGenomics-CCDS-CRC-20140507.bed] 
+bpipe.Dependencies	INFO	|8:05:35 Checking [raw/MelbourneGenomics-CCDS-AML-20140507.bed] 
+bpipe.Pipeline	INFO	|8:05:35 Running segment with inputs [raw/MelbourneGenomics-CCDS-CMT-20140507.bed] 
+bpipe.Pipeline	INFO	|8:05:35 Running segment with inputs [raw/MelbourneGenomics-CCDS-CS-20140507.bed] 
+bpipe.Dependencies	INFO	|8:05:35  Checking file raw/MelbourneGenomics-CCDS-AML-20140507.bed 
+bpipe.Dependencies	INFO	|8:05:35 Checking [raw/MelbourneGenomics-CCDS-CRC-20140507.bed] 
+bpipe.Dependencies	INFO	|8:05:35 Checking [raw/MelbourneGenomics-CCDS-EPIL-20140507.bed] 
+bpipe.Dependencies	INFO	|8:05:35  Checking file raw/MelbourneGenomics-CCDS-CRC-20140507.bed 
+bpipe.Dependencies	INFO	|8:05:35 Checking [raw/MelbourneGenomics-CCDS-CS-20140507.bed] 
+bpipe.Dependencies	INFO	|8:05:35 Checking [raw/MelbourneGenomics-CCDS-CMT-20140507.bed] 
+bpipe.Dependencies	INFO	|8:05:35  Checking file raw/MelbourneGenomics-CCDS-EPIL-20140507.bed 
+bpipe.Dependencies	INFO	|8:05:35  Checking file raw/MelbourneGenomics-CCDS-CS-20140507.bed 
+bpipe.Dependencies	INFO	|8:05:35  Checking file raw/MelbourneGenomics-CCDS-CMT-20140507.bed 
+bpipe.Dependencies	INFO	|8:05:35 Checking [raw/MelbourneGenomics-CCDS-CRC-20140507.bed] 
+bpipe.Dependencies	INFO	|8:05:35 Checking [raw/MelbourneGenomics-CCDS-AML-20140507.bed] 
+bpipe.Dependencies	INFO	|8:05:35 Checking [raw/MelbourneGenomics-CCDS-EPIL-20140507.bed] 
+bpipe.Dependencies	INFO	|8:05:35  Checking file raw/MelbourneGenomics-CCDS-AML-20140507.bed 
+bpipe.Dependencies	INFO	|8:05:35  Checking file raw/MelbourneGenomics-CCDS-CRC-20140507.bed 
+bpipe.Dependencies	INFO	|8:05:35  Checking file raw/MelbourneGenomics-CCDS-EPIL-20140507.bed 
+bpipe.Dependencies	INFO	|8:05:35 Checking [raw/MelbourneGenomics-CCDS-CS-20140507.bed] 
+bpipe.Dependencies	INFO	|8:05:35 Checking [raw/MelbourneGenomics-CCDS-CMT-20140507.bed] 
+bpipe.Dependencies	INFO	|8:05:35  Checking file raw/MelbourneGenomics-CCDS-CS-20140507.bed 
+bpipe.Dependencies	INFO	|8:05:35  Checking file raw/MelbourneGenomics-CCDS-CMT-20140507.bed 
+bpipe.Dependencies	INFO	|8:05:35 Checking [raw/MelbourneGenomics-CCDS-AML-20140507.bed] 
+bpipe.Dependencies	INFO	|8:05:35 Checking [raw/MelbourneGenomics-CCDS-CRC-20140507.bed] 
+bpipe.Dependencies	INFO	|8:05:35 Checking [raw/MelbourneGenomics-CCDS-EPIL-20140507.bed] 
+bpipe.Dependencies	INFO	|8:05:35 Checking [raw/MelbourneGenomics-CCDS-CS-20140507.bed] 
+bpipe.Dependencies	INFO	|8:05:35  Checking file raw/MelbourneGenomics-CCDS-EPIL-20140507.bed 
+bpipe.Dependencies	INFO	|8:05:35 Checking [raw/MelbourneGenomics-CCDS-CMT-20140507.bed] 
+bpipe.Dependencies	INFO	|8:05:35  Checking file raw/MelbourneGenomics-CCDS-CRC-20140507.bed 
+bpipe.Dependencies	INFO	|8:05:35  Checking file raw/MelbourneGenomics-CCDS-AML-20140507.bed 
+bpipe.Dependencies	INFO	|8:05:35  Checking file raw/MelbourneGenomics-CCDS-CMT-20140507.bed 
+bpipe.Dependencies	INFO	|8:05:35  Checking file raw/MelbourneGenomics-CCDS-CS-20140507.bed 
+bpipe.Dependencies	INFO	|8:05:35 Checking [raw/MelbourneGenomics-CCDS-EPIL-20140507.bed] 
+bpipe.Dependencies	INFO	|8:05:35 Checking [raw/MelbourneGenomics-CCDS-CRC-20140507.bed] 
+bpipe.Dependencies	INFO	|8:05:35  Checking file raw/MelbourneGenomics-CCDS-EPIL-20140507.bed 
+bpipe.Dependencies	INFO	|8:05:35  Checking file raw/MelbourneGenomics-CCDS-CRC-20140507.bed 
+bpipe.Dependencies	INFO	|8:05:35 Checking [raw/MelbourneGenomics-CCDS-AML-20140507.bed] 
+bpipe.Dependencies	INFO	|8:05:35 Checking [raw/MelbourneGenomics-CCDS-CMT-20140507.bed] 
+bpipe.Dependencies	INFO	|8:05:35  Checking file raw/MelbourneGenomics-CCDS-AML-20140507.bed 
+bpipe.Dependencies	INFO	|8:05:35  Checking file raw/MelbourneGenomics-CCDS-CMT-20140507.bed 
+bpipe.Dependencies	INFO	|8:05:35 Checking [raw/MelbourneGenomics-CCDS-CS-20140507.bed] 
+bpipe.PipelineStage	INFO	|8:05:35 Stage flatten [CRC] : INPUT=[raw/MelbourneGenomics-CCDS-CRC-20140507.bed] OUTPUT=MelbourneGenomics-CCDS-CRC-20140507.bed.flatten 
+bpipe.PipelineStage	INFO	|8:05:35 Stage flatten [CMT] : INPUT=[raw/MelbourneGenomics-CCDS-CMT-20140507.bed] OUTPUT=MelbourneGenomics-CCDS-CMT-20140507.bed.flatten 
+bpipe.Dependencies	INFO	|8:05:35  Checking file raw/MelbourneGenomics-CCDS-CS-20140507.bed 
+bpipe.PipelineStage	INFO	|8:05:35 Stage flatten [AML] : INPUT=[raw/MelbourneGenomics-CCDS-AML-20140507.bed] OUTPUT=MelbourneGenomics-CCDS-AML-20140507.bed.flatten 
+bpipe.PipelineStage	INFO	|8:05:35 Stage flatten [EPIL] : INPUT=[raw/MelbourneGenomics-CCDS-EPIL-20140507.bed] OUTPUT=MelbourneGenomics-CCDS-EPIL-20140507.bed.flatten 
+bpipe.PipelineStage	INFO	|8:05:35 Stage flatten [CS] : INPUT=[raw/MelbourneGenomics-CCDS-CS-20140507.bed] OUTPUT=MelbourneGenomics-CCDS-CS-20140507.bed.flatten 
+bpipe.PipelineInput	INFO	|8:05:35 Searching for missing Property: bed 
+bpipe.PipelineInput	INFO	|8:05:35 Searching for missing Property: bed 
+bpipe.PipelineInput	INFO	|8:05:35 Searching for missing Property: bed 
+bpipe.PipelineInput	INFO	|8:05:35 Searching for missing Property: bed 
+bpipe.PipelineInput	INFO	|8:05:35 Searching for missing Property: bed 
+bpipe.PipelineInput	INFO	|8:05:35 Checking outputs [raw/MelbourneGenomics-CCDS-CMT-20140507.bed] 
+bpipe.PipelineInput	INFO	|8:05:35 Checking outputs [raw/MelbourneGenomics-CCDS-EPIL-20140507.bed] 
+bpipe.PipelineInput	INFO	|8:05:35 Checking outputs [raw/MelbourneGenomics-CCDS-AML-20140507.bed] 
+bpipe.PipelineInput	INFO	|8:05:35 Checking outputs [raw/MelbourneGenomics-CCDS-CS-20140507.bed] 
+bpipe.PipelineInput	INFO	|8:05:35 Checking outputs [raw/MelbourneGenomics-CCDS-CRC-20140507.bed] 
+bpipe.PipelineInput	INFO	|8:05:35 Found files with exts [bed$] : [[raw/MelbourneGenomics-CCDS-CRC-20140507.bed]] 
+bpipe.PipelineInput	INFO	|8:05:35 Found files with exts [bed$] : [[raw/MelbourneGenomics-CCDS-AML-20140507.bed]] 
+bpipe.PipelineInput	INFO	|8:05:35 Found files with exts [bed$] : [[raw/MelbourneGenomics-CCDS-EPIL-20140507.bed]] 
+bpipe.PipelineInput	INFO	|8:05:35 Found files with exts [bed$] : [[raw/MelbourneGenomics-CCDS-CMT-20140507.bed]] 
+bpipe.PipelineInput	INFO	|8:05:35 Found files with exts [bed$] : [[raw/MelbourneGenomics-CCDS-CS-20140507.bed]] 
+bpipe.PipelineInput	INFO	|8:05:35 Adding resolved input raw/MelbourneGenomics-CCDS-EPIL-20140507.bed 
+bpipe.PipelineInput	INFO	|8:05:35 Adding resolved input raw/MelbourneGenomics-CCDS-AML-20140507.bed 
+bpipe.PipelineInput	INFO	|8:05:35 Adding resolved input raw/MelbourneGenomics-CCDS-CRC-20140507.bed 
+bpipe.PipelineInput	INFO	|8:05:35 Adding resolved input raw/MelbourneGenomics-CCDS-CS-20140507.bed 
+bpipe.PipelineInput	INFO	|8:05:35 Adding resolved input raw/MelbourneGenomics-CCDS-CMT-20140507.bed 
+bpipe.PipelineContext	INFO	|8:05:35 Using non-default output due to input property reference: raw/MelbourneGenomics-CCDS-CRC-20140507.bed from resolved inputs [raw/MelbourneGenomics-CCDS-CRC-20140507.bed] 
+bpipe.PipelineContext	INFO	|8:05:35 Using non-default output due to input property reference: raw/MelbourneGenomics-CCDS-AML-20140507.bed from resolved inputs [raw/MelbourneGenomics-CCDS-AML-20140507.bed] 
+bpipe.PipelineContext	INFO	|8:05:35 Using non-default output due to input property reference: raw/MelbourneGenomics-CCDS-EPIL-20140507.bed from resolved inputs [raw/MelbourneGenomics-CCDS-EPIL-20140507.bed] 
+bpipe.PipelineContext	INFO	|8:05:35 Using non-default output due to input property reference: raw/MelbourneGenomics-CCDS-CS-20140507.bed from resolved inputs [raw/MelbourneGenomics-CCDS-CS-20140507.bed] 
+bpipe.PipelineContext	INFO	|8:05:35 Using non-default output due to input property reference: raw/MelbourneGenomics-CCDS-CMT-20140507.bed from resolved inputs [raw/MelbourneGenomics-CCDS-CMT-20140507.bed] 
+bpipe.PipelineOutput	INFO	|8:05:35 Replacing bed\.flatten with flatten.bed 
+bpipe.PipelineOutput	INFO	|8:05:35 Replacing bed\.flatten with flatten.bed 
+bpipe.PipelineOutput	INFO	|8:05:35 Replacing bed\.flatten with flatten.bed 
+bpipe.PipelineOutput	INFO	|8:05:35 Replacing bed\.flatten with flatten.bed 
+bpipe.PipelineOutput	INFO	|8:05:35 Replacing bed\.flatten with flatten.bed 
+bpipe.PipelineContext	INFO	|8:05:35 Tracking outputs referenced=[[]] inferred=[[MelbourneGenomics-CCDS-EPIL-20140507.flatten.bed]] for command 
+        echo "Flattening and removing nonstandard chromosomes ..."
+
+        sortBed -i raw/MelbourneGenomics-CCDS-EPIL-20140507.bed | bedtools merge -nms -i - | sed 's/;.*$//' | grep -v '^chr[0-9]_' > MelbourneGenomics-CCDS-EPIL-20140507.flatten.bed
+     
+bpipe.PipelineContext	INFO	|8:05:35 Tracking outputs referenced=[[]] inferred=[[MelbourneGenomics-CCDS-AML-20140507.flatten.bed]] for command 
+        echo "Flattening and removing nonstandard chromosomes ..."
+
+        sortBed -i raw/MelbourneGenomics-CCDS-AML-20140507.bed | bedtools merge -nms -i - | sed 's/;.*$//' | grep -v '^chr[0-9]_' > MelbourneGenomics-CCDS-AML-20140507.flatten.bed
+     
+bpipe.PipelineContext	INFO	|8:05:35 Tracking outputs referenced=[[]] inferred=[[MelbourneGenomics-CCDS-CRC-20140507.flatten.bed]] for command 
+        echo "Flattening and removing nonstandard chromosomes ..."
+
+        sortBed -i raw/MelbourneGenomics-CCDS-CRC-20140507.bed | bedtools merge -nms -i - | sed 's/;.*$//' | grep -v '^chr[0-9]_' > MelbourneGenomics-CCDS-CRC-20140507.flatten.bed
+     
+bpipe.PipelineContext	INFO	|8:05:35 Tracking outputs referenced=[[]] inferred=[[MelbourneGenomics-CCDS-CS-20140507.flatten.bed]] for command 
+        echo "Flattening and removing nonstandard chromosomes ..."
+
+        sortBed -i raw/MelbourneGenomics-CCDS-CS-20140507.bed | bedtools merge -nms -i - | sed 's/;.*$//' | grep -v '^chr[0-9]_' > MelbourneGenomics-CCDS-CS-20140507.flatten.bed
+     
+bpipe.PipelineContext	INFO	|8:05:35 Tracking outputs referenced=[[]] inferred=[[MelbourneGenomics-CCDS-CMT-20140507.flatten.bed]] for command 
+        echo "Flattening and removing nonstandard chromosomes ..."
+
+        sortBed -i raw/MelbourneGenomics-CCDS-CMT-20140507.bed | bedtools merge -nms -i - | sed 's/;.*$//' | grep -v '^chr[0-9]_' > MelbourneGenomics-CCDS-CMT-20140507.flatten.bed
+     
+bpipe.PipelineContext	INFO	|8:05:35 Checking actual resolved inputs [raw/MelbourneGenomics-CCDS-CRC-20140507.bed] 
+bpipe.PipelineContext	INFO	|8:05:35 Checking actual resolved inputs [raw/MelbourneGenomics-CCDS-CMT-20140507.bed] 
+bpipe.PipelineContext	INFO	|8:05:35 Checking actual resolved inputs [raw/MelbourneGenomics-CCDS-AML-20140507.bed] 
+bpipe.PipelineContext	INFO	|8:05:35 Checking actual resolved inputs [raw/MelbourneGenomics-CCDS-CS-20140507.bed] 
+bpipe.PipelineContext	INFO	|8:05:35 Checking actual resolved inputs [raw/MelbourneGenomics-CCDS-EPIL-20140507.bed] 
+bpipe.Utils	INFO	|8:05:35 ===== Check MelbourneGenomics-CCDS-CRC-20140507.flatten.bed ===== 
+bpipe.Utils	INFO	|8:05:35 ===== Check MelbourneGenomics-CCDS-EPIL-20140507.flatten.bed ===== 
+bpipe.Utils	INFO	|8:05:35 ===== Check MelbourneGenomics-CCDS-CMT-20140507.flatten.bed ===== 
+bpipe.Utils	INFO	|8:05:35 ===== Check MelbourneGenomics-CCDS-AML-20140507.flatten.bed ===== 
+bpipe.Utils	INFO	|8:05:35 ===== Check MelbourneGenomics-CCDS-CS-20140507.flatten.bed ===== 
+bpipe.Utils	INFO	|8:05:35 file doesn't exist: MelbourneGenomics-CCDS-CMT-20140507.flatten.bed 
+bpipe.Utils	INFO	|8:05:35 file doesn't exist: MelbourneGenomics-CCDS-EPIL-20140507.flatten.bed 
+bpipe.Utils	INFO	|8:05:35 file doesn't exist: MelbourneGenomics-CCDS-CRC-20140507.flatten.bed 
+bpipe.Utils	INFO	|8:05:35 file doesn't exist: MelbourneGenomics-CCDS-CS-20140507.flatten.bed 
+bpipe.Utils	INFO	|8:05:35 file doesn't exist: MelbourneGenomics-CCDS-AML-20140507.flatten.bed 
+bpipe.Dependencies	INFO	|8:05:35 Found these missing / older files: [MelbourneGenomics-CCDS-CMT-20140507.flatten.bed] 
+bpipe.Dependencies	INFO	|8:05:35 Found these missing / older files: [MelbourneGenomics-CCDS-CS-20140507.flatten.bed] 
+bpipe.Dependencies	INFO	|8:05:35 Found these missing / older files: [MelbourneGenomics-CCDS-EPIL-20140507.flatten.bed] 
+bpipe.Dependencies	INFO	|8:05:35 Found these missing / older files: [MelbourneGenomics-CCDS-CRC-20140507.flatten.bed] 
+bpipe.Dependencies	INFO	|8:05:35 Found these missing / older files: [MelbourneGenomics-CCDS-AML-20140507.flatten.bed] 
+bpipe.Dependencies	INFO	|8:05:35 Some files are outdated : [MelbourneGenomics-CCDS-CMT-20140507.flatten.bed] 
+bpipe.Dependencies	INFO	|8:05:35 Some files are outdated : [MelbourneGenomics-CCDS-CRC-20140507.flatten.bed] 
+bpipe.Dependencies	INFO	|8:05:35 Some files are outdated : [MelbourneGenomics-CCDS-AML-20140507.flatten.bed] 
+bpipe.Dependencies	INFO	|8:05:35 Some files are outdated : [MelbourneGenomics-CCDS-CS-20140507.flatten.bed] 
+bpipe.Dependencies	INFO	|8:05:35 Some files are outdated : [MelbourneGenomics-CCDS-EPIL-20140507.flatten.bed] 
+bpipe.Command	INFO	|8:05:35 Checking for configuration for command echo 
+bpipe.Command	INFO	|8:05:35 Checking for configuration for command echo 
+bpipe.Command	INFO	|8:05:35 Checking for configuration for command echo 
+bpipe.Command	INFO	|8:05:35 Checking for configuration for command echo 
+bpipe.Command	INFO	|8:05:35 Checking for configuration for command echo 
+bpipe.Command	INFO	|8:05:35 Default command properties: [executor:slurm, account:VR0002, walltime:08:00:00, memory:8, jobtype:single, queue:main] 
+bpipe.Command	INFO	|8:05:35 Default command properties: [executor:slurm, account:VR0002, walltime:08:00:00, memory:8, jobtype:single, queue:main] 
+bpipe.Command	INFO	|8:05:35 Default command properties: [executor:slurm, account:VR0002, walltime:08:00:00, memory:8, jobtype:single, queue:main] 
+bpipe.Command	INFO	|8:05:35 Default command properties: [executor:slurm, account:VR0002, walltime:08:00:00, memory:8, jobtype:single, queue:main] 
+bpipe.Command	INFO	|8:05:35 Default command properties: [executor:slurm, account:VR0002, walltime:08:00:00, memory:8, jobtype:single, queue:main] 
+bpipe.CommandManager	INFO	|8:05:35 Using config [executor:slurm, account:VR0002, walltime:08:00:00, memory:8, jobtype:single, queue:main] for command 
+bpipe.CommandManager	INFO	|8:05:35 Using config [executor:slurm, account:VR0002, walltime:08:00:00, memory:8, jobtype:single, queue:main] for command 
+bpipe.CommandManager	INFO	|8:05:35 Using config [executor:slurm, account:VR0002, walltime:08:00:00, memory:8, jobtype:single, queue:main] for command 
+bpipe.CommandManager	INFO	|8:05:35 Using config [executor:slurm, account:VR0002, walltime:08:00:00, memory:8, jobtype:single, queue:main] for command 
+bpipe.CommandManager	INFO	|8:05:35 Using config [executor:slurm, account:VR0002, walltime:08:00:00, memory:8, jobtype:single, queue:main] for command 
+bpipe.Pipeline	INFO	|8:05:35 Pipeline segment aborted due to test mode 
+bpipe.Pipeline	INFO	|8:05:35 Pipeline segment aborted due to test mode 
+bpipe.Pipeline	INFO	|8:05:35 Pipeline segment aborted due to test mode 
+bpipe.Pipeline	INFO	|8:05:35 Pipeline segment aborted due to test mode 
+bpipe.Pipeline	INFO	|8:05:35 Pipeline segment aborted due to test mode 
+bpipe.Pipeline	INFO	|8:05:35 Finished running segment for inputs [raw/MelbourneGenomics-CCDS-CS-20140507.bed] 
+bpipe.Pipeline	INFO	|8:05:35 Finished running segment for inputs [raw/MelbourneGenomics-CCDS-AML-20140507.bed] 
+bpipe.Pipeline	INFO	|8:05:35 Finished running segment for inputs [raw/MelbourneGenomics-CCDS-EPIL-20140507.bed] 
+bpipe.Pipeline	INFO	|8:05:35 Finished running segment for inputs [raw/MelbourneGenomics-CCDS-CMT-20140507.bed] 
+bpipe.Pipeline	INFO	|8:05:35 Finished running segment for inputs [raw/MelbourneGenomics-CCDS-CRC-20140507.bed] 
+bpipe.Concurrency	INFO	|8:05:35 Decremented running count to 0 in thread Thread-8 
+bpipe.Concurrency	INFO	|8:05:35 Decremented running count to 1 in thread Thread-11 
+bpipe.Concurrency	INFO	|8:05:35 Decremented running count to 2 in thread Thread-7 
+bpipe.Concurrency	INFO	|8:05:35 Decremented running count to 4 in thread Thread-10 
+bpipe.Concurrency	INFO	|8:05:35 Decremented running count to 3 in thread Thread-9 
+bpipe.PipelineStage	INFO	|8:05:35 Retaining pre-existing files [] from outputs 
+bpipe.PipelineContext	INFO	|8:05:35 No inputs resolved by input wrappers: outputs based on default null 
+bpipe.Pipeline	INFO	|8:05:35 Pipeline segment failed (2): One or more parallel stages aborted. The following messages were reported: 
+
+Pipeline was run in test mode and was stopped before performing an action. See earlier messages for details. 
+bpipe.Pipeline	INFO	|8:05:35 Finished running segment for inputs [raw/MelbourneGenomics-CCDS-AML-20140507.bed, raw/MelbourneGenomics-CCDS-CMT-20140507.bed, raw/MelbourneGenomics-CCDS-CRC-20140507.bed, raw/MelbourneGenomics-CCDS-CS-20140507.bed, raw/MelbourneGenomics-CCDS-EPIL-20140507.bed] 
+bpipe.Runner	INFO	|8:05:35 Deleting job file /vlsci/VR0193/ssadedin/.bpipedb/jobs/13619 
