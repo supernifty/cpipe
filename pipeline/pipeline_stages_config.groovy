@@ -671,9 +671,11 @@ vcf_to_excel = {
                 -x "synonymous SNV"
                 -db $VARIANT_DB
                 -o $output.xlsx
+                -oocf $OUT_OF_COHORT_VARIANT_COUNT_FILTER
                 -si $sample_metadata_file
                 -gc $target_gene_file ${pgx_flag}
                 -annox $output.dir
+                -log ${target_name}_filtering.log
                 ${inputs.bam.withFlag("-bam")}
         """
     }

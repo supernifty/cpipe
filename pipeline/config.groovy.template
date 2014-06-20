@@ -73,6 +73,10 @@ GOLD_STANDARD_INDELS="$REFBASE/Mills_and_1000G_gold_standard.indels.hg19.vcf"
 // use the covered regions for the exome (see examples in designs)
 DISEASE_COHORTS="AML,CMT,CS,EPIL,CRC"
 
+// Filter out variants observed more than 2 times (ie: 3 times or more)
+// in samples from a different cohort / disease target
+OUT_OF_COHORT_VARIANT_COUNT_FILTER=2
+
 // This is only used for setting read group information in the
 // BAM files
 PLATFORM="illumina"
