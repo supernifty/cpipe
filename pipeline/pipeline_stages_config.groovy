@@ -876,7 +876,7 @@ annovar_to_lovd = {
     output.dir="results/lovd"
     produce(sample +"_LOVD") {
         exec """
-            python scripts/annovar2LOVD.py --csv $input.annovarx.csv --meta $sample_metadata_file --outdir results/lovd
+            python $SCRIPTS/annovar2LOVD.py --csv $input.annovarx.csv --meta $sample_metadata_file --dir results/lovd
         """
     }
 }
