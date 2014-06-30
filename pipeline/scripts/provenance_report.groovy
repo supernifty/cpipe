@@ -1,4 +1,22 @@
-// vim: sw=4:expandtab:ts=4:cindent:
+//vim: shiftwidth=4:ts=4:expandtab:
+/////////////////////////////////////////////////////////////////////////
+//
+// Melbourne Genomics Demonstration Project
+//
+// Provenance Report Template
+//
+// This script generates the provenance report in PDF format.
+// It extracts all the versions of tools from Bpipe meta data
+// (provided by Bpipe, which executes this script as a report template),
+// and also reports the timestamps and file sizes of all the important
+// files.
+//
+// Requires: Groovy NGS Utils (https://github.com/ssadedin/groovy-ngs-utils)
+//
+// Author: Simon Sadedin, simon.sadedin@mcri.edu.au
+//
+/////////////////////////////////////////////////////////////////////////
+
 // Start by getting the basic information we will need
 si = sample_info[sample]
 
@@ -25,7 +43,7 @@ tools = sampleFiles.grep { it.tools }                   // Only files with tools
                    .flatten()*.trim()*.replaceAll(',$','')*.replaceAll('^,','') // remove leading or trailing commas
                    .unique()                            // Don't list tools multiple times
                    .collect { it.split(":") }           // Split the tool:version for each tool 
-                   .collectEntries {  [it[0], it[1]] }  // Create a map of tool => version from above split
+                   .collectEntries { it.size()>1 ? [it[0], it[1]] : [it[0], "UNKNOWN"] }  // Create a map of tool => version from above split
 
 // Read the version of the pipeline from the version file in the root directory
 pipelineVersion = new File(BASE,"version.txt").text.trim()
