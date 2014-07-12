@@ -676,6 +676,7 @@ vcf_to_excel = {
                 -gc $target_gene_file ${pgx_flag}
                 -annox $output.dir
                 -log ${target_name}_filtering.log
+                -idmask '$SAMPLE_ID_MASK'
                 ${inputs.bam.withFlag("-bam")}
         """
     }
@@ -788,6 +789,7 @@ add_to_database = {
                    -a $input.csv 
                    -db $VARIANT_DB 
                    -cohort $target_name
+                   -idmask '$SAMPLE_ID_MASK'
                    -b "$batch"
 
             echo "<==== Finished adding variants for flaship $target_name to database"

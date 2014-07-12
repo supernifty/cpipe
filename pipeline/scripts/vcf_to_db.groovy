@@ -26,6 +26,7 @@ cli.with {
   b 'Batch name or id', args:1, required: true
   cohort 'Cohort / target /flagship name', args:1, required: true
   db 'Database file to use', args:1, required: true
+  idmask 'Regular expression used to mask sample ids to allow multiple ids to match to single individuals', args:1
   c 'Create the tables'
 }
 opts = cli.parse(args)
@@ -141,7 +142,13 @@ add_variant_to_db = { variant, allele, av, dosage, sample_row ->
         return true // variant already existed in database
 }
 
-for(sample in samples) {
+sample_id_mask = opts.idmask ? opts.idmask : false
+
+for(studyId in samples) {
+
+    // The study ID is the unmasked form, which is what is in the VCF file
+    // For entry into the database we will apply the mask to the study id
+    def sample = sample_id_mask ? (studyId =~ sample_id_mask)[0] : studyId
 
     def sample_row = sql.firstRow("select * from sample where study_id = $sample")
     if(!sample_row) {
@@ -171,8 +178,7 @@ for(sample in samples) {
             ++includeCount
 
             Variant variant = variantInfo.variant
-                    
-            int dosage = variant.sampleDosage(sample, variantInfo.allele)
+            int dosage = variant.sampleDosage(studyId, variantInfo.allele)
             if(dosage==0)  // Sample doesn't have the variant: some other sample in the cohort must have it
                 continue
 
@@ -189,14 +195,14 @@ for(sample in samples) {
     
     VCF vcfFile = VCF.parse(opts.v) { variant ->
         variant.alleles.eachWithIndex { allele, index ->
-            int dosage = variant.sampleDosage(sample, index)
+            int dosage = variant.sampleDosage(studyId, index)
             add_variant_to_db(variant, allele, null, dosage, sample_row)
         }
     }
 
-    println "Sample $sample has ${sampleCount} / ${includeCount} of included Annovar variants"
+    println "Sample $studyId has ${sampleCount} / ${includeCount} of included Annovar variants"
     if(existingCount>0) {
-        println "WARNING: sample $sample has $existingCount variants that were already registered in the database"
+        println "WARNING: sample $studyId has $existingCount variants that were already registered in the database"
         println "WARNING: this sample may have been re-processed or re-sequenced."
     }
 }
