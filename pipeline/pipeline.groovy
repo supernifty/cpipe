@@ -91,7 +91,7 @@ run {
    targets * [ set_target_info +  vcf_to_excel ] +
 
    // And then finally write the provenance report (1 per sample)
-   samples * [ provenance_report, annovar_to_lovd ] +
+   samples * [ provenance_report /* , annovar_to_lovd */ ] +
    
    // And report on similarity between samples
    sample_similarity_report
