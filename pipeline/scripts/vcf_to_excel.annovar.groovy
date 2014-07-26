@@ -43,7 +43,6 @@ cli.with {
   pgxcov 'Coverage threshold below which a pharmocogenomic site is considered untested (15)', args: 1
   annox 'Directory to send Annovar style per-sample summaries to', args: 1, required: true
   log 'Log file for writing information about variants filtered out', args: 1
-  idmask 'Regular expression used to mask sample ids to allow multiple ids to match to single individuals', args:1
 }
 opts = cli.parse(args)
 
@@ -107,8 +106,6 @@ if(opts.db) {
     sql = Sql.newInstance("jdbc:sqlite:${opts.db}")
 }
 
-sample_id_mask = opts.mask ? opts.mask : false
-
 // Read the gene categories
 geneCategories = new File(opts.gc).readLines()*.split('\t').collect { [it[0],it[1]] }.collectEntries()
 
@@ -125,10 +122,8 @@ CENTERED_COLUMNS = ["Gene Category", "Priority Index", "1000g2010nov_ALL","ESP54
 //
 query_variant_counts = { variant, allele, av, studyId ->
 
-    def sample = sample_id_mask ? (studyId =~ opts.mask)[0] : studyId
-
     // Look up in database
-    def target = sample_info[sample].target
+    def target = sample_info[studyId].target
 
     // The total observations of the variant
     def variant_count = sql.firstRow(
