@@ -2,7 +2,21 @@
 ////////////////////////////////////////////////////////////////////////
 //
 // Conversion script for preparing target region BED files for use in
-// the pipeline.
+// the pipeline. What it does:
+//
+//     1. sorts the bed files by chromosome and start region
+//     2. merges overlapping regions together so that the BED file consists of 
+//        non-overlapping regions
+//     3. annotates to each of these regions the gene that is found in the RefSeq
+//        database that is to be used by the pipeline (this ensures 
+//        consistency, in case the incoming BED files use different variant of
+//        the gene name to RefSeq)
+//     4. names the BED file to a standard form, <SYMBOL>.bed, where the
+//        <SYMBOL> part is the name of the target region (cohort, flagship).
+//        
+// Note: you may need to adjust the  split pattern below (in the run {} section)
+//       so that it correctly selects the SYMBOL for the target region from the
+//       names of your input files.
 //
 // Author:      Simon Sadedin, simon.sadedin@mcri.edu.au
 // Date:        February 2014
@@ -18,8 +32,6 @@
 ////////////////////////////////////////////////////////////////////////
 
 
-BASE="/vlsci/VR0320/shared/production/"
-
 load "../config.groovy"
 load "../pipeline_stages_config.groovy"
 
@@ -34,7 +46,7 @@ flatten = {
     exec """
         echo "Flattening and removing nonstandard chromosomes ..."
 
-        sortBed -i $input.bed | bedtools merge -nms -i - | sed 's/;.*\$//' | grep -v '^chr[0-9]_' > $output.bed
+        $BEDTOOLS/sortBed -i $input.bed | $BEDTOOLS/bedtools merge -nms -i - | sed 's/;.*\$//' | grep -v '^chr[0-9]_' > $output.bed
     """
 }
 
@@ -73,7 +85,8 @@ extract_pgx = {
 
 run {
       //"RefSeq_coding_%.bed" * [ flatten + annotate + sort + rename ] +
-      "%.pgx.txt" * [ extract_pgx + annotate_vep ] 
+      "MelbourneGenomics-CCDS-%-*.bed" * [ flatten + annotate + sort + rename ]// +
+      // "%.pgx.txt" * [ extract_pgx + annotate_vep ] 
     }
 
 
