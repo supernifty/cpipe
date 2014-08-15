@@ -46,7 +46,7 @@ flatten = {
     exec """
         echo "Flattening and removing nonstandard chromosomes ..."
 
-        $BEDTOOLS/sortBed -i $input.bed | $BEDTOOLS/bedtools merge -nms -i - | sed 's/;.*\$//' | grep -v '^chr[0-9]_' > $output.bed
+        $BEDTOOLS/bin/sortBed -i $input.bed | $BEDTOOLS/bin/bedtools merge -nms -i - | sed 's/;.*\$//' | grep -v '^chr[0-9]_' > $output.bed
     """
 }
 
