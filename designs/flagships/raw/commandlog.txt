@@ -1,0 +1,51 @@
+
+####################################################################################################
+# Starting pipeline at Thu Aug 14 15:47:27 EST 2014
+# Input files:  null
+# Output Log:  .bpipe/logs/18063.log
+
+
+####################################################################################################
+# Starting pipeline at Thu Aug 14 15:47:48 EST 2014
+# Input files:  [commandlog.txt, MelbourneGenomics-CCDS-AML-20140814.bed, MelbourneGenomics-CCDS-CMT-20140814.bed, MelbourneGenomics-CCDS-CRC-20140814.bed, MelbourneGenomics-CCDS-CS-20140814.bed, MelbourneGenomics-CCDS-EPIL-20140814.bed]
+# Output Log:  .bpipe/logs/18163.log
+# Stage flatten [MelbourneGenomics-CCDS-CS-20140814]
+# Stage flatten [MelbourneGenomics-CCDS-CMT-20140814]
+# Stage flatten [MelbourneGenomics-CCDS-EPIL-20140814]
+# Stage flatten [MelbourneGenomics-CCDS-AML-20140814]
+# Stage flatten [MelbourneGenomics-CCDS-CRC-20140814]
+echo "Flattening and removing nonstandard chromosomes ...";          sortBed -i MelbourneGenomics-CCDS-CS-20140814.bed | bedtools merge -nms -i - | sed 's/;.*$//' | grep -v '^chr[0-9]_' > MelbourneGenomics-CCDS-CS-20140814.flatten.bed
+echo "Flattening and removing nonstandard chromosomes ...";          sortBed -i MelbourneGenomics-CCDS-AML-20140814.bed | bedtools merge -nms -i - | sed 's/;.*$//' | grep -v '^chr[0-9]_' > MelbourneGenomics-CCDS-AML-20140814.flatten.bed
+echo "Flattening and removing nonstandard chromosomes ...";          sortBed -i MelbourneGenomics-CCDS-EPIL-20140814.bed | bedtools merge -nms -i - | sed 's/;.*$//' | grep -v '^chr[0-9]_' > MelbourneGenomics-CCDS-EPIL-20140814.flatten.bed
+echo "Flattening and removing nonstandard chromosomes ...";          sortBed -i MelbourneGenomics-CCDS-CMT-20140814.bed | bedtools merge -nms -i - | sed 's/;.*$//' | grep -v '^chr[0-9]_' > MelbourneGenomics-CCDS-CMT-20140814.flatten.bed
+echo "Flattening and removing nonstandard chromosomes ...";          sortBed -i MelbourneGenomics-CCDS-CRC-20140814.bed | bedtools merge -nms -i - | sed 's/;.*$//' | grep -v '^chr[0-9]_' > MelbourneGenomics-CCDS-CRC-20140814.flatten.bed
+# Stage annotate [MelbourneGenomics-CCDS-EPIL-20140814]
+# Stage annotate [MelbourneGenomics-CCDS-CRC-20140814]
+# Stage annotate [MelbourneGenomics-CCDS-CMT-20140814]
+# Stage annotate [MelbourneGenomics-CCDS-AML-20140814]
+echo "Annotating genes ...";          JAVA_OPTS="-Xmx1g" /vlsci/VR0320/shared/production//tools/groovy/2.1.1/bin/groovy /vlsci/VR0320/shared/production//pipeline/scripts/annotate_genes.groovy -r /vlsci/VR0320/shared/production//tools/annovar/humandb/hg19_refGene.txt MelbourneGenomics-CCDS-EPIL-20140814.flatten.bed > MelbourneGenomics-CCDS-EPIL-20140814.flatten.annotate.bed
+echo "Annotating genes ...";          JAVA_OPTS="-Xmx1g" /vlsci/VR0320/shared/production//tools/groovy/2.1.1/bin/groovy /vlsci/VR0320/shared/production//pipeline/scripts/annotate_genes.groovy -r /vlsci/VR0320/shared/production//tools/annovar/humandb/hg19_refGene.txt MelbourneGenomics-CCDS-CRC-20140814.flatten.bed > MelbourneGenomics-CCDS-CRC-20140814.flatten.annotate.bed
+echo "Annotating genes ...";          JAVA_OPTS="-Xmx1g" /vlsci/VR0320/shared/production//tools/groovy/2.1.1/bin/groovy /vlsci/VR0320/shared/production//pipeline/scripts/annotate_genes.groovy -r /vlsci/VR0320/shared/production//tools/annovar/humandb/hg19_refGene.txt MelbourneGenomics-CCDS-CMT-20140814.flatten.bed > MelbourneGenomics-CCDS-CMT-20140814.flatten.annotate.bed
+echo "Annotating genes ...";          JAVA_OPTS="-Xmx1g" /vlsci/VR0320/shared/production//tools/groovy/2.1.1/bin/groovy /vlsci/VR0320/shared/production//pipeline/scripts/annotate_genes.groovy -r /vlsci/VR0320/shared/production//tools/annovar/humandb/hg19_refGene.txt MelbourneGenomics-CCDS-AML-20140814.flatten.bed > MelbourneGenomics-CCDS-AML-20140814.flatten.annotate.bed
+# Stage annotate [MelbourneGenomics-CCDS-CS-20140814]
+echo "Annotating genes ...";          JAVA_OPTS="-Xmx1g" /vlsci/VR0320/shared/production//tools/groovy/2.1.1/bin/groovy /vlsci/VR0320/shared/production//pipeline/scripts/annotate_genes.groovy -r /vlsci/VR0320/shared/production//tools/annovar/humandb/hg19_refGene.txt MelbourneGenomics-CCDS-CS-20140814.flatten.bed > MelbourneGenomics-CCDS-CS-20140814.flatten.annotate.bed
+# Stage sort [MelbourneGenomics-CCDS-CRC-20140814]
+echo "Sorting ...";          /vlsci/VR0320/shared/production//tools/IGVTools/2.3.6/igvtools.lowmem sort MelbourneGenomics-CCDS-CRC-20140814.flatten.annotate.bed MelbourneGenomics-CCDS-CRC-20140814.flatten.annotate.sort.bed
+# Stage sort [MelbourneGenomics-CCDS-AML-20140814]
+echo "Sorting ...";          /vlsci/VR0320/shared/production//tools/IGVTools/2.3.6/igvtools.lowmem sort MelbourneGenomics-CCDS-AML-20140814.flatten.annotate.bed MelbourneGenomics-CCDS-AML-20140814.flatten.annotate.sort.bed
+# Stage sort [MelbourneGenomics-CCDS-CMT-20140814]
+echo "Sorting ...";          /vlsci/VR0320/shared/production//tools/IGVTools/2.3.6/igvtools.lowmem sort MelbourneGenomics-CCDS-CMT-20140814.flatten.annotate.bed MelbourneGenomics-CCDS-CMT-20140814.flatten.annotate.sort.bed
+# Stage rename [MelbourneGenomics-CCDS-CRC-20140814]
+cp MelbourneGenomics-CCDS-CRC-20140814.flatten.annotate.sort.bed MelbourneGenomics-CCDS-CRC-20140814.bed
+# Stage rename [MelbourneGenomics-CCDS-AML-20140814]
+cp MelbourneGenomics-CCDS-AML-20140814.flatten.annotate.sort.bed MelbourneGenomics-CCDS-AML-20140814.bed
+# Stage rename [MelbourneGenomics-CCDS-CMT-20140814]
+cp MelbourneGenomics-CCDS-CMT-20140814.flatten.annotate.sort.bed MelbourneGenomics-CCDS-CMT-20140814.bed
+# Stage sort [MelbourneGenomics-CCDS-EPIL-20140814]
+echo "Sorting ...";          /vlsci/VR0320/shared/production//tools/IGVTools/2.3.6/igvtools.lowmem sort MelbourneGenomics-CCDS-EPIL-20140814.flatten.annotate.bed MelbourneGenomics-CCDS-EPIL-20140814.flatten.annotate.sort.bed
+# Stage rename [MelbourneGenomics-CCDS-EPIL-20140814]
+cp MelbourneGenomics-CCDS-EPIL-20140814.flatten.annotate.sort.bed MelbourneGenomics-CCDS-EPIL-20140814.bed
+# Stage sort [MelbourneGenomics-CCDS-CS-20140814]
+echo "Sorting ...";          /vlsci/VR0320/shared/production//tools/IGVTools/2.3.6/igvtools.lowmem sort MelbourneGenomics-CCDS-CS-20140814.flatten.annotate.bed MelbourneGenomics-CCDS-CS-20140814.flatten.annotate.sort.bed
+# Stage rename [MelbourneGenomics-CCDS-CS-20140814]
+cp MelbourneGenomics-CCDS-CS-20140814.flatten.annotate.sort.bed MelbourneGenomics-CCDS-CS-20140814.bed
