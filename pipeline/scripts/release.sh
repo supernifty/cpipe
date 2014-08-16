@@ -7,6 +7,11 @@ function err() {
     exit 1
 }
 
+if [ ! -e pipeline/scripts/release.sh ];
+then
+    err "Please run this script from the root of the pipeline distribution."
+fi
+
 echo
 echo "================================================="
 echo
@@ -21,7 +26,25 @@ What this script does:
      on changelog from git
   3  creates a tag for the version in the git repository
   4  pushes tag to main repository
+
+How it works:
+
+  The version number is stored in a file in the top level directory:
+
+    version.txt
+
+  This file contains the current version of the pipeline, and this is
+  what is imprinted into the provenance files that are output
+  when the pipeline is run. This script both updates the version number
+  and creates a tag in git reflecting the version, and pushes that
+  to the main github repository.
+
 "
+
+echo "The previous released version was: "
+echo
+cat version.txt
+echo
 
 read -p "Please enter the version number for the release: "
 
@@ -46,15 +69,17 @@ Version $VERSION Release Notes
 
 ==================================================
 
+# Please enter your release notes here. The pane
+# opposite has a list of changes committed since the 
+# last release was made. Please delete this comment.
+
 " > notes.tmp.txt
 
-git log ${PREV_VERSION}..HEAD | grep -v '^Author' | grep -v '^commit' | grep -v '^Date' >> notes.tmp.txt
-
-#vim -O3 notes.tmp.txt docs/ReleaseNotes-${PREV_VERSION}.txt git.tmp.txt
+git log ${PREV_VERSION}..HEAD | grep -v '^Author' | grep -v '^commit' | grep -v '^Date' >> git.tmp.txt
 
 touch .notes.tmp.txt.timestamp
 
-vi notes.tmp.txt
+vim -O notes.tmp.txt git.tmp.txt 
 
 if [ .notes.tmp.txt.timestamp -nt notes.tmp.txt ];
 then
