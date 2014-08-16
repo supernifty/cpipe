@@ -1,0 +1,31 @@
+==================================================
+
+Melbourne Genomics Demonstration Project Pipeline
+
+Version 0.9.3 Release Notes
+
+==================================================
+
+New genes 
+- CMT: BSCL2
+- CRC: BMP4, BUB1B
+- Bed files and gene tiers/lists updated accordingly
+- 20140611 genelist
+
+Tiers in CRC and EPIL fixed (switched all 1's and 2's)
+
+- Technical filtering amendment - Reporting and filtering 
+    variants seen in multiple samples. Remove reporting of 
+    cross cohort observation count, raise filtering to 3 
+    or  more samples before filtering out
+- Mask last two digits of study id for purposes of variant
+    filtering
+
+Minor big fixes:
+- check coverage
+- LOVD conversion script
+- parse tumor/normal status from sample metadata
+- provenance report no longer fails if version not detect
+- pipeline no longer fails when samples have unequal 
+    numbers of fastq files
+
