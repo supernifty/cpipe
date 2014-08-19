@@ -7,5 +7,5 @@ Version 0.9.4 Release Notes
 ==================================================
 
 Updated to 2014-08-19 version of gene lists and tiers. 
-When there is one gene in two tiers, the larger tier is used (previously the smaller one). 
+Now when there is one gene in two tiers, the larger tier is used (previously the smaller one). 
 Fixed SFXN4 gene in CRC (previously mispelled)
