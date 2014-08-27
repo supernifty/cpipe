@@ -277,7 +277,7 @@ new ExcelBuilder().build {
 
 // Write a separate excel doc for each sample
 for(sample in samples) {
-    println "Writing sheet for $sample"
+    println "Writing excel gap file for $sample"
 
     new ExcelBuilder().build {
 
@@ -328,5 +328,5 @@ for(sample in samples) {
             }
 
         }.autoSize()
-    }.save(sample+".xlsx")
+    }.save(sample+".gap.xlsx")
 }
