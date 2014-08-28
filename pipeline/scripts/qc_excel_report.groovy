@@ -285,24 +285,24 @@ for(sample in samples) {
         sheet(sample) {
             def blocks = sampleBlocks[sample]
             row {
-                cell('Total low regions')//.bold() //using .bold() causes an error in the the second and later excel files
+                cell('Total low regions').bold()
                 cell(blocks.size())
             }
             row {
-                cell('Total low bp')//.bold()
+                cell('Total low bp').bold()
                 cell(blocks.sum { it.end-it.start})
             }
             row {
-                cell('Frac low bp')//.bold()
+                cell('Frac low bp').bold()
                 if(blocks)
                     cell(blocks.sum { it.end-it.start} / (float)sampleStats[sample].lowbp)
             }
             row {
-                cell('Genes containing low bp')//.bold()
+                cell('Genes containing low bp').bold()
                 cell(blocks*.gene.unique().size())
             }
             row {
-                cell('Frac Genes containing low bp')//.bold()
+                cell('Frac Genes containing low bp').bold()
                 cell(blocks*.gene.unique().size() / (float)allGenes.size())
             }
 
@@ -315,18 +315,16 @@ for(sample in samples) {
             bold { row {
                 cells('gene','chr','start','end','min','max','median','length')
             }}
-// Commented out the below lines because this bed file is already created above.
-//            def lowBed = new File("${sample}.low.bed").newWriter()
             blocks.each { b ->
                 b.with {
                     row { 
                         cells(gene, chr, start, end, stats.min, stats.max, stats.getPercentile(50), end-start);
-//                        cell("ucsc").link("http://genome.ucsc.edu/cgi-bin/hgTracks?db=hg19&position=$chr%3A$start-$end&refGene=pack")
+                        cell("ucsc").link("http://genome.ucsc.edu/cgi-bin/hgTracks?db=hg19&position=$chr%3A$start-$end&refGene=pack")
                     }
-//                    lowBed.println([chr,start,end,stats.getPercentile(50)+'-'+gene].join("\t"))
                 }
             }
 
         }.autoSize()
-    }.save(sample+".gap.xlsx")
+    }.save("results/"+sample+".gap.xlsx")
 }
+
