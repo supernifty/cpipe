@@ -87,6 +87,8 @@ run {
         ] + qc_excel_report
    ] + 
 
+   copy_variant_database +
+
    // The 3rd phase is to produce the output spreadsheet, 1 per target (flagship)
    targets * [ set_target_info +  vcf_to_excel ] +
 

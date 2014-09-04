@@ -669,7 +669,7 @@ vcf_to_excel = {
                 ${inputs.csv.withFlag("-a")}
                 ${inputs.vcf.withFlag("-vcf")}
                 -x "synonymous SNV"
-                -db $VARIANT_DB
+                -db $input.db
                 -o $output.xlsx
                 -oocf $OUT_OF_COHORT_VARIANT_COUNT_FILTER
                 -si $sample_metadata_file
@@ -795,6 +795,16 @@ add_to_database = {
 
             echo "Variants from $input.vcf were added to database $VARIANT_DB on ${new Date()}" > $output.txt
         """, "add_to_database"
+    }
+}
+
+copy_variant_database = {
+    requires VARIANT_DB : "The file name of the primary SQLite database to which variants are added"
+    output.dir = "variants"
+    from(VARIANT_DB) {
+        exec """
+            cp -v $input.db $output.db
+        """
     }
 }
 
