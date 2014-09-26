@@ -167,6 +167,18 @@ ProgressCounter.withProgress {
     ++totalBP
     count()
   }
+  if(stats != null) {
+    def geneSummary = [
+          gene: currentGene, 
+          fracOK: totalOK / (float)totalBP,
+          totalOK: totalOK,
+          totalBP: totalBP,
+          median: stats.median,
+          stats: stats
+        ]
+
+    geneReport.add(geneSummary)
+  }
 }
 
 // Sort the gene report by category
