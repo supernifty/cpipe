@@ -669,7 +669,7 @@ vcf_to_excel = {
                 ${inputs.csv.withFlag("-a")}
                 ${inputs.vcf.withFlag("-vcf")}
                 -x "synonymous SNV"
-                -db $input.db
+                -db $VARIANT_DB
                 -o $output.xlsx
                 -oocf $OUT_OF_COHORT_VARIANT_COUNT_FILTER
                 -si $sample_metadata_file
