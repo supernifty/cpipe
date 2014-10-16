@@ -798,6 +798,16 @@ add_to_database = {
     }
 }
 
+copy_variant_database = {
+    requires VARIANT_DB : "The file name of the primary SQLite database to which variants are added"
+    output.dir = "variants"
+    from(VARIANT_DB) {
+        exec """
+            cp -v $input.db $output.db
+        """
+    }
+}
+
 reorder = {
     filter('reorder') {
         exec """
