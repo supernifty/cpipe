@@ -80,7 +80,7 @@ run {
                             annovar_summarize_refgene +
                          [add_to_database, augment_condel + annotate_significance, calculate_cadd_scores] + augment_cadd, 
                          calc_coverage_stats + summary_pdf, 
-                         gatk_depth_of_coverage
+                         gatk_depth_of_coverage 
                        ]
                    + check_coverage
                    + check_karyotype
@@ -91,7 +91,7 @@ run {
    targets * [ set_target_info +  vcf_to_excel ] +
 
    // And then finally write the provenance report (1 per sample)
-   samples * [ provenance_report /* , annovar_to_lovd */  + variant_bams] +
+   samples * [ provenance_report /* , annovar_to_lovd */ ] +
    
    // And report on similarity between samples
    sample_similarity_report

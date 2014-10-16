@@ -884,14 +884,3 @@ annovar_to_lovd = {
     }
 }
 
-// Slice bams around variants
-variant_bams = {
-    branch.sample = branch.name
-    output.dir="results/variant_bams"
-    exec """
-            python $SCRIPTS/variant_bams.py --bam $input.bam --csv $input.annovarx.csv
-        """
-}
-
-
-
