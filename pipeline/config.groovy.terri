@@ -60,7 +60,7 @@ PLATFORM="illumina"
 // Base location of all the tools that we use
 TOOLS="$BASE/tools"
 
-MEDIAN_COVERAGE_THRESHOLD=60
+MEDIAN_COVERAGE_THRESHOLD=90
 
 // Various support scripts that the pipeline uses
 SCRIPTS="$BASE/pipeline/scripts"
