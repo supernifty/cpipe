@@ -32,7 +32,7 @@ from annotate_significance import Annovar
 class AnnotateSignificanceTest(unittest.TestCase):
     
     
-    header = "Func,Gene,ExonicFunc,AAChange,Conserved,SegDup,esp5400_all,1000g2014oct_all,snp138,AVSIFT,LJB_PhyloP,LJB_PhyloP_Pred,LJB_SIFT,LJB_SIFT_Pred,LJB_PolyPhen2,LJB_PolyPhen2_Pred,LJB_LRT,LJB_LRT_Pred,LJB_MutationTaster,LJB_MutationTaster_Pred,LJB_GERP++,Chr,Start,End,Ref,Obs,Otherinfo,Qual,Depth,Condel,exac03,phastConsElements46way".split(",")
+    header = "Func,Gene,ExonicFunc,AAChange,Conserved,SegDup,esp6500siv2_all,1000g2014oct_all,snp138,AVSIFT,LJB_PhyloP,LJB_PhyloP_Pred,LJB_SIFT,LJB_SIFT_Pred,LJB_PolyPhen2,LJB_PolyPhen2_Pred,LJB_LRT,LJB_LRT_Pred,LJB_MutationTaster,LJB_MutationTaster_Pred,LJB_GERP++,Chr,Start,End,Ref,Obs,Otherinfo,Qual,Depth,Condel,exac03,phastConsElements46way".split(",")
     
     # A prototype line that we use to create test data
     line = '"exonic","SCN5A","nonsynonymous SNV","NM_000335:c.G1339T:p.A447S","437;Name=lod=80",,,,,0.42,,,,,,,,,,,,chr3,38646399,38646399,C,A,"het","14.91","19","0.3",".",""\n'
@@ -95,7 +95,7 @@ class AnnotateSignificanceTest(unittest.TestCase):
         # test: variant index 3 can only happen to a novel variant
 
         a = self.a
-        a.set_value('esp5400_all','0.001')
+        a.set_value('esp6500siv2_all','0.001')
         a.set_value('1000g2014oct_all','0.001')
         a.set_value('Condel','0.9')
 
@@ -106,7 +106,7 @@ class AnnotateSignificanceTest(unittest.TestCase):
         a.ExonicFunc = "stopgain SNV"
         assert a.priority() == 4
 
-        a.set_value('esp5400_all','0.001')
+        a.set_value('esp6500siv2_all','0.001')
         assert a.priority() == 1
         
     def testNovelTruncating(self):
@@ -114,14 +114,14 @@ class AnnotateSignificanceTest(unittest.TestCase):
         a.ExonicFunc = "stopgain SNV"
 
         # Make it novel
-        a.set_value('esp5400_all','')
+        a.set_value('esp6500siv2_all','')
         a.set_value('1000g2014oct_all','')
         a.set_value('snp138','')
         assert a.priority() == 4
 
     def testMissenseVaryRare(self):
         a = self.a
-        a.set_value('esp5400_all','0.0001')
+        a.set_value('esp6500siv2_all','0.0001')
         a.set_value('1000g2014oct_all','')
         a.set_value('Conserved','')
         a.set_value('Condel','')
