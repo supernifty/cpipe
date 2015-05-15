@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# vim: expandtab:ts=4:sw=4:
+# vim: expandtab:ts=4:sw=4:cindent
 ###########################################################################
 #
 # This file is part of Cpipe.
@@ -85,7 +85,7 @@ class Annovar:
     # These are the Annovar fields that contain population frequency estimates
     # Note we do some fooling around in the maf_value() method to maintain 
     # compatibility with different versions of Annovar
-    POPULATION_FREQ_FIELDS = ["esp5400_all", "1000g2014oct_all","exac03"]
+    POPULATION_FREQ_FIELDS = ["esp6500siv2_all", "1000g2014oct_all","exac03"]
 
     def __init__(self, line):
         self.line = line
@@ -196,7 +196,7 @@ class Annovar:
 
 def main():
     # Parse command line options
-    optstring = "a:"
+    optstring = "a:f:c:r:"
     opts,args = getopt.getopt(sys.argv[1:],optstring)
     
     options = {}
@@ -212,7 +212,7 @@ def main():
     
     # Read the file
     reader = csv.reader(open(options["-a"]), delimiter=',', quotechar='"', doublequote=True)
-    
+
     # Open CSV writer to standard output, first for header (for body comes in the loop below)
     header_out = csv.writer(sys.stdout, delimiter=',', quotechar='"', quoting=csv.QUOTE_NONE)
     is_header = True
@@ -228,7 +228,15 @@ def main():
                 line = line + ["Depth"]
     
             Annovar.init_columns(line)
-    
+            if '-f' in options:
+                Annovar.MAF_THRESHOLD = float(options['-f'])
+
+            if '-c' in options:
+                Annovar.CONDEL_THRESHOLD = float(options['-c'])
+
+            if '-r' in options:
+                Annovar.MAF_THRESHOLD_VERY_RARE = float(options['-r'])
+
             header_out.writerow(Annovar.columns + ["Priority_Index"])
             sys.stdout.flush()
             output = csv.writer(sys.stdout, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
