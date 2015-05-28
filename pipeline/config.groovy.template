@@ -158,3 +158,5 @@ VARIANT_DB="$BASE/variants.db"
 // Location of groovy binary
 GROOVY="$TOOLS/groovy/2.1.1/bin/groovy"
 
+// interval padding to prevent filtering of splice site variants
+INTERVAL_PADDING=10

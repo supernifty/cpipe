@@ -53,7 +53,7 @@ mkdir -p batches/selftest/data || err "Unable to create selftest batch directory
 mkdir -p batches/selftest/analysis || err "Unable to create selftest batch directory"
 
 msg "Copying test data ..."
-cp -v ./batches/na18507/data/000000000_*.fastq.gz batches/selftest/data  || err "Unable to copy selftest data"
+[ -e ./batches/na18507/data/000000000_S1_L001_R1_001.fastq.gz ] || cp -v ./batches/na18507/data/000000000_*.fastq.gz batches/selftest/data  || err "Unable to copy selftest data"
 cp -v ./batches/na18507/samples.selftest.txt batches/selftest/samples.txt || err "Unable to copy selftest sample file"
 
 pushd batches/selftest/analysis

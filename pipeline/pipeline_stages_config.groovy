@@ -437,6 +437,7 @@ call_variants = {
                    -dcov 1600 
                    -l INFO 
                    -L $COMBINED_TARGET
+                   --interval_padding $INTERVAL_PADDING
                    -A AlleleBalance -A Coverage -A FisherStrand 
                    -glm BOTH
                    -metrics $output.metrics
@@ -467,6 +468,7 @@ call_pgx = {
                    -dcov 1600 
                    -l INFO 
                    -L ../design/${target_name}.pgx.vcf
+                   --interval_padding $INTERVAL_PADDING
                    -A AlleleBalance -A Coverage -A FisherStrand 
                    -glm BOTH
                    -metrics $output.metrics
@@ -491,6 +493,7 @@ filter_variants = {
              -T SelectVariants 
              --variant $input.vcf 
              -L $target_bed_file $pgx_flag
+             --interval_padding $INTERVAL_PADDING
              -o $output.vcf 
     """
 }
