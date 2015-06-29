@@ -25,5 +25,5 @@
 ########################################################
 
 pushd pipeline/scripts
-python -m unittest discover -p '*_tests.py'
+python -m unittest discover -s ../tests -p '*_tests.py'
 popd

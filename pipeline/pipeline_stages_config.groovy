@@ -21,6 +21,35 @@
 
 ENABLE_CADD=true
 
+call_variants_ug = {
+    doc "Call SNPs/SNVs using GATK Unified Genotyper"
+    output.dir="variants"
+
+    // Default values of quality thresholds
+    var call_conf:5.0, 
+        emit_conf:5.0
+
+    transform("bam","bam") to("metrics.txt","vcf") {
+        exec """
+                $JAVA -Xmx6g -jar $GATK/GenomeAnalysisTK.jar -T UnifiedGenotyper 
+                   -R $REF 
+                   -I $input.bam 
+                   -nt 4
+                   --dbsnp $DBSNP 
+                   -stand_call_conf $call_conf -stand_emit_conf $emit_conf
+                   -dcov 1600 
+                   -l INFO 
+                   -L $COMBINED_TARGET $splice_region_bed_flag
+                   -A AlleleBalance -A FisherStrand 
+                   -glm BOTH
+                   -metrics $output.txt
+                   -o $output.vcf
+            ""","gatk_call_variants"
+    }
+}
+
+
+
 set_target_info = {
 
     doc "Validate and set information about the target region to be processed"
@@ -88,6 +117,11 @@ set_target_info = {
     println "Target $target_name is processing samples $target_samples"
 }
 
+init_analysis_profile = {
+  // This stage is a placeholder to allow individual analysis profiles
+  // to perform initialization steps
+}
+
 create_splice_site_bed = {
 
     // If no splice region window is defined, simply set the 
@@ -152,11 +186,20 @@ check_tools = {
         to enable or disable corresponding pipeline features
         """
 
+    var UPDATE_VARIANT_DB : VARIANT_DB,
+        ANNOTATION_VARIANT_DB : VARIANT_DB
+
     produce("revision.txt") {
         exec """
             git describe --always > $output.txt || true
         """
     }
+
+    if(file(GROOVY_NGS).name == "1.0")
+        fail "This version of Cpipe requires GROOVY_NGS >= 1.0.1. Please edit config.groovy to set the latest version of tools/groovy-ngs-utils"
+
+    branch.UPDATE_VARIANT_DB = UPDATE_VARIANT_DB
+    branch.ANNOTATION_VARIANT_DB = ANNOTATION_VARIANT_DB
 }
 
 check_sample_info = {
@@ -415,14 +458,11 @@ merge_bams = {
 
     output.dir="align"
 
-    // If there is only 1 bam file, then there is no need to merge
     produce(sample + ".merge.bam") {
+        // If there is only 1 bam file, then there is no need to merge,
+        // just alias the name 
         if(inputs.bam.size()==1)  {
-           // It's unfortunate to do a copy for no reason, however 
-           // it is important to have the bam file renamed, and 
-           // we have encountered file systems where symbolic linking
-           // is not possible
-           exec "cp $input.bam $output.bam"
+           alias(input.bam) to(output.bam)
         }
         else {
             msg "Merging $inputs.bam size=${inputs.bam.size()}"
@@ -493,6 +533,7 @@ dedup = {
              VALIDATION_STRINGENCY=LENIENT 
              AS=true 
              METRICS_FILE=$output.metrics
+             CREATE_INDEX=true
              OUTPUT=$output.bam
     """
 
@@ -608,33 +649,6 @@ cleanup_intermediate_bams = {
     cleanup("*.dedup.bam", "*.realign.bam")
 }
 
-call_variants_ug = {
-    doc "Call SNPs/SNVs using GATK Unified Genotyper"
-    output.dir="variants"
-
-    // Default values of quality thresholds
-    var call_conf:5.0, 
-        emit_conf:5.0
-
-    transform("bam","bam") to("metrics.txt","vcf") {
-        exec """
-                $JAVA -Xmx6g -jar $GATK/GenomeAnalysisTK.jar -T UnifiedGenotyper 
-                   -R $REF 
-                   -I $input.bam 
-                   -nt 4
-                   --dbsnp $DBSNP 
-                   -stand_call_conf $call_conf -stand_emit_conf $emit_conf
-                   -dcov 1600 
-                   -l INFO 
-                   -L $COMBINED_TARGET $splice_region_bed_flag
-                   -A AlleleBalance -A FisherStrand 
-                   -glm BOTH
-                   -metrics $output.txt
-                   -o $output.vcf
-            ""","gatk_call_variants"
-    }
-}
-
 call_variants_hc = {
     doc "Call SNPs/SNVs using GATK Unified Genotyper"
     output.dir="variants"
@@ -745,10 +759,14 @@ annotate_vep = {
 annotate_snpeff = {
     output.dir="variants"
 
-    var enable_snpeff:false
+    var enable_snpeff:false,
+        SNPEFF : false
 
     if(!enable_snpeff)
         succeed "Snpeff support not enabled"
+
+    if(!SNPEFF)
+        fail "Please define the SNPEFF variable to point to the location of your SNPEFF installation"
 
     exec """
             $JAVA -Xmx2g -jar $SNPEFF/snpEff.jar eff -c $SNPEFF/snpEff.config -treatAllAsProteinCoding false -a 2 hg19 $input.vcf  > $output.vcf
@@ -768,9 +786,13 @@ calc_coverage_stats = {
           $SAMTOOLS/samtools view -L $COMBINED_TARGET $input.bam | wc | awk '{ print \$1 }' > $output2.txt
         """
     }
+}
+
+check_ontarget_perc = {
+    var MIN_ONTARGET_PERCENTAGE : 50
     check {
         exec """
-            RAW_READ_COUNT=`cat $output2.txt`
+            RAW_READ_COUNT=`cat $input.ontarget.txt`
 
             ONTARGET_PERC=`grep -A 1 LIBRARY $input.metrics | tail -1 | awk '{ print int(((\$3 * 2) / $RAW_READ_COUNT))*100 }'`
 
@@ -880,7 +902,8 @@ vcf_to_excel = {
 
     doc "Convert a VCF output file to Excel format, merging information from Annovar"
 
-    requires sample_metadata_file : "File describing meta data for pipeline run (usually, samples.txt)"
+    requires sample_metadata_file : "File describing meta data for pipeline run (usually, samples.txt)",
+             ANNOTATION_VARIANT_DB : "File name of SQLite variant database for storing variants"
 
     var exclude_variant_types : "synonymous SNV",
         out_of_cohort_filter_threshold : OUT_OF_COHORT_VARIANT_COUNT_FILTER
@@ -915,7 +938,7 @@ vcf_to_excel = {
                 ${inputs.csv.withFlag("-a")}
                 ${inputs.vcf.withFlag("-vcf")}
                 -x "$EXCLUDE_VARIANT_TYPES"
-                -db $VARIANT_DB
+                -db $ANNOTATION_VARIANT_DB
                 -o $output.xlsx
                 -oocf $out_of_cohort_filter_threshold
                 -si $sample_metadata_file
@@ -934,7 +957,7 @@ vcf_to_family_excel = {
          designed for diagnostics from family based sequencing.
         """
 
-    requires VARIANT_DB : "File name of SQLite variant database for storing variants"
+    requires ANNOTATION_VARIANT_DB : "File name of SQLite variant database for storing variants"
 
     output.dir = "results"
 
@@ -950,7 +973,8 @@ vcf_to_family_excel = {
             exec """
                 JAVA_OPTS="-Xmx6g -Djava.awt.headless=true" $GROOVY -cp $GROOVY_NGS/groovy-ngs-utils.jar:$EXCEL/excel.jar $SCRIPTS/vcf_to_excel.family.groovy 
                     -p "" 
-                    -db $VARIANT_DB
+                    -db $ANNOTATION_VARIANT_DB
+                    -ped $input.ped
                     -o $output.xlsx
                     $UNIQUE $input.vcf $inputs.csv 
             """, "vcf_to_family_excel"
@@ -1040,17 +1064,16 @@ qc_excel_report = {
     output.dir="results"
 
     def samples = sample_info.grep { it.value.target == target_name }.collect { it.value.sample }
-    from("*.cov.gz", "*.dedup.metrics") produce(target_name + ".qc.xlsx") {
+    produce(target_name + ".qc.xlsx") {
             exec """
                 JAVA_OPTS="-Xmx16g -Djava.awt.headless=true" $GROOVY -cp $GROOVY_NGS/groovy-ngs-utils.jar:$EXCEL/excel.jar $SCRIPTS/qc_excel_report.groovy 
                     -s ${target_samples.join(",")} 
                     -t $LOW_COVERAGE_THRESHOLD
                     -w $LOW_COVERAGE_WIDTH
-                    -low qc
+                    -low qc ${inputs.dedup.metrics.withFlag('-metrics')}
                     -o $output.xlsx
                     $inputs.sample_cumulative_coverage_proportions  
                     $inputs.sample_interval_statistics 
-                    $inputs.metrics 
                     $inputs.gz
             ""","qc_excel_report"
     }
@@ -1110,8 +1133,13 @@ merge_annovar_reports = {
 
 
 add_to_database = {
+
     doc "Add discovered variants to a database to enable annotation of number of observations of the variant"
+
+    requires UPDATE_VARIANT_DB : "SQLite database to store variants in"
+
     output.dir="variants"
+
     uses(variantdb:1) {
         exec """
 
@@ -1120,7 +1148,7 @@ add_to_database = {
             JAVA_OPTS="-Xmx24g" $GROOVY -cp $GROOVY_NGS/groovy-ngs-utils.jar:$EXCEL/excel.jar $SCRIPTS/vcf_to_db.groovy 
                    -v $input.recal.vcf 
                    -a $input.csv 
-                   -db $VARIANT_DB 
+                   -db $UPDATE_VARIANT_DB 
                    -cohort $target_name
                    -idmask '$SAMPLE_ID_MASK'
                    -b "$batch"
@@ -1129,16 +1157,6 @@ add_to_database = {
 
             echo "Variants from $input.recal.vcf were added to database $VARIANT_DB on ${new Date()}" > $output.txt
         """, "add_to_database"
-    }
-}
-
-copy_variant_database = {
-    requires VARIANT_DB : "The file name of the primary SQLite database to which variants are added"
-    output.dir = "variants"
-    from(VARIANT_DB) {
-        exec """
-            cp -v $input.db $output.db
-        """
     }
 }
 
@@ -1162,11 +1180,12 @@ summary_pdf = {
     output.dir="results"
 
     produce("${sample}.summary.pdf","${sample}.summary.karyotype.tsv") {
+
+        // -metrics $input.metrics
         exec """
              JAVA_OPTS="-Xmx3g" $GROOVY -cp $GROOVY_NGS/groovy-ngs-utils.jar $SCRIPTS/qc_pdf.groovy 
                 -cov $input.cov.gz
-                -ontarget $input.ontarget.txt
-                -metrics $input.metrics
+                -ontarget $input.ontarget.txt ${inputs.metrics.withFlag("-metrics")}
                 -study $sample 
                 -meta $sample_metadata_file
                 -threshold 20 

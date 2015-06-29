@@ -20,8 +20,7 @@
 BASE="<EDIT THIS>" 
 
 // Set a good location for storing large temp files here (probably not /tmp)
-// or "unset TMPDIR" if your resource manager sets TMPDIR for you (e.g. slurm)
-TMPDIR="/tmp"
+TMPDIR="$BASE/tmpdata"
 
 // Enter email here to get notified by email about failures
 EMAILS=""
@@ -129,7 +128,7 @@ SAMTOOLS="$TOOLS/samtools/0.1.19"
 FASTQC="$TOOLS/fastqc/0.10.1"
 
 // Utilties for processing NGS data in Java/Groovy
-GROOVY_NGS="$TOOLS/groovy-ngs-utils/1.0"
+GROOVY_NGS="$TOOLS/groovy-ngs-utils/1.0.1"
 
 // Set location of Variant Effect Predictor here
 // and store it in the local directory called 'vep_cache'
@@ -152,6 +151,12 @@ CONDEL="$TOOLS/condel/24-1-2013"
 // Database of unique variants, updated for each sample
 VARIANT_DB="$BASE/variants.db"
 
+// By default variant counts are annotated from the same database as the
+// one that they were added to in the first place
+// However you can modify them to be separate if you wish
+UPDATE_VARIANT_DB=VARIANT_DB
+ANNOTATION_VARIANT_DB=VARIANT_DB
+
 // Location of groovy installation
 GROOVY_HOME="$TOOLS/groovy/2.3.4"
 
@@ -173,7 +178,7 @@ JAVA="java"
 
 // SNPEFF location
 // Note: snpeff is not needed by default pipeline
-SNPEFF="$TOOLS/snpEff/3.1"
+SNPEFF="$TOOLS/snpeff/3.1"
 
 // Genome needed (currently) only if using expanded splice regions
 HG19_CHROM_INFO="$REFBASE/hg19.genome"
