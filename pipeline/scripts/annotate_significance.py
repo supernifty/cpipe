@@ -55,7 +55,11 @@
 #
 ####################################################################################
 
-import csv, getopt, sys, logging as log
+import csv
+import getopt
+import logging as log
+import re
+import sys
 
 log.basicConfig(level=log.INFO)
 
@@ -235,15 +239,16 @@ class AnnovarLineVCF (AnnovarPriority):
         else:
             return float(value)
     
-    def write_row( self, output, line ):
-        pass
+    def write_row( self, output ):
+        # add priority to info
+        updated_line = re.sub( ';ALLELE_END', ';Priority=%i;ALLELE_END' % self.priority(), self.line )
+        output.write( '%s\n' % updated_line )
 
 class AnnovarCSV:
-    def __init__( self, fh ):
-        self.reader = csv.reader(open(fh), delimiter='\t', quotechar='"', doublequote=True)
+    def __init__( self ):
         self.first = True
 
-    def process( self, line ):
+    def process( self, line, fh ):
         if self.first:
             self.first = False
             if "Qual" not in line:
@@ -253,24 +258,24 @@ class AnnovarCSV:
                 line = line + ["Depth"]
     
             AnnovarLineCSV.init_columns(line)
-            header_out = csv.writer(sys.stdout, delimiter=',', quotechar='"', quoting=csv.QUOTE_NONE)
+            header_out = csv.writer(fh, delimiter=',', quotechar='"', quoting=csv.QUOTE_NONE)
             header_out.writerow(AnnovarLineCSV.columns + ["Priority_Index"])
-            sys.stdout.flush()
-            self.output = csv.writer(sys.stdout, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            fh.flush()
+            self.output = csv.writer(fh, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
         else:
             av = AnnovarLineCSV(line)
             av.write_row(self.output) 
 
 class AnnovarVCF:
-    def __init__( self, fh ):
-        self.reader = open(fh, 'r')
+    def __init__( self ):
+        pass
 
-    def process( self, line ):
+    def process( self, line, fh ):
         if line.startswith( '#' ):
-            sys.stdout.write( line )
+            fh.write( '%s\n' % line )
         else:
             av = AnnovarLineVCF(line)
-            av.write_row( sys.stdout, line ) 
+            av.write_row( fh ) 
 
 ####################################################################################
 #
@@ -305,11 +310,16 @@ def main():
         AnnovarPriority.MAF_THRESHOLD_VERY_RARE = float(options['-r'])
 
     # Read the file
-    handler = AnnovarVCF(options['-a']) if use_vcf else AnnovarCSV(options['-a']) 
+    if use_vcf:
+        handler = AnnovarVCF()
+        reader = open( options['-a'], 'r' ) 
+    else:
+        handler = AnnovarCSV()
+        reader = csv.reader(open(options['-a'], 'r'), delimiter='\t', quotechar='"', doublequote=True)
 
     # Open CSV writer to standard output, first for header (for body comes in the loop below)
-    for line in handler.reader:
-        handler.process( line )
+    for line in reader:
+        handler.process( line, sys.stdout )
    
 if __name__ == "__main__":    
     main()

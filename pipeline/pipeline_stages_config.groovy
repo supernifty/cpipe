@@ -1087,14 +1087,15 @@ annotate_significance = {
             CONDEL_THRESHOLD : 0.7
 
         output.dir="variants"
-        from("con.csv") {
+        from("hg19_multianno.vcf") {
             exec """
                 python $SCRIPTS/annotate_significance.py 
-                -a $input.csv
+                -a $input.hg19_multianno.vcf
                 -f $MAF_THRESHOLD_RARE
                 -r $MAF_THRESHOLD_VERY_RARE
                 -c $CONDEL_THRESHOLD
-                > $output.csv
+                -v
+                > $output.vcf
                 """
         }
 }
