@@ -1,0 +1,9 @@
+64c64
+< 	$sc = "convert2annovar.pl -includeinfo -allsample -withfreq -format vcf4 $queryfile > $tempfile.avinput";
+---
+> 	$sc = "convert2annovar.pl -includeinfo -allsample -comment -withfreq -format vcf4 $queryfile > $tempfile.avinput"; # patch: include comment
+777c785
+< =cut
+\ No newline at end of file
+---
+> =cut

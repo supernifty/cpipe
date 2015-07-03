@@ -95,7 +95,7 @@ run {
                             annovar_table +
                             [ 
                                add_to_database, 
-                               augment_condel + annotate_significance
+                               /* augment_condel + */ annotate_significance
                             ]  +
                          calc_coverage_stats + check_ontarget_perc + [ summary_pdf, exon_qc_report ],
                          gatk_depth_of_coverage,

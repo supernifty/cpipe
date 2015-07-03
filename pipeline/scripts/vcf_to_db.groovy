@@ -35,15 +35,16 @@
 import groovy.sql.Sql
 
 // Parse command line args
-CliBuilder cli = new CliBuilder(usage: "vcf_to_excel.groovy [options]\n")
+CliBuilder cli = new CliBuilder(usage: "vcf_to_db.groovy [options]\n")
 cli.with {
-  v 'VCF file to convert to Excel format', args:1, required: true
+  v 'VCF file to write to database', args:1, required: true
   a 'Annovar file containing annotations', args:1, required: true
   b 'Batch name or id', args:1, required: true
   cohort 'Cohort / target /flagship name', args:1, required: true
   db 'Database file to use', args:1, required: true
   idmask 'Regular expression used to mask sample ids to allow multiple ids to match to single individuals', args:1
   c 'Create the tables'
+  annovar_format 'Annovar file format, either CSV or VCF, default CSV', args: 1, required: false
 }
 opts = cli.parse(args)
 
@@ -62,14 +63,18 @@ args = opts.arguments()
 
 db = new VariantDB(opts.db)
 
-// Read all the annovar fields
-ANNOVAR_FIELDS = null
-new File(opts.a).withReader { r -> ANNOVAR_FIELDS = r.readLine().split(",") as List }
+annovar_format_vcf = opts.annovar_format && opts.annovar_format.toLowerCase() == "vcf"
 
-// Not all the fields have headers (why?)
-ANNOVAR_FIELDS += ["Qual","Depth"]
-
-println "Annovar fields are " + ANNOVAR_FIELDS
+if ( !annovar_format_vcf ) {
+    // Read all the annovar fields
+    ANNOVAR_FIELDS = null
+    new File(opts.a).withReader { r -> ANNOVAR_FIELDS = r.readLine().split(",") as List }
+    
+    // Not all the fields have headers (why?)
+    ANNOVAR_FIELDS += ["Qual","Depth"]
+    
+    println "Annovar fields are " + ANNOVAR_FIELDS
+}
 
 // Parse the VCF. It is assumed that all the samples to be exported are included in the VCF
 VCFIndex vcf = new VCFIndex(opts.v)
@@ -120,14 +125,24 @@ db.tx {
         sampleCount = 0
         includeCount=0
         existingCount=0
-        annovar_csv = ExcelCategory.parseCSV("", opts.a, ',')
         ProgressCounter.withProgress { 
-            for(av in annovar_csv) {
+            if (annovar_format_vcf) {
+                annovar_items = new VCF( opts.a )
+            }
+            else {
+                annovar_items = ExcelCategory.parseCSV("", opts.a, ',')
+            }
+            for(av in annovar_items) {
                 ++lineIndex
                 if(lineIndex%5000==0)
-                    println new Date().toString() + "\tProcessed $lineIndex lines"
+                    println new Date().toString() + "\tProcessed $lineIndex lines..."
 
-                def variantInfo = vcf.findAnnovarVariant(av.Chr, av.Start, av.End, av.Alt)
+                if (annovar_format_vcf) {
+                    def variantInfo = vcf.findAnnovarVariant(av.chr, av.start, av.end, av.alt)
+                }
+                else {
+                    def variantInfo = vcf.findAnnovarVariant(av.Chr, av.Start, av.End, av.Alt)
+                }
                 if(!variantInfo) {
                     println "WARNING: Variant $av.Chr:$av.Start at line $lineIndex could not be found in the original VCF file"
                     continue
@@ -149,6 +164,7 @@ db.tx {
                 count()
             }
         }
+        println new Date().toString() + "\tFinished processing $lineIndex lines from ${opts.a}."
 
         println "=" * 80
         println "Now including variants not annotated by Annovar"

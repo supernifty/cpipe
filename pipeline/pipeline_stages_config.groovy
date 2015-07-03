@@ -1103,20 +1103,20 @@ annovar_table = {
 
     output.dir="variants"
 
-    transform("vcf","vcf") to("av", "hg19_multianno.csv") {
+    transform("vcf","vcf") to("hg19_multianno.vcf") {
         exec """
-            $ANNOVAR/convert2annovar.pl $input.vcf -format vcf4 > $output.av
-
-            $ANNOVAR/table_annovar.pl $output.av $ANNOVAR_DB/  -buildver hg19 
+            $ANNOVAR/table_annovar.pl $input.vcf $ANNOVAR_DB/  -buildver hg19 
             -protocol refGene,phastConsElements46way,genomicSuperDups,esp6500siv2_all,1000g2014oct_all,exac03,snp138,ljb26_all
             -operation g,r,r,f,f,f,f,f 
             -nastring . 
             --otherinfo   
-            --csvout
-            --outfile $output.csv.prefix.prefix
+            --vcfinput
+            --outfile $output.vcf.prefix.prefix
             --argument '-exonicsplicing -splicing $splice_region_window',,,,,,,
 
-            sed -i '/^Chr,/ s/\\.refGene//g' $output.csv
+            sed -i -e 's/\\.refGene//g' -e '/^FORMAT/d' -e '/^\t/d' $output.vcf
+
+            $IGVTOOLS/igvtools index $output.vcf
         """
     }
 }
@@ -1147,11 +1147,12 @@ add_to_database = {
 
             JAVA_OPTS="-Xmx24g" $GROOVY -cp $GROOVY_NGS/groovy-ngs-utils.jar:$EXCEL/excel.jar $SCRIPTS/vcf_to_db.groovy 
                    -v $input.recal.vcf 
-                   -a $input.csv 
+                   -a $input.hg19_multianno.vcf 
                    -db $UPDATE_VARIANT_DB 
                    -cohort $target_name
                    -idmask '$SAMPLE_ID_MASK'
                    -b "$batch"
+                   -annovar_format vcf
 
             echo "<==== Finished adding variants for flaship $target_name to database"
 

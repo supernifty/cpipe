@@ -212,6 +212,11 @@ msg "Check Annovar is downloaded and available"
       mv $ANNOVAR_DIR $ANNOVAR_VERSION
 
       set_config_variable ANNOVAR "$BASE/tools/annovar/$ANNOVAR_VERSION"
+
+      # apply patch to annovar to enable vcf output
+      msg "Patching annovar..."
+      patch "$BASE/tools/annovar/$ANNOVAR_VERSION/table_annovar.pl" "$BASE/tools/annovar.patch"
+      msg "Patching annovar: done"
   else
       err "Could not find tar.gz file in $BASE/tools/annovar"
   fi

@@ -59,17 +59,11 @@ import csv, getopt, sys, logging as log
 
 log.basicConfig(level=log.INFO)
 
-class Annovar:
+class AnnovarPriority:
     """
     Helper class to map Annovar column names to their fields parsed from CSV,
     and to implement logic surrounding categorization.
-
-    The function init_columns() must be called, passing the header row as 
-    returned by csv.reader() to initialise the class before use.
     """
-
-    # Column names of Annovar file
-    columns = []
 
     # Default MAF threshold for considering a variant 'rare'
     MAF_THRESHOLD = 0.01
@@ -83,19 +77,16 @@ class Annovar:
     # Categories of variants as specified by Annovar, mapped to functional categories
     # defined for Melbourne Genomics
     ANNOVAR_EXONIC_FUNCS = {
-        "truncating" : ["frameshift insertion","frameshift deletion","frameshift substitution","stopgain SNV","stoploss SNV","stoploss","stopgain"],
-        "missense" : ["nonframeshift insertion","nonframeshift deletion","nonframeshift substitution","nonsynonymous SNV"],
-        "synonymous" : ["synonymous SNV"],
-        "noncoding" : ["intronic","intergenic","ncRNA_intronic","ncRNA_exonic","upstream","downstream","UTR5","UTR3","ncRNA_splicing","upstream;downstream"]
+        "truncating" : set( ( "frameshift insertion","frameshift deletion","frameshift substitution","stopgain SNV","stoploss SNV","stoploss","stopgain", "frameshift_insertion","frameshift_deletion","frameshift_substitution","stopgain_SNV","stoploss_SNV", ) ),
+        "missense" : set( ( "nonframeshift insertion","nonframeshift deletion","nonframeshift substitution","nonsynonymous SNV", "nonframeshift_insertion","nonframeshift_deletion","nonframeshift_substitution","nonsynonymous_SNV", ) ),
+        "synonymous" : set( ( "synonymous SNV", "synonymous_SNV" ) ),
+        "noncoding" : set( ( "intronic","intergenic","ncRNA_intronic","ncRNA_exonic","upstream","downstream","UTR5","UTR3","ncRNA_splicing","upstream;downstream","upstream\x3bdownstream"  ) )
     }
 
     # These are the Annovar fields that contain population frequency estimates
     # Note we do some fooling around in the maf_value() method to maintain 
     # compatibility with different versions of Annovar
     POPULATION_FREQ_FIELDS = ["esp6500siv2_all", "1000g2014oct_all","exac03"]
-
-    def __init__(self, line):
-        self.line = line
 
     def priority(self):
         """
@@ -115,6 +106,7 @@ class Annovar:
                else:
                     return 2 # Missense & rare but not novel => category 2
            else:
+               log.debug("%s:%s is missense and not rare" % (self.Chr,self.Start))
                return 1 # Missense but not even rare => category 1
 
         elif self.is_truncating():
@@ -125,9 +117,10 @@ class Annovar:
             if self.is_novel():
                 return 5
             elif self.is_rare():
-                log.debug("%s:%s is rare" % (self.Chr,self.Start))
+                log.debug("%s:%s is truncating and rare" % (self.Chr,self.Start))
                 return 2
             else:
+                log.debug("%s:%s is truncating and not rare" % (self.Chr,self.Start))
                 return 1
 
         elif self.is_noncoding():
@@ -144,6 +137,7 @@ class Annovar:
         return self.Func in self.ANNOVAR_EXONIC_FUNCS["noncoding"]
 
     def is_missense(self):
+        log.debug( 'ExonicFunc: %s' % ( self.ExonicFunc ) )
         return self.ExonicFunc in self.ANNOVAR_EXONIC_FUNCS["missense"]
 
     def is_truncating(self):
@@ -171,9 +165,31 @@ class Annovar:
         else:
             return self.phastConsElements46way != ""
 
+class AnnovarLineCSV (AnnovarPriority):
+    """
+    The function init_columns() must be called, passing the header row as 
+    returned by csv.reader() to initialise the class before use.
+    """
+    # Column names of Annovar file
+    columns = []
+
+    def __init__(self, line):
+        self.line = line
+
     @staticmethod
     def init_columns(cols):
-        Annovar.columns = cols #+ ["MapQ","QD"]
+        AnnovarLineCSV.columns = cols #+ ["MapQ","QD"]
+
+    def __getattr__(self,name):
+        return self.line[self.columns.index(name)]
+
+    def write_row(self, output):
+        while len(self.line)<len(AnnovarLineCSV.columns):
+            self.line.append("")
+        output.writerow(self.line + [av.priority()])
+ 
+    def set_value(self,name,value):
+        self.line[self.columns.index(name)]=value
 
     def maf_value(self, name):
         # Trying to be compatible with multiple versions of Annovar, each having different
@@ -188,12 +204,74 @@ class Annovar:
         else:
             return float(value)
 
+
+class AnnovarLineVCF (AnnovarPriority):
+    FIELDS = { 'Chr': 0, 'Start': 1, 'Id': 2, 'Ref': 3, 'Alt': 4, 'Qual': 5, 'Filter': 6, 'Info': 7 }
+
+    def __init__(self, line):
+        self.line = line
+        self.fields = line.split( '\t' )
+    
     def __getattr__(self,name):
-        return self.line[self.columns.index(name)]
+        if name in AnnovarLineVCF.FIELDS:
+            return self.fields[AnnovarLineVCF.FIELDS[name]]
+        else:
+            # key1=val1;key2=vale => { 'key1': 'val1', 'key2': 'val2' }
+            info = dict( map( lambda(x): x.split("=",1), [ y for y in self.fields[AnnovarLineVCF.FIELDS['Info']].split( ';' ) if y.find('=') != -1 ] ) )
+            if name in info:
+                return info[name]
+            else:
+                return ''
+
+    def maf_value(self, name):
+        if name == "exac03" and self.ExAC_Freq != '':
+            value = self.ExAC_Freq
+        elif name == "exac03" and self.ExAC_ALL != '':
+            value = self.ExAC_ALL
+        else:
+            value = self.__getattr__(name)
+        if value == "" or value ==".":
+            return 0
+        else:
+            return float(value)
     
-    def set_value(self,name,value):
-        self.line[self.columns.index(name)]=value
+    def write_row( self, output, line ):
+        pass
+
+class AnnovarCSV:
+    def __init__( self, fh ):
+        self.reader = csv.reader(open(fh), delimiter='\t', quotechar='"', doublequote=True)
+        self.first = True
+
+    def process( self, line ):
+        if self.first:
+            self.first = False
+            if "Qual" not in line:
+                line = line + ["Qual"]
+            
+            if "Depth" not in line:
+                line = line + ["Depth"]
     
+            AnnovarLineCSV.init_columns(line)
+            header_out = csv.writer(sys.stdout, delimiter=',', quotechar='"', quoting=csv.QUOTE_NONE)
+            header_out.writerow(AnnovarLineCSV.columns + ["Priority_Index"])
+            sys.stdout.flush()
+            self.output = csv.writer(sys.stdout, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+        else:
+            av = AnnovarLineCSV(line)
+            av.write_row(self.output) 
+
+class AnnovarVCF:
+    def __init__( self, fh ):
+        self.reader = open(fh, 'r')
+
+    def process( self, line ):
+        if line.startswith( '#' ):
+            sys.stdout.write( line )
+        else:
+            av = AnnovarLineVCF(line)
+            av.write_row( sys.stdout, line ) 
+
 ####################################################################################
 #
 # Main body
@@ -202,7 +280,8 @@ class Annovar:
 
 def main():
     # Parse command line options
-    optstring = "a:f:c:r:"
+    # annovar file, maf threshold, condel threshold, maf threshold very rare, annovar is vcf (default to csv)
+    optstring = "a:f:c:r:v" 
     opts,args = getopt.getopt(sys.argv[1:],optstring)
     
     options = {}
@@ -216,44 +295,21 @@ def main():
     if not '-a' in options:
         usage("Please provide -a option.")
     
+    use_vcf = '-v' in options
+    # Note: Annovar does not seem to provide Qual and Depth headings itself
+    if '-f' in options:
+        AnnovarPriority.MAF_THRESHOLD = float(options['-f'])
+    if '-c' in options:
+        AnnovarPriority.CONDEL_THRESHOLD = float(options['-c'])
+    if '-r' in options:
+        AnnovarPriority.MAF_THRESHOLD_VERY_RARE = float(options['-r'])
+
     # Read the file
-    reader = csv.reader(open(options["-a"]), delimiter=',', quotechar='"', doublequote=True)
+    handler = AnnovarVCF(options['-a']) if use_vcf else AnnovarCSV(options['-a']) 
 
     # Open CSV writer to standard output, first for header (for body comes in the loop below)
-    header_out = csv.writer(sys.stdout, delimiter=',', quotechar='"', quoting=csv.QUOTE_NONE)
-    is_header = True
-    for line in reader:
-    
-        if is_header:
-            is_header = False
-            # Note: Annovar does not seem to provide Qual and Depth headings itself
-            if "Qual" not in line:
-                line = line + ["Qual"]
-            
-            if "Depth" not in line:
-                line = line + ["Depth"]
-    
-            Annovar.init_columns(line)
-            if '-f' in options:
-                Annovar.MAF_THRESHOLD = float(options['-f'])
-
-            if '-c' in options:
-                Annovar.CONDEL_THRESHOLD = float(options['-c'])
-
-            if '-r' in options:
-                Annovar.MAF_THRESHOLD_VERY_RARE = float(options['-r'])
-
-            header_out.writerow(Annovar.columns + ["Priority_Index"])
-            sys.stdout.flush()
-            output = csv.writer(sys.stdout, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-            continue
-    
-        av = Annovar(line)
-    
-        while len(line)<len(Annovar.columns):
-                line.append("")
-          
-        output.writerow(line + [av.priority()])
-    
+    for line in handler.reader:
+        handler.process( line )
+   
 if __name__ == "__main__":    
     main()
