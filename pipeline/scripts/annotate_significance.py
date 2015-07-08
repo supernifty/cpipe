@@ -130,7 +130,7 @@ class AnnovarPriority:
         elif self.is_noncoding():
             return 0
 
-        elif self.ExonicFunc in ["synonymous SNV", "unknown"]:
+        elif self.ExonicFunc in AnnovarPriority.ANNOVAR_EXONIC_FUNCS["synonymous"] or self.ExonicFunc == "unknown":
             return 0
         else:
             print >>sys.stderr, "WARNING: variant %s:%s %s/%s func=%s failed to be categorized" % \
@@ -217,6 +217,9 @@ class AnnovarLineVCF (AnnovarPriority):
         self.fields = line.split( '\t' )
     
     def __getattr__(self,name):
+        '''
+          get the value of a given key for the current row
+        '''
         if name in AnnovarLineVCF.FIELDS:
             return self.fields[AnnovarLineVCF.FIELDS[name]]
         else:
@@ -242,7 +245,7 @@ class AnnovarLineVCF (AnnovarPriority):
     def write_row( self, output ):
         # add priority to info
         updated_line = re.sub( ';ALLELE_END', ';Priority=%i;ALLELE_END' % self.priority(), self.line )
-        output.write( '%s\n' % updated_line )
+        output.write( '%s' % updated_line )
 
 class AnnovarCSV:
     def __init__( self ):
@@ -270,9 +273,14 @@ class AnnovarVCF:
     def __init__( self ):
         pass
 
+    def write_meta( self, output ):
+        output.write( '##INFO=<ID=Priority,Number=1,Type=Integer,Description="Variant category ranging from 1 (missense) to 5 (truncating), with 9 denoting unclassified">\n' )
+
     def process( self, line, fh ):
         if line.startswith( '#' ):
-            fh.write( '%s\n' % line )
+            if line.startswith( '##INFO' ) and 'ALLELE_END' in line:
+                self.write_meta( fh )
+            fh.write( '%s' % line )
         else:
             av = AnnovarLineVCF(line)
             av.write_row( fh ) 

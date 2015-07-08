@@ -905,7 +905,7 @@ vcf_to_excel = {
     requires sample_metadata_file : "File describing meta data for pipeline run (usually, samples.txt)",
              ANNOTATION_VARIANT_DB : "File name of SQLite variant database for storing variants"
 
-    var exclude_variant_types : "synonymous SNV",
+    var exclude_variant_types : "synonymous SNV,synonymous_SNV",
         out_of_cohort_filter_threshold : OUT_OF_COHORT_VARIANT_COUNT_FILTER
 
     check {
@@ -927,15 +927,15 @@ vcf_to_excel = {
 
     output.dir="results"
 
-    def all_outputs = [target_name + ".xlsx"] + target_samples.collect { it + ".annovarx.csv" }
-    from("*.hg19_multianno.*.csv", "*.vcf") produce(all_outputs) {
+    def all_outputs = [target_name + ".xlsx"] + target_samples.collect { it + ".annovarx.vcf" } // xlsx for each target_name, vcf for each target_sample
+    from("*.hg19_multianno.vcf", "*.vcf") produce(all_outputs) { // from("*.hg19_multianno.*.csv", "*.vcf") produce(all_outputs) {
         exec """
-            echo "Creating $outputs.csv"
+            echo "Creating $outputs.vcf"
 
             JAVA_OPTS="-Xmx12g -Djava.awt.headless=true" $GROOVY 
                 -cp $SCRIPTS:$GROOVY_NGS/groovy-ngs-utils.jar:$EXCEL/excel.jar $SCRIPTS/vcf_to_excel.annovar.groovy 
                 -s '${target_samples.join(",")}'
-                ${inputs.csv.withFlag("-a")}
+                ${inputs.hg19_multianno.vcf.withFlag("-a")}
                 ${inputs.vcf.withFlag("-vcf")}
                 -x "$EXCLUDE_VARIANT_TYPES"
                 -db $ANNOTATION_VARIANT_DB
