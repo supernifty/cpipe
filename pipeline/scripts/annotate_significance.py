@@ -141,11 +141,10 @@ class AnnovarPriority:
         return self.Func in self.ANNOVAR_EXONIC_FUNCS["noncoding"]
 
     def is_missense(self):
-        log.debug( 'ExonicFunc: %s' % ( self.ExonicFunc ) )
         return self.ExonicFunc in self.ANNOVAR_EXONIC_FUNCS["missense"]
 
     def is_truncating(self):
-        return self.ExonicFunc in self.ANNOVAR_EXONIC_FUNCS["truncating"] or self.Func in ["splicing","exonic;splicing"]
+        return self.ExonicFunc in self.ANNOVAR_EXONIC_FUNCS["truncating"] or self.Func in ("splicing","exonic;splicing", "exonic\\x3bsplicing")
 
     def is_rare(self):
         # Return true iff at least one database has the variant at > the MAF_THRESHOLD
@@ -227,6 +226,12 @@ class AnnovarLineVCF (AnnovarPriority):
             info = dict( map( lambda(x): x.split("=",1), [ y for y in self.fields[AnnovarLineVCF.FIELDS['Info']].split( ';' ) if y.find('=') != -1 ] ) )
             if name in info:
                 return info[name]
+            elif name == 'Condel' and 'CSQ' in info:
+                items = info['CSQ'].split('|')
+                if len(items) > 28:
+                    return items[28].split(',')[0]
+                else:
+                    return ''
             else:
                 return ''
 

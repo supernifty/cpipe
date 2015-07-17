@@ -29,8 +29,6 @@
 // Requires: Groovy NGS Utils (https://github.com/ssadedin/groovy-ngs-utils)
 //           ExcelCategory    (https://github.com/ssadedin/excelcatgory)
 //
-// Author: Peter Georgeson
-//
 /////////////////////////////////////////////////////////////////////////
 
 import groovy.sql.Sql
@@ -39,7 +37,7 @@ import au.com.bytecode.opencsv.*
 import org.apache.commons.cli.Option
 
 // Parse command line args
-CliBuilder cli = new CliBuilder(usage: "vcf_to_excel.groovy [options]\n")
+CliBuilder cli = new CliBuilder(usage: "vcf_to_excel.annovar_vcf.groovy [options]\n")
 cli.with {
   s 'comma separated list of samples to include', args:1, required:true
   a 'Annovar file containing annotations', args: Option.UNLIMITED_VALUES, required:true
@@ -73,16 +71,22 @@ if(!opts) {
 args = opts.arguments()
 
 Writer log = new File(opts.log?:'/dev/null').newWriter()
+msg = { m ->
+  System.err.println( new Date().toString() + "\t" + m )
+  log.println( m )
+}
 
 int out_of_cohort_variant_count_threshold = opts.oocf.toInteger() 
 
 def pg_variants = []
-if(opts.pgx) 
+if(opts.pgx) { 
     pg_variants = VCF.parse(opts.pgx)
+}
 
 int pgx_coverage_threshold = opts.pgxcov ? opts.pgxcov.toInteger() : 15
 
 sample_info = SampleInfo.parse_sample_info(opts.si)
+msg( "INFO: sample_info ${sample_info}" )
 
 exclude_types = opts.x ? opts.x.split(",") : []
 excluded_profiles_from_counts = opts.xprof ? opts.xprof.split(",") as List : ["AML"]
@@ -92,50 +96,45 @@ samples = opts.s.split(",")
 Map<String,SAM> bams = null
 if(opts.bams) {
     bams = opts.bams.collectEntries { def bam = new SAM(it); [ bam.samples[0], bam ] }
-    println "="*80
-    println "Read ${bams.size()} BAM files for querying read depth:"
-    bams.each {  println "Sample: $it.key => $it.value.samFile " }
-    println "="*80
+    msg "="*80
+    msg "Read ${bams.size()} BAM files for querying read depth:"
+    bams.each {  msg "Sample: $it.key => $it.value.samFile " }
+    msg "="*80
 }
 
-// determine available annovar fields
-//String vcfName = opts.as.find { new File(it).name.startsWith(samplePrefix) }
-//if(vcfName == null) {
-//  err "The following samples were not found in the VCF file provided: ${sample}"
-//}
-//VCFIndex vcf = new VCFIndex(vcfName)
+// determine incoming fields
+first_vcf = VCF.parse( opts.as[0] )
+VCF_INFO_FIELDS = first_vcf.headerLines.grep {
+    String hline -> hline.startsWith( '##INFO' )
+}.collect {
+    first_vcf.parseInfoMetaData( it )['ID']
+}
 
+msg "Input fields are " + VCF_INFO_FIELDS
 
-ANNOVAR_FIELDS = null
-new File(opts.as[0]).withReader { r -> ANNOVAR_FIELDS = r.readLine().split(",") as List }
-// Not all the fields have headers (why?)
-if(!("Qual" in ANNOVAR_FIELDS))
-        ANNOVAR_FIELDS += ["Qual","Depth"]
-
-        println "Annovar fields are " + ANNOVAR_FIELDS
-
-// Then read all the annovar files
-println "Processing ${opts.as.size()} Annovar files"
+// Read all the annovar files
+msg "Processing ${opts.as.size()} incoming VCF files"
 
 // connect to database, if specified
 db = null
-if(opts.db) 
+if(opts.db) { 
     db = new VariantDB(opts.db)
+}
 
 // Read the gene categories
 geneCategories = new File(opts.gc).readLines()*.split('\t').collect { [it[0],it[1]] }.collectEntries()
 
 // input fields
-AACHANGE_FIELDS = ANNOVAR_FIELDS.grep { it.startsWith("AAChange") }
+AACHANGE_FIELDS = VCF_INFO_FIELDS.grep { it.startsWith("AAChange") }
 EXAC_FIELDS=["exac03","ExAC_ALL","ExAC_Freq"]
 
-EXAC_FIELD = EXAC_FIELDS.find { it in ANNOVAR_FIELDS }
+EXAC_FIELD = EXAC_FIELDS.find { it in VCF_INFO_FIELDS }
 if(EXAC_FIELD == null) 
     EXAC_FIELD = "exac03"
 
 ONEKG_FIELD="1000g2014oct_all"
 
-ESP_FIELD = ANNOVAR_FIELDS.find { it =~ /^esp/ }
+ESP_FIELD = VCF_INFO_FIELDS.find { it =~ /^esp/ }
 if(ESP_FIELD == null)
     ESP_FIELD = "esp5400_all"
 
@@ -151,12 +150,6 @@ OUTPUT_FIELDS = ["Func", "Gene", "ExonicFunc"] +
                 ["Gene Category", "Priority_Index", "CADD_raw", "CADD_phred", "Condel", "phastConsElements46way", ESP_FIELD, ONEKG_FIELD, "snp138", EXAC_FIELD] +
                 LJB_FIELDS + 
                 [ "genomicSuperDups", "Chr", "Start", "End", "Ref", "Alt", "Otherinfo", "Qual", "Depth", "#Obs", "RefCount", "AltCount", "PRIORITY_TX"]
-
-OUTPUT_CSV_FIELDS = ["Func","Gene","ExonicFunc"] +
-                    AACHANGE_FIELDS + 
-                    ["phastConsElements46way","genomicSuperDups",ESP_FIELD,ONEKG_FIELD,EXAC_FIELD,"snp138"] +
-                    LJB_FIELDS +
-                    ["Chr","Start","End","Ref","Alt","Otherinfo","Qual","Depth","Condel","Priority_Index","CADD_raw","CADD_phred", "Gene Category","Priority_Index","#Obs","RefCount","AltCount","PRIORITY_TX"]
 
 CENTERED_COLUMNS = ["Gene Category", "Priority_Index", ONEKG_FIELD, ESP_FIELD, "LJB_PhyloP_Pred","LJB_SIFT_Pred","LJB_PolyPhen2","LJB_PolyPhen2_Pred"]
 
@@ -175,23 +168,24 @@ HEADING_MAP = OUTPUT_FIELDS.collectEntries{[it,it]} + [
    "CADD_raw": "CADD"
 ] + [ LJB_FIELDS, OLD_LJB_FIELDS ].transpose().collectEntries()
 
-println HEADING_MAP
-
+// if gene contains a (, return what's contained in () else return aaChange
+//
 extractAAChange = { gene, aaChange ->
     if(gene.indexOf("(")>=0) {
         def geneParts = (gene =~ /(.*)\((.*)\)/)[0]
         gene = geneParts[1].toString()
         return geneParts[2].toString()
     }
-    else
-	return aaChange
+    else {
+        return aaChange
+    }
 }
 
 //
 // Utility function to collect information about a variant into the columns
 // required for export.
 //
-collectOutputValues = { lineIndex, funcGene, variant, sample, variant_counts, av ->
+collectOutputValues = { lineIndex, funcGene, variant, sample, variant_counts ->
 
     // Build up values for the row in a map with the column name as the key
     def outputValues = [:]
@@ -199,61 +193,84 @@ collectOutputValues = { lineIndex, funcGene, variant, sample, variant_counts, av
     (func,gene) = funcGene
 
     for(aaChange in AACHANGE_FIELDS) {
-        outputValues[aaChange] = extractAAChange(gene, av[aaChange])
+        outputValues[aaChange] = extractAAChange(gene, variant.info[aaChange])
     }
-    outputValues.ExonicFunc = func=="splicing"?"":av.ExonicFunc
+    outputValues.ExonicFunc = func == "splicing" ? "" : variant.info.ExonicFunc
 
     def geneCategory = geneCategories[gene]
-    if(sample_info[sample].geneCategories[gene])
+    if(sample_info[sample].geneCategories[gene]) {
         geneCategory = sample_info[sample].geneCategories[gene]
+    }
 
-    outputValues["Gene Category"] = (geneCategory == null)?:1
-    
-    outputValues["Gene"] = gene
-    outputValues["Func"] = func
 
-    for(af in ANNOVAR_FIELDS) {
-        if(av.columns.containsKey(af)) {
-            outputValues[af] = av[af]
+    // copy annovar fields to output row
+    for(af in VCF_INFO_FIELDS) {
+        if(variant.info.containsKey(af)) {
+            // undo annovar character replacements
+            outputValues[af] = variant.info[af].toString().replaceAll('_', ' ').replaceAll( "\\\\x3b", ";" ).replaceAll( "\\\\x3e", "=" )
         }
     }
 
     // New version of Annovar puts het/hom, Qual and Depth all in one tab separated field called Otherinfo
-    def otherInfo = av.Otherinfo.split("\t")
-    outputValues["Otherinfo"] = otherInfo[0] // the original value that was called Otherinfo
-    outputValues["Qual"] = otherInfo[1]
-    outputValues["Depth"] = otherInfo[2]
+    // def otherInfo = variant.info.Otherinfo.split("\t")
+    outputValues["Otherinfo"] = (variant.dosages[0] == 1 ? "het" : "hom")
+    variant.update{ variant.info.DosageInfo = (variant.dosages[0] == 1 ? "het" : "hom") }
 
-    outputValues.CADD = av.columns.CADD != null ? av.CADD: ""
+    outputValues["Gene Category"] = geneCategory ?: 1
+    variant.update { variant.info.GeneCategory = geneCategory ?: 1 } // default to 1
+
+    outputValues["Gene"] = gene
+    outputValues["Func"] = func
+
+    outputValues["Qual"] = variant.qual
+    outputValues["Depth"] = variant.info.DP
+    outputValues["Priority_Index"] = variant.info.Priority
+    outputValues["Chr"] = variant.chr
+    outputValues["Start"] = variant.pos
+    outputValues["End"] = variant.pos + variant.size() // was Start, End
+    outputValues["Ref"] = variant.ref
+    outputValues["Alt"] = variant.alt
+    if (variant.info.containsKey("CSQ")) {
+      csq0 = variant.info["CSQ"].split( ",", -1 )[0]
+      csq = csq0.split("\\|", -1)
+      if ( csq.length > 28 ) {
+         condel = csq[28]
+         outputValues["Condel"] = condel
+      }
+    }
+
+    outputValues.CADD = variant.info.CADD_raw != null ? variant.info.CADD_raw : ""
 
     if(db) {
         outputValues["#Obs"] = variant_counts.in_target
     }
 
-    outputValues.RefCount=outputValues.AltCount="";
-    if(!variant) 
+    outputValues.RefCount = outputValues.AltCount = "";
+    if(!variant) { 
+        msg("WARNING: no variant specified")
         return outputValues // Cannot annotate allele depths for this variant
+    }
 
     // Try to annotate allele frequencies
     def gt = variant.sampleGenoType(sample)
     if(gt) {
         // Reference depth
-        if(gt.containsKey('AD')) {
-            outputValues.RefCount=gt.AD[0]
+        if (gt.containsKey('AD')) {
+            outputValues.RefCount = gt.AD[0]
 
             // Alternate depth depends on which allele
-            int altAllele = (variant.alts.size()==1)?1:variant.equalsAnnovar(av.Chr, av.Start.toInteger(), av.Alt)
+            int altAllele = 1 // (variant.alts.size()==1)?1:variant.equalsAnnovar(variant.Chr, variant.Start.toInteger(), variant.Alt)
             outputValues.AltCount = gt.AD[altAllele]
         }
         else {
-          System.err.println("WARNING: variant $variant.chr:$variant.pos ($variant.ref/$variant.alt) had no AD info for sample $sample at line $lineIndex")
+          msg("WARNING: variant $variant.chr:$variant.pos ($variant.ref/$variant.alt) had no AD info for sample $sample at line $lineIndex")
         }
     }
     else {
-      System.err.println("WARNING: variant $variant.chr:$variant.pos ($variant.ref/$variant.alt) had no genotype for sample $sample at line $lineIndex")
+      msg("WARNING: variant $variant.chr:$variant.pos ($variant.ref/$variant.alt) had no genotype for sample $sample at line $lineIndex")
     }
     return outputValues
-}
+} // collectOutputValues 
 
 // Because excel can only handle up to 30 chars in the worksheet name,
 // we may have to shorten them
@@ -278,65 +295,84 @@ try {
                 // Read the VCF file and sort the annovar output by Priority Index
                 String samplePrefix = sample+"."
                 String annovarName = opts.as.find{new File(it).name.startsWith(samplePrefix)}
-                if(annovarName == null)
-                    err "The following samples did not have an Annovar file provided: $sample in Annovar files:\n${opts.as.join('\n')}"
+                if(annovarName == null) {
+                    err "The following samples did not have an associated VCF: $sample in Annovar files:\n${opts.as.join('\n')}"
+                }
 
-                println "Processing $annovarName ..."
-                // def annovar_csv = parseCSV(annovarName,',').grep { it.Priority_Index.toInteger()>0 }.sort { -it.Priority_Index.toInteger() }
-                def annovar_items = new VCF( annovarName ).grep { it.info.Priority }.sort{ -it.info.Priority }
-                println "Processing $annovarName: got items"
+                msg "INFO: Processing $annovarName..."
+                def annovar_vcf = VCF.parse( annovarName ) // TODO .sort{ -it.info.Priority }
+                msg "INFO: Processing $annovarName: got ${annovar_vcf.getSize()} items"
+
+                // add sample metadata
+                for ( name in [ 'target', 'sampleType', 'geneCategories', 'batch', 'pedigree', 'sex' ,'consanguinity', 'ethnicity', 'dnaDates', 'captureDates', 'sequencingDates', 'dnaConcentrationNg', 'dnaQuality', 'dnaQuantity', 'meanCoverage', 'variantsFile', 'machineIds', 'sequencingContact', 'analysisContact', 'institution' ] ) {
+                  if ( sample_info[sample][name] ) {
+                    msg( "##metadata_$name=${sample_info[sample][name]}" )
+                    annovar_vcf.headerLines.add( 1, "##metadata_$name=${sample_info[sample][name]}" )
+                  }
+                }
+                // add new fields to info
+                annovar_vcf.addInfoHeader( "Observations", "Number of times this variant was observed in out of cohort targets", new Integer(0) )
+                annovar_vcf.addInfoHeader( "Filter", "Whether the variation should be filtered (allow|excluded-type|observation-count|dosage-zero)", new String("") )
+                annovar_vcf.addInfoHeader( "GeneCategory", "An integer index assigned to a gene to indicate the strength of evidence of its association to a particular disease", new Integer(0) )
+                annovar_vcf.addInfoHeader( "Purpose", "Whether the variant is diagnostic or pharmacogenomic (diag|phx)", new String("") )
+                annovar_vcf.addInfoHeader( "DosageInfo", "Type of variant (het|hom)", new String("") )
+                annovar_vcf.addInfoHeader( "VariantStatus", "(Untested|Absent|Present)", new String("") )
 
                 // Write out header row
-                // PG bold { row {
-                // PG         cells(OUTPUT_FIELDS.collect {HEADING_MAP[it]} )
-                // PG } }
+                bold { row {
+                        cells(OUTPUT_FIELDS.collect {HEADING_MAP[it]} )
+                } }
 
-                println "Priority genes for $sample are ${sample_info[sample].geneCategories.keySet()}"
+                msg "INFO: Priority genes for $sample are ${sample_info[sample].geneCategories.keySet()}"
 
                 // We are going to write out a CSV that is identical to the original annovar output
                 // but which includes our custom fields on the end
                 // Start by writing the headers
-                def writer = new FileWriter("${opts.annox}/${sample}.annovarx.csv")
-                writer.println(OUTPUT_CSV_FIELDS.collect{HEADING_MAP[it]}.join(","))
-                CSVWriter csvWriter = new CSVWriter(writer);
-                for(av in annovar_items) {
+                for(Variant av in annovar_vcf) { // each variant in the sample vcf
                     ++lineIndex
                     // if(lineIndex%5000==0)
-                    println new Date().toString() + "\tProcessed $lineIndex lines"
+                    msg "INFO: Processing variant $lineIndex..."
+                    av.update{ av.info.Purpose = 'diag' }
+                    av.update{ av.info.VariantStatus = 'Present' }
 
                     // note: check for exonic, because splice events show up as synonymous but with 
                     // Func="exonic;splicing", and should not be filtered out this way
                     if(av.info.ExonicFunc in exclude_types && av.info.Func=="exonic") { 
-                        log.println "Variant $av.Chr:$av.Start-$av.End excluded by being an excluded type: $av.ExonicFunc"
+                        msg "INFO: Variant $av.chr:$av.pos excluded by being an excluded type: $av.info.ExonicFunc"
+                        av.update { av.info.Filter = 'excluded-type' }
                         continue
                     }
 
-                    Variant variant = av.variant
-                    if(variant.sampleDosage(sample, variantInfo.allele)==0)
+                    if(av.sampleDosage(sample, 0)==0) { //if(av.sampleDosage(sample, av.alleles)==0)
+                        msg "INFO: Variant $av.chr:$av.pos excluded by dosage zero"
+                        av.update { av.info.Filter = 'dosage-zero' }
                         continue
-
+                    }
+                    av.update{ av.info.Otherinfo = (av.dosages[0] == 1 ? "het" : "hom") }
                     Map variant_counts = [total: 0, other_target:0]
                     if(db) {
-                        variant_counts = db.queryVariantCounts(variant, 
-                                                               variant.alleles[variantInfo.allele], 
-                                                               sample, 
-                                                               sample_info[sample].target, 
+                        variant_counts = db.queryVariantCounts(av, // variant
+                                                               av.getAlleles()[0], // allele (was av.Alleles) TODO ok?
+                                                               sample, // sampleId
+                                                               sample_info[sample].target, // cohort
                                                                excludeCohorts: excluded_profiles_from_counts,
                                                                batch: sample_info[sample].batch)
-                        if(variant_counts.other_target>out_of_cohort_variant_count_threshold) {
-                            log.println "Variant $variant excluded by presence ${variant_counts.other_target} times in other targets"
+                        av.update{ av.info.Observations = variant_counts.other_target }
+                        if(variant_counts.other_target > out_of_cohort_variant_count_threshold) {
+                            msg "INFO: Variant $av excluded by presence ${variant_counts.other_target} times in other targets"
+                            av.update{ av.info.Filter = 'observation-count' }
                             continue
                         }
                     }
                     ++includeCount
-
                     ++sampleCount
-                    def funcs = av.info.Func.split(";")
-                    def genes = av.info.Gene.split(";")
+
+                    def funcs = av.info.Func.split("\\\\x3b")
+                    def genes = av.info.Gene.split("\\\\x3b")
 
                     [funcs,genes].transpose().each { funcGene ->
                         
-                        def outputValues = collectOutputValues(lineIndex, funcGene, variant, sample, variant_counts, av)
+                        def outputValues = collectOutputValues(lineIndex, funcGene, av, sample, variant_counts)
 
                         // Write the row into the spreadsheet
                         row {
@@ -347,18 +383,15 @@ try {
                                 else {
                                     cell(outputValues[fieldName]) 
                                 }
-                            }
-                      }
-
-                      // Write Annovar CSV format
-                      csvWriter.writeNext( OUTPUT_CSV_FIELDS.collect { fieldName ->
-                        outputValues[fieldName] == null ? "" : outputValues[fieldName]
-                      } as String[])
-                  }
-                } // End Annovar variants
-                println new Date().toString() + "\tProcessed $lineIndex lines: done"
+                            } // each
+                        } // row
+                  } // transpose.each
+                  av.update{ av.info.Filter = 'allow' }
+                  msg "INFO: Processed $lineIndex variants: done"
+                } // end foreach Annovar variant
 
                 // Now add pharmacogenomic variants
+                def annovar_vcf_index = new VCFIndex( annovarName )
                 for(pvx in pg_variants) {
 
                     values = OUTPUT_FIELDS.collect { "" }
@@ -366,7 +399,7 @@ try {
                     // Check if the unfiltered VCF has the variant
                     // Note: there's an issue here about canonicalizing the variant
                     // representation. For now, it's being ignored.
-                    def vx = vcf.contains(pvx)
+                    def vx = annovar_vcf_index.contains(pvx)
 
                     List<Map> vepInfos = pvx.vepInfo
                     def genes = vepInfos*.SYMBOL.grep { it != null }.join(",")
@@ -382,7 +415,7 @@ try {
                     else { // Variant not called - but is there coverage?
                         if(depth >= pgx_coverage_threshold)
                             state = "Absent"
-                        System.err.println "WARNING : PGX variant $pvx was not genotyped for sample $sample"
+                        msg "WARNING : PGX variant $pvx was not genotyped for sample $sample"
                     }
 
                     // Convert to annovar form since we are using Annovar annotations in the 
@@ -412,7 +445,6 @@ try {
                     nvlcell = { cell(it == null ? "" : it ) }
                     row { 
                         OUTPUT_FIELDS.each { fieldName ->
-                            //println "Export $fieldName = ${outputValues[fieldName]}"
                             if(fieldName in CENTERED_COLUMNS) { 
                                 center { nvlcell(output[fieldName]) } 
                             }
@@ -425,13 +457,25 @@ try {
                             }
                         }
                     }
-                    csvWriter.writeNext( ANNOVAR_FIELDS.collect { f -> if(output[f] != null) { String.valueOf(output[f]) } else "" } as String[] )
-
+                    // add to variants
+                    pvx.update{ pvx.info["VariantStatus"] = state }
+                    pvx.update{ pvx.info["Purpose"] = "phx" }
+                    annovar_vcf.add( pvx )
                 }
-                csvWriter.close()
+
+                // write out modified variant list
+                target_vcf_filename = "${opts.annox}/${sample}.annovarx.vcf"
+                annovar_vcf.print( new PrintStream( new File( target_vcf_filename ) ) )
+                msg "INFO: Wrote ${target_vcf_filename}"
+
+            } // sheet sample
+            msg "INFO: Sample $sample has ${sampleCount} / ${includeCount} of included variants"
+            try { 
+                s/*.autoFilter("A:"+(char)(65+6+samples.size()))*/.autoSize() 
+            } 
+            catch(e) { 
+                msg "WARNING: Unable to autosize columns: " + String.valueOf(e) 
             }
-            println "Sample $sample has ${sampleCount} / ${includeCount} of included variants"
-            try { s/*.autoFilter("A:"+(char)(65+6+samples.size()))*/.autoSize() } catch(e) { println "WARNING: Unable to autosize columns: " + String.valueOf(e) }
             s.setColumnWidth(OUTPUT_FIELDS.indexOf("Gene"),60*256) // 30 chars wide for Gene column
             AACHANGE_FIELDS.each { aaChange -> 
                 s.setColumnWidth(OUTPUT_FIELDS.indexOf(aaChange),30*256) // 60 chars wide for AAChange column
@@ -439,7 +483,7 @@ try {
             // s.setColumnWidth(OUTPUT_FIELDS.indexOf("AAChange_RefSeq"),30*256) // 60 chars wide for AAChange column
             // s.setColumnWidth(OUTPUT_FIELDS.indexOf("AAChange_UCSC"),30*256) // 60 chars wide for AAChange column
             s.setColumnWidth(OUTPUT_FIELDS.indexOf("Gene Category"),14*256) // 14 chars wide for Gene category column
-        }
+        } // for(sample in samples) 
 
         sheet("README") {
             row { }
@@ -466,14 +510,8 @@ try {
     }.save(opts.o)
 }
 finally {
-    if(db)
+    if (db) {
        db.close()
-
+    }
     log.close()
 }
-
-
-
-
-
-

@@ -930,8 +930,10 @@ vcf_to_excel = {
     def all_outputs = [target_name + ".xlsx"] + target_samples.collect { it + ".annovarx.vcf" } // xlsx for each target_name, vcf for each target_sample
     from("*.hg19_multianno.vcf", "*.vcf") produce(all_outputs) { // from("*.hg19_multianno.*.csv", "*.vcf") produce(all_outputs) {
         exec """
-            echo "Creating $outputs.vcf"
+            echo "Indexing ${inputs.hg19_multianno.vcf}"
+            $IGVTOOLS/igvtools index "${inputs.hg19_multianno.vcf}"
 
+            echo "Creating $outputs.vcf"
             JAVA_OPTS="-Xmx12g -Djava.awt.headless=true" $GROOVY 
                 -cp $SCRIPTS:$GROOVY_NGS/groovy-ngs-utils.jar:$EXCEL/excel.jar $SCRIPTS/vcf_to_excel.annovar.groovy 
                 -s '${target_samples.join(",")}'
