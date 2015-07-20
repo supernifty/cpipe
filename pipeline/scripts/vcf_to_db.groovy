@@ -134,7 +134,7 @@ db.tx {
             }
             for(av in annovar_items) {
                 ++lineIndex
-                if(lineIndex%5000==0)
+                if(lineIndex % 5000==0)
                     println new Date().toString() + "\tProcessed $lineIndex lines..."
 
                 if (annovar_format_vcf) {

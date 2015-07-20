@@ -149,7 +149,7 @@ OUTPUT_FIELDS = ["Func", "Gene", "ExonicFunc"] +
                 AACHANGE_FIELDS + 
                 ["Gene Category", "Priority_Index", "CADD_raw", "CADD_phred", "Condel", "phastConsElements46way", ESP_FIELD, ONEKG_FIELD, "snp138", EXAC_FIELD] +
                 LJB_FIELDS + 
-                [ "genomicSuperDups", "Chr", "Start", "End", "Ref", "Alt", "Otherinfo", "Qual", "Depth", "#Obs", "RefCount", "AltCount", "PRIORITY_TX"]
+                [ "genomicSuperDups", "Chr", "Start", "End", "Ref", "Alt", "Otherinfo", "Qual", "Depth", "#Obs", "RefCount", "AltCount"] // TODO removed priority_tx
 
 CENTERED_COLUMNS = ["Gene Category", "Priority_Index", ONEKG_FIELD, ESP_FIELD, "LJB_PhyloP_Pred","LJB_SIFT_Pred","LJB_PolyPhen2","LJB_PolyPhen2_Pred"]
 
@@ -197,12 +197,6 @@ collectOutputValues = { lineIndex, funcGene, variant, sample, variant_counts ->
     }
     outputValues.ExonicFunc = func == "splicing" ? "" : variant.info.ExonicFunc
 
-    def geneCategory = geneCategories[gene]
-    if(sample_info[sample].geneCategories[gene]) {
-        geneCategory = sample_info[sample].geneCategories[gene]
-    }
-
-
     // copy annovar fields to output row
     for(af in VCF_INFO_FIELDS) {
         if(variant.info.containsKey(af)) {
@@ -215,6 +209,11 @@ collectOutputValues = { lineIndex, funcGene, variant, sample, variant_counts ->
     // def otherInfo = variant.info.Otherinfo.split("\t")
     outputValues["Otherinfo"] = (variant.dosages[0] == 1 ? "het" : "hom")
     variant.update{ variant.info.DosageInfo = (variant.dosages[0] == 1 ? "het" : "hom") }
+
+    def geneCategory = geneCategories[gene]
+    if(sample_info[sample].geneCategories[gene]) {
+        geneCategory = sample_info[sample].geneCategories[gene]
+    }
 
     outputValues["Gene Category"] = geneCategory ?: 1
     variant.update { variant.info.GeneCategory = geneCategory ?: 1 } // default to 1
@@ -293,7 +292,7 @@ try {
                 includeCount=0
 
                 // Read the VCF file and sort the annovar output by Priority Index
-                String samplePrefix = sample+"."
+                String samplePrefix = sample + "."
                 String annovarName = opts.as.find{new File(it).name.startsWith(samplePrefix)}
                 if(annovarName == null) {
                     err "The following samples did not have an associated VCF: $sample in Annovar files:\n${opts.as.join('\n')}"

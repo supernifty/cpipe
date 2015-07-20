@@ -24,6 +24,13 @@
 #
 ########################################################
 
+# python unit tests
 pushd pipeline/scripts
 python -m unittest discover -s ../tests -p '*_tests.py'
+popd
+
+# groovy unit tests
+eval `sed 's/\/\/.*$//' pipeline/config.groovy`
+pushd pipeline/scripts
+JAVA_OPTS="-Xmx4g -Djava.awt.headless=true" $GROOVY -cp $GROOVY_NGS/groovy-ngs-utils.jar:$EXCEL/excel.jar ../tests/*.groovy
 popd

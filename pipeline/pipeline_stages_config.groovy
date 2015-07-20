@@ -702,7 +702,7 @@ call_pgx = {
                    -dcov 1600 
                    -l INFO 
                    -L ../design/${target_name}.pgx.vcf
-                   -A AlleleBalance -A Coverage -A FisherStrand 
+                   -A AlleleBalance -A DepthOfCoverage -A FisherStrand 
                    -glm BOTH
                    -metrics $output.metrics
                    -o $output.vcf
