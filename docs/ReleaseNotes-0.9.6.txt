@@ -1,0 +1,16 @@
+==================================================
+
+Melbourne Genomics Demonstration Project Pipeline
+
+Version 0.9.6 Release Notes
+
+==================================================
+
+This release supports the calling of variants at splice sites. Three new
+parameters are introduced in config.groovy:
+* INTERVAL_PADDING_CALL: padding used when calling all variants.
+* INTERVAL_PADDING_SNV: padding used to filter SNVs.
+* INTERVAL_PADDING_INDEL: padding used to filter INDELs.
+
+These parameters are used in the call_variants, call_pgx, and filter_variants
+tasks in pipeline_stages_config.groovy.
