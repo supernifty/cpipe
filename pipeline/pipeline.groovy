@@ -38,6 +38,7 @@ load 'pipeline_stages_config.groovy'
 
 sample_metadata_file = args[0]
 sample_info = SampleInfo.parse_mg_sample_info(args[0])
+// sample_info = SampleInfo.parse_sample_info(args[0])
 
 // We are specifying that each analysis takes place inside a fixed file structure
 // where the parent directory is named according to the batch name. Thus we
@@ -75,7 +76,7 @@ run {
                    recal_count + recal + index_bam +
                        [
                          call_variants + call_pgx + merge_pgx +
-                            filter_variants + 
+                            filter_variants + merge_variants +
                             annotate_vep + index_vcf +
                             annovar_summarize_refgene +
                          [add_to_database, augment_condel + annotate_significance, calculate_cadd_scores] + augment_cadd, 
@@ -84,7 +85,7 @@ run {
                        ]
                    + check_coverage
                    + check_karyotype
-        ] + qc_excel_report
+        ] + qc_excel_report 
    ] + 
 
    // The 3rd phase is to produce the output spreadsheet, 1 per target (flagship)

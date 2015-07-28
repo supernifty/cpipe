@@ -38,6 +38,8 @@ files = [
     summary: sampleFiles.grep { it.stageName == "summary_pdf" && it.outputFile.name.endsWith(".pdf") }
 ].collectEntries { key, fs -> [ key, fs.unique { it.outputFile.absolutePath }[0] ] }
 
+println files
+
 tools = sampleFiles.grep { it.tools }                   // Only files with tools
                    .collect { it.tools.split("\n") }    // A single file has multiple tools -> split/ flatten
                    .flatten()*.trim()*.replaceAll(',$','')*.replaceAll('^,','') // remove leading or trailing commas

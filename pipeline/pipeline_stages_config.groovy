@@ -437,7 +437,7 @@ call_variants = {
                    -dcov 1600 
                    -l INFO 
                    -L $COMBINED_TARGET
-                   --interval_padding $INTERVAL_PADDING
+                   --interval_padding $INTERVAL_PADDING_CALL
                    -A AlleleBalance -A Coverage -A FisherStrand 
                    -glm BOTH
                    -metrics $output.metrics
@@ -468,7 +468,7 @@ call_pgx = {
                    -dcov 1600 
                    -l INFO 
                    -L ../design/${target_name}.pgx.vcf
-                   --interval_padding $INTERVAL_PADDING
+                   --interval_padding $INTERVAL_PADDING_CALL
                    -A AlleleBalance -A Coverage -A FisherStrand 
                    -glm BOTH
                    -metrics $output.metrics
@@ -477,7 +477,6 @@ call_pgx = {
     }
 }
 
-@filter("filter")
 filter_variants = {
     doc "Select only variants in the genomic regions defined for the $target_name target"
     output.dir="variants"
@@ -487,15 +486,45 @@ filter_variants = {
         pgx_flag = "-L ../design/${target_name}.pgx.vcf"
     }
 
+    msg "Filtering variants - finding INDELs"
     exec """
         java -Xmx2g -jar $GATK/GenomeAnalysisTK.jar 
              -R $REF
              -T SelectVariants 
              --variant $input.vcf 
              -L $target_bed_file $pgx_flag
-             --interval_padding $INTERVAL_PADDING
-             -o $output.vcf 
+             --interval_padding $INTERVAL_PADDING_SNV
+             --selectTypeToInclude SNP --selectTypeToInclude MIXED --selectTypeToInclude MNP --selectTypeToInclude SYMBOLIC --selectTypeToInclude NO_VARIATION
+             -o $output.snv
     """
+
+    msg "Filtering variants - finding SNVs"
+    exec """
+        java -Xmx2g -jar $GATK/GenomeAnalysisTK.jar 
+             -R $REF
+             -T SelectVariants 
+             --variant $input.vcf 
+             -L $target_bed_file $pgx_flag
+             --interval_padding $INTERVAL_PADDING_INDEL
+             --selectTypeToInclude INDEL
+             -o $output.indel
+    """
+}
+
+merge_variants = {
+    doc "Merge SNVs and INDELs"
+    output.dir="variants"
+
+    msg "Merging SNVs and INDELs"
+    exec """
+            java -Xmx3g -jar $GATK/GenomeAnalysisTK.jar
+            -T CombineVariants
+            -R $REF
+            --variant:indel $input.indel
+            --variant:snv $input.snv
+            --out $output.vcf
+            --setKey set
+         """
 }
 
 @filter("vep")
@@ -648,11 +677,12 @@ vcf_to_excel = {
 
     requires sample_metadata_file : "File describing meta data for pipeline run (usually, samples.txt)"
 
-    check {
-        exec "ls results/${target_name}.qc.xlsx > /dev/null 2>&1"
-    } otherwise { 
-        succeed "No samples succeeded for target $target_name" 
-    }
+    // disable this check - attempt to generate results regardless of qc
+    //check {
+    //    exec "ls results/${target_name}.qc.xlsx > /dev/null 2>&1"
+    //} otherwise { 
+    //    succeed "No samples succeeded for target $target_name" 
+    //}
 
     def pgx_flag = ""
     if(file("../design/${target_name}.pgx.vcf").exists()) {
