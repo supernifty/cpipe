@@ -1,0 +1,11 @@
+==================================================
+
+Melbourne Genomics Demonstration Project Pipeline
+
+Version 0.9.7 Release Notes
+
+==================================================
+
+* added new CS genes
+* enable provenance report to be created even if alignment done elsewhere
+* don't split multiple annotations into multiple lines on the final csv
