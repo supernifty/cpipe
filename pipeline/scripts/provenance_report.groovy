@@ -48,6 +48,8 @@ tools = sampleFiles.grep { it.tools }                   // Only files with tools
 // Read the version of the pipeline from the version file in the root directory
 pipelineVersion = new File(BASE,"version.txt").text.trim()
 
+println "Generating PDF for $outputFile"
+
 new PDF().document(outputFile.absolutePath) {
 
     title "Provenance Report for Study $sample"
@@ -90,14 +92,28 @@ new PDF().document(outputFile.absolutePath) {
 
             // BAM files from alignment
             cell("Raw Alignment")
-            cell(files.rawbam.outputFile.name)
-            cell(files.rawbam.timestamp)
-            cell(files.rawbam.outputFile.length())
+            if ( files.rawbam != null ) {
+              cell(files.rawbam.outputFile.name)
+              cell(files.rawbam.timestamp)
+              cell(files.rawbam.outputFile.length())
+            }
+            else {
+              cell("n/a")
+              cell("n/a")
+              cell("n/a")
+            }
 
             cell("Final Alignment")
-            cell(files.finalbam.outputFile.name)
-            cell(files.finalbam.timestamp)
-            cell(files.finalbam.outputFile.length())
+            if ( files.finalbam != null ) {
+              cell(files.finalbam.outputFile.name)
+              cell(files.finalbam.timestamp)
+              cell(files.finalbam.outputFile.length())
+            }
+            else {
+              cell("n/a")
+              cell("n/a")
+              cell("n/a")
+            }
 
             cell("Variant Calls")
             cell(files.vcf.outputFile.name)
