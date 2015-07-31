@@ -1,0 +1,11 @@
+==================================================
+
+Melbourne Genomics Demonstration Project Pipeline
+
+Version 0.9.7.1 Release Notes
+
+==================================================
+
+* removed erroneous CS genes
+* no longer split multi function genes on output
+* provenance can now succeed even if alignment was done elsewhere
