@@ -382,7 +382,7 @@ dedup = {
              METRICS_FILE=$output.metrics
              OUTPUT=$output.bam
 
-        rm -r $TMPDIR/\$USER
+        rm -r "$TMPDIR/\$USER"
     """
 }
 
