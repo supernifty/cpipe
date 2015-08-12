@@ -1,0 +1,10 @@
+==================================================
+
+Melbourne Genomics Demonstration Project Pipeline
+
+Version 0.9.7.2 Release Notes
+
+==================================================
+
+* Primarily new CS bed file corresponding to additional genes.
+* Minor bug fixes
