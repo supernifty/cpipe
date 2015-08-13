@@ -919,3 +919,14 @@ annovar_to_lovd = {
     }
 }
 
+create_sample_metadata = {
+    doc "Create a new samples.txt file that includes the pipeline ID"
+    requires sample_metadata_file : "File describing meta data for pipeline run (usually, samples.txt)"
+
+    output.dir="results"
+
+    exec """
+        echo "Creating $outputs.meta"
+        python $SCRIPTS/create_sample_metadata.py -id $ID_FILE < $sample_metadata_file > $output.meta
+    """
+}

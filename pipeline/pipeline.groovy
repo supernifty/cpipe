@@ -99,6 +99,9 @@ run {
    samples * [ provenance_report /* , annovar_to_lovd */ ] +
    
    // And report on similarity between samples
-   sample_similarity_report
+   sample_similarity_report +
+
+   // update metadata and pipeline ID
+   create_sample_metadata
 }
 
