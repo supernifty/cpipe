@@ -70,7 +70,6 @@ if(opts.pgx)
 
 int pgx_coverage_threshold = opts.pgxcov ? opts.pgxcov.toInteger() : 15
 
-def sample_info
 try {
   sample_info = SampleInfo.parse_mg_sample_info(opts.si)
 }

@@ -37,7 +37,6 @@ load 'config.groovy'
 load 'pipeline_stages_config.groovy'
 
 sample_metadata_file = args[0]
-def sample_info
 try {
   sample_info = SampleInfo.parse_mg_sample_info(args[0])
 }
