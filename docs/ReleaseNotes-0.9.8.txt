@@ -1,0 +1,12 @@
+==================================================
+
+Melbourne Genomics Demonstration Project Pipeline
+
+Version 0.9.8 Release Notes
+
+==================================================
+
+* add CS additional genes to flagship
+* generate pipeline run ID for each pipeline run
+* ability to generate provenance reports when part of the pipeline ran on a different pipeline
+* accept either the simple or extended samples.txt format
