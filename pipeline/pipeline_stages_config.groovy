@@ -924,9 +924,9 @@ create_sample_metadata = {
     requires sample_metadata_file : "File describing meta data for pipeline run (usually, samples.txt)"
 
     output.dir="results"
-
-    exec """
-        echo "Creating $outputs.meta"
-        python $SCRIPTS/create_sample_metadata.py -id $ID_FILE < $sample_metadata_file > $output.meta
-    """
+    produce("results/samples.meta") {
+      exec """
+          python $SCRIPTS/create_sample_metadata.py --id $ID_FILE < $sample_metadata_file > results/samples.meta
+      """
+    }
 }
