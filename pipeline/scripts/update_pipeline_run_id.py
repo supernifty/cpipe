@@ -31,11 +31,8 @@ def generate_new_id( f ):
   '''
   current_id = get_current_id( f )
   site, run = current_id.rsplit("_", 1)
-  try:
-    run = int(run) + 1
-  except ValueError: # 2nd half isn't an id after all
-    site = current_id
-    run = 1
+  # increment run ID
+  run = int(run) + 1
 
   new_id = '%s_%09i' % (site, run)
 
@@ -58,6 +55,11 @@ def get_current_id( f ):
     fh.close()
     if "_" in current:
       site, run = current.rsplit("_", 1)
+      try:
+        run = int(run)
+      except ValueError: # rightmost section isn't an id after all
+        site = current_id
+        run = 1
       current_id = '%s_%09i' % (site, run)
     elif len(current) == 0: # empty file
       run = 0
