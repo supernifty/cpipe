@@ -31,7 +31,12 @@ def generate_new_id( f ):
   '''
   current_id = get_current_id( f )
   site, run = current_id.rsplit("_", 1)
-  run = int(run) + 1
+  try:
+    run = int(run) + 1
+  except ValueError: # 2nd half isn't an id after all
+    site = current_id
+    run = 1
+
   new_id = '%s_%09i' % (site, run)
 
   fh = open( f, 'w' )
