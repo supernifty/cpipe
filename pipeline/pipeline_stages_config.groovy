@@ -921,6 +921,16 @@ annovar_to_lovd = {
     }
 }
 
+correct_sample_metadata_file = {
+    doc "Remove spaces from gene lists and point to a new sample metadata file"
+    produce("results/samples.corrected") {
+      exec """
+        python $SCRIPTS/correct_sample_metadata_file.py < $sample_metadata_file > results/samples.corrected
+      """
+    }
+    sample_metadata_file = "results/samples.corrected"
+}
+
 generate_pipeline_id = {
     doc "Generate a pipeline run ID for this batch"
     output.dir="results"
