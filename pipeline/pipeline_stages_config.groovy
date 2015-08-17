@@ -776,6 +776,7 @@ qc_excel_report = {
                     -t $LOW_COVERAGE_THRESHOLD
                     -w $LOW_COVERAGE_WIDTH
                     -o $output.xlsx
+                    -p $run_id
                     $inputs.sample_cumulative_coverage_proportions  
                     $inputs.sample_interval_statistics 
                     $inputs.metrics 
