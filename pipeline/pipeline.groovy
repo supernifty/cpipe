@@ -64,6 +64,8 @@ run {
     // variants in
     create_combined_target + 
 
+    generate_pipeline_id + // make a new pipeline run ID file if required
+
     // For each target (flagship) we run the main pipeline in parallel
     targets * [
 
