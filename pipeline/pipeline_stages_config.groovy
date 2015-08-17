@@ -927,7 +927,7 @@ generate_pipeline_id = {
       exec """
         python $SCRIPTS/update_pipeline_run_id.py --id $ID_FILE --increment True > results/run_id
       """
-      run_id = new File('results/run_id').text
+      run_id = new File('results/run_id').text.trim()
     }
 }
 
