@@ -43,6 +43,7 @@ cli.with {
   pgxcov 'Coverage threshold below which a pharmocogenomic site is considered untested (15)', args: 1
   annox 'Directory to send Annovar style per-sample summaries to', args: 1, required: true
   log 'Log file for writing information about variants filtered out', args: 1
+  prefix 'Prefix for generated CSV files', args: 1
 }
 opts = cli.parse(args)
 
@@ -270,7 +271,7 @@ try {
                 // We are going to write out a CSV that is identical to the original annovar output
                 // but which includes our custom fields on the end
                 // Start by writing the headers
-                def writer = new FileWriter("${opts.annox}/${sample}.annovarx.csv")
+                def writer = new FileWriter("${opts.annox}/${opts.prefix}_${sample}.annovarx.csv")
                 writer.println(OUTPUT_CSV_FIELDS.join(","))
                 CSVWriter csvWriter = new CSVWriter(writer);
                 for(av in annovar_csv) {

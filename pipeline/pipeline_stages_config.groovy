@@ -591,7 +591,7 @@ check_karyotype = {
 
     doc "Compare the inferred sex of the sample to the inferred karyotype from the sequencing data"
 
-    def karyotype_file = "results/" + sample + '.summary.karyotype.tsv'
+    def karyotype_file = "results/" + run_id + '_' + sample + '.summary.karyotype.tsv'
     check {
         exec """
             [ `grep '^Sex' $karyotype_file | cut -f 2` == `grep 'Inferred Sex' $karyotype_file | cut -f 2` ]
@@ -693,7 +693,7 @@ vcf_to_excel = {
 
     output.dir="results"
 
-    def all_outputs = [target_name + ".xlsx"] + target_samples.collect { it + ".annovarx.csv" }
+    def all_outputs = [target_name + ".xlsx"] + target_samples.collect { run_id + '_' + it + ".annovarx.csv" }
     from("*.exome_summary.*.csv", "*.vcf") produce(all_outputs) {
         exec """
             echo "Creating $outputs.csv"
@@ -711,6 +711,7 @@ vcf_to_excel = {
                 -gc $target_gene_file ${pgx_flag}
                 -annox $output.dir
                 -log ${target_name}_filtering.log
+                -prefix $run_id
                 ${inputs.bam.withFlag("-bam")}
         """
     }
@@ -775,6 +776,7 @@ qc_excel_report = {
                     -t $LOW_COVERAGE_THRESHOLD
                     -w $LOW_COVERAGE_WIDTH
                     -o $output.xlsx
+                    -p $run_id
                     $inputs.sample_cumulative_coverage_proportions  
                     $inputs.sample_interval_statistics 
                     $inputs.metrics 
@@ -852,7 +854,7 @@ summary_pdf = {
 
     output.dir="results"
 
-    produce("${sample}.summary.pdf","${sample}.summary.karyotype.tsv") {
+    produce("${run_id}_${sample}.summary.pdf","${run_id}_${sample}.summary.karyotype.tsv") {
         exec """
              JAVA_OPTS="-Xmx3g" $GROOVY -cp $GROOVY_NGS/groovy-ngs-utils.jar $SCRIPTS/qc_pdf.groovy 
                 -cov $input.cov.txt
@@ -904,7 +906,7 @@ sample_similarity_report = {
 provenance_report = {
     branch.sample = branch.name
     output.dir = "results"
-    produce(sample + ".provenance.pdf") {
+    produce(run_id + '_' + sample + ".provenance.pdf") {
        send report("scripts/provenance_report.groovy") to file: output.pdf
     }
 }
@@ -912,10 +914,21 @@ provenance_report = {
 annovar_to_lovd = {
     branch.sample = branch.name
     output.dir="results/lovd"
-    produce(sample +"_LOVD") {
+    produce(run_id + '_' + sample +"_LOVD") {
         exec """
             python $SCRIPTS/annovar2LOVD.py --csv $input.annovarx.csv --meta $sample_metadata_file --dir results/lovd
         """
+    }
+}
+
+generate_pipeline_id = {
+    doc "Generate a pipeline run ID for this batch"
+    output.dir="results"
+    produce("results/run_id") {
+      exec """
+        python $SCRIPTS/update_pipeline_run_id.py --id $ID_FILE --increment True > results/run_id
+      """
+      run_id = new File('results/run_id').text.trim()
     }
 }
 
@@ -926,7 +939,7 @@ create_sample_metadata = {
     output.dir="results"
     produce("results/samples.meta") {
       exec """
-          python $SCRIPTS/create_sample_metadata.py --id $ID_FILE < $sample_metadata_file > results/samples.meta
+          python $SCRIPTS/update_pipeline_run_id.py --id results/run_id --parse True < $sample_metadata_file > results/samples.meta
       """
     }
 }
