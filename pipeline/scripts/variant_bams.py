@@ -85,6 +85,8 @@ def main():
             call([samtools_exec, 'index', outdir+'/'+outbam])
             
             var_count += 1
+            if var_count % 100 == 0:
+              print "{0} variants processed...".format( var_count )
 
     # If required, produce a log file
     # This is useful to trick bpipe into tracking the output of this script, 
