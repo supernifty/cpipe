@@ -921,14 +921,11 @@ annovar_to_lovd = {
     }
 }
 
+// remove spaces from gene lists and point to a new sample metadata file
+// note that this isn't run through bpipe
 correct_sample_metadata_file = {
-    doc "Remove spaces from gene lists and point to a new sample metadata file"
-    produce("results/samples.corrected") {
-      exec """
-        python $SCRIPTS/correct_sample_metadata_file.py < $sample_metadata_file > results/samples.corrected
-      """
-    }
-    sample_metadata_file = "results/samples.corrected"
+    [ "sh", "-c", "python $SCRIPTS/correct_sample_metadata_file.py < $it > results/samples.corrected" ].execute().waitFor()
+    return "results/samples.corrected"
 }
 
 generate_pipeline_id = {

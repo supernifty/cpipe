@@ -36,9 +36,7 @@ load 'config.groovy'
 // All the core pipeline stages in the pipeline
 load 'pipeline_stages_config.groovy'
 
-sample_metadata_file = args[0]
-
-correct_sample_metadata_file // fix syntax issues and update sample_metadata_file
+sample_metadata_file = correct_sample_metadata_file( args[0] ) // fix syntax issues and update sample_metadata_file
 
 try {
   sample_info = SampleInfo.parse_mg_sample_info(sample_metadata_file)
