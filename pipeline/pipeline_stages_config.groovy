@@ -973,6 +973,6 @@ validate_batch = {
     produce("results/batch_validation.md") {
       exec """
           python $SCRIPTS/validate_batch.py > results/batch_validation.md
-      """
+      """, "validate_batch"
     }
 }
