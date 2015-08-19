@@ -967,3 +967,12 @@ create_sample_metadata = {
       """
     }
 }
+
+validate_batch = {
+    doc "Validates batch results"
+    produce("results/batch_validation.md") {
+      exec """
+          python $SCRIPTS/validate_batch.py > results/batch_validation.md
+      """
+    }
+}

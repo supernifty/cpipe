@@ -107,6 +107,8 @@ run {
    // And report on similarity between samples
    sample_similarity_report +
 
+   validate_batch +
+
    // update metadata and pipeline ID
    create_sample_metadata
 }
