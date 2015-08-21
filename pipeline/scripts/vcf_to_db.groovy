@@ -127,7 +127,7 @@ db.tx {
         existingCount=0
         ProgressCounter.withProgress { 
             if (annovar_format_vcf) {
-                annovar_items = new VCF( opts.a )
+                annovar_items = VCF.parse( opts.a )
             }
             else {
                 annovar_items = ExcelCategory.parseCSV("", opts.a, ',')

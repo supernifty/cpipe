@@ -40,7 +40,7 @@ import org.apache.commons.cli.Option
 CliBuilder cli = new CliBuilder(usage: "vcf_to_excel.annovar_vcf.groovy [options]\n")
 cli.with {
   s 'comma separated list of samples to include', args:1, required:true
-  a 'Annovar file containing annotations', args: Option.UNLIMITED_VALUES, required:true
+  a 'Annovar file containing annotations and priority', args: Option.UNLIMITED_VALUES, required:true
   o 'Name of output file', args:1, required:true
   x 'Comma separated list of functional types to exclude', args:1
   si 'sample meta data file for the pipeline', args:1, required:true
@@ -331,6 +331,8 @@ try {
                     ++lineIndex
                     // if(lineIndex%5000==0)
                     msg "INFO: Processing variant $lineIndex..."
+                    // TODO see if it's a pgx variant
+
                     av.update{ av.info.Purpose = 'diag' }
                     av.update{ av.info.VariantStatus = 'Present' }
 
@@ -347,7 +349,7 @@ try {
                         av.update { av.info.Filter = 'dosage-zero' }
                         continue
                     }
-                    av.update{ av.info.Otherinfo = (av.dosages[0] == 1 ? "het" : "hom") }
+                    av.update{ av.info.DosageInfo = (av.dosages[0] == 1 ? "het" : "hom") }
                     Map variant_counts = [total: 0, other_target:0]
                     if(db) {
                         variant_counts = db.queryVariantCounts(av, // variant

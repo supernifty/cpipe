@@ -398,8 +398,9 @@ merge_pgx = {
             $JAVA -Xmx3g -jar $GATK/GenomeAnalysisTK.jar
             -T CombineVariants
             -R $REF
-            --variant $input.recal.vcf
-            --variant $input.pgx.vcf
+            --variant:diag $input.recal.vcf
+            --variant:pgx $input.pgx.vcf
+            --setKey purpose
             --out $output.vcf
          """
 }
@@ -740,6 +741,7 @@ annotate_vep = {
     // To avoid this causing the pipeline to fail, we first copy only the
     // headers from the input file to the output file so that if VEP does not
     // overwrite the file, we end up with an empty file
+    // --allow_non_variant allows pgx variants through
     exec """
         grep '^#' $input.vcf > $output.vcf 
 
@@ -752,6 +754,7 @@ annotate_vep = {
             --sift=b --polyphen=b
             --symbol hgnc --force_overwrite --hgvs  --maf_1kg --maf_esp --pubmed
             --plugin Condel,$CONDEL/config,s
+            --allow_non_variant
     """, "vep"
 }
 
@@ -928,17 +931,16 @@ vcf_to_excel = {
     output.dir="results"
 
     def all_outputs = [target_name + ".xlsx"] + target_samples.collect { it + ".annovarx.vcf" } // xlsx for each target_name, vcf for each target_sample
-    from("*.hg19_multianno.vcf", "*.vcf") produce(all_outputs) { // from("*.hg19_multianno.*.csv", "*.vcf") produce(all_outputs) {
+    from("*.hg19_multianno.sig.vcf", "*.vcf") produce(all_outputs) { // from("*.hg19_multianno.*.csv", "*.vcf") produce(all_outputs) {
         exec """
-            echo "Indexing ${inputs.hg19_multianno.vcf}"
-            $IGVTOOLS/igvtools index "${inputs.hg19_multianno.vcf}"
+            echo "Indexing ${inputs.hg19_multianno.sig.vcf}"
+            $IGVTOOLS/igvtools index "${inputs.hg19_multianno.sig.vcf}"
 
             echo "Creating $outputs.vcf"
             JAVA_OPTS="-Xmx12g -Djava.awt.headless=true" $GROOVY 
-                -cp $SCRIPTS:$GROOVY_NGS/groovy-ngs-utils.jar:$EXCEL/excel.jar $SCRIPTS/vcf_to_excel.annovar.groovy 
+                -cp $SCRIPTS:$GROOVY_NGS/groovy-ngs-utils.jar:$EXCEL/excel.jar $SCRIPTS/vcf_to_excel.annovar_vcf.groovy 
                 -s '${target_samples.join(",")}'
-                ${inputs.hg19_multianno.vcf.withFlag("-a")}
-                ${inputs.vcf.withFlag("-vcf")}
+                ${inputs.hg19_multianno.sig.vcf.withFlag("-a")}
                 -x "$EXCLUDE_VARIANT_TYPES"
                 -db $ANNOTATION_VARIANT_DB
                 -o $output.xlsx
