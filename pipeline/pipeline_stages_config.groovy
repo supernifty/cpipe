@@ -373,8 +373,12 @@ realign = {
 dedup = {
     doc "Remove PCR duplicates from reads"
     output.dir="align"
+
+    def safe_tmp_dir = [TMPDIR, UUID.randomUUID().toString()].join( File.separator )
     exec """
-        java -Xmx4g -Djava.io.tmpdir=$TMPDIR -jar $PICARD_HOME/lib/MarkDuplicates.jar
+        mkdir -p $safe_tmp_dir
+
+        java -Xmx4g -Djava.io.tmpdir=$safe_tmp_dir -jar $PICARD_HOME/lib/MarkDuplicates.jar
              INPUT=$input.bam 
              REMOVE_DUPLICATES=true 
              VALIDATION_STRINGENCY=LENIENT 
@@ -382,7 +386,7 @@ dedup = {
              METRICS_FILE=$output.metrics
              OUTPUT=$output.bam
 
-        rm -r "$TMPDIR/\$USER"
+        rm -r "$safe_tmp_dir"
     """
 }
 
