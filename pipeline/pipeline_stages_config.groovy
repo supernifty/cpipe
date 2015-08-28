@@ -376,7 +376,7 @@ dedup = {
 
     def safe_tmp_dir = [TMPDIR, UUID.randomUUID().toString()].join( File.separator )
     exec """
-        mkdir -p $safe_tmp_dir
+        mkdir -p "$safe_tmp_dir"
 
         java -Xmx4g -Djava.io.tmpdir=$safe_tmp_dir -jar $PICARD_HOME/lib/MarkDuplicates.jar
              INPUT=$input.bam 
