@@ -21,6 +21,7 @@
 
 ENABLE_CADD=true
 
+// if any design files do not exist, create them from the flagship files
 set_target_info = {
 
     doc "Validate and set information about the target region to be processed"
@@ -36,8 +37,15 @@ set_target_info = {
     if(!file(target_bed_file).exists() || !file(target_gene_file).exists()) {
         exec """
                 mkdir -p ../design;
-                cp $BASE/designs/flagships/${target_name}.bed $target_bed_file; 
+
                 cp $BASE/designs/flagships/${target_name}.genes.txt $target_gene_file
+
+                if [ -e $BASE/designs/flagships/${target_name}.bed ];
+                then
+                    cp $BASE/designs/flagships/${target_name}.bed $target_bed_file; 
+                else
+                    python $SCRIPTS/genelist_to_bed.py $target_gene_file ../design/${target_name}.addonce.genes.txt < $BASE/designs/flagships/exons.bed > $target_bed_file;
+                fi
 
                 if [ -e $BASE/designs/flagships/${target_name}.pgx.vcf ];
                 then
@@ -154,22 +162,33 @@ check_sample_info = {
     }
 }
 
+// find additionally specified genes and add new ones, that aren't on the incidentalome, to the gene lists
+update_gene_lists = {
+    // builds additional genes from sample metadata file, then adds any new ones to the flagship
+    exec """
+        python $SCRIPTS/find_new_genes.py --reference "$BASE/designs/flagships/exons.bed" --exclude "$BASE/designs/flagships/incidentalome.genes.txt" --target ../design < $sample_metadata_file
+
+        python $SCRIPTS/update_gene_lists.py --source ../design --target "$BASE/designs/flagships" --log "$BASE/designs/flagships/changes.genes.log"
+    """
+}
+
 create_combined_target = {
 
     // Construct the region for variant calling from 
     //
     //   a) all of the disease cohort BED files
     //   b) the EXOME target regions
+    //   c) any additional genes being analyzed
     //
     // This way we avoid calling variants over the entire genome, but still
     // include everything of interest
-    String diseaseBeds = DISEASE_COHORTS.split(",")*.trim().collect { it+".bed"}.join(",")
+    String diseaseGeneLists = DISEASE_COHORTS.split(",")*.trim().collect { it+".genes.txt"}.join(",")
 
     output.dir = "../design"
 
     produce("combined_target_regions.bed") {
         exec """
-            cat $BASE/designs/flagships/{$diseaseBeds} $EXOME_TARGET | 
+        { python $SCRIPTS/genelist_to_bed.py $BASE/designs/flagships/{$diseaseGeneLists} ../design/*.addonce.genes.txt < $BASE/designs/flagships/exons.bed; cat $EXOME_TARGET; } |
                 cut -f 1,2,3 | 
                 $BEDTOOLS/bin/bedtools sort | 
                 $BEDTOOLS/bin/bedtools merge > $output.bed
