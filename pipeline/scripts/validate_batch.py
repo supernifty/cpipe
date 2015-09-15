@@ -15,6 +15,9 @@
 #
 # Purpose:
 # * Validate batch results and generate a markdown flavoured report
+#
+# Dependencies:
+# * pdftotext
 ####################################################################################
 
 import argparse
@@ -119,14 +122,35 @@ def check_individual_genes( dir, bad_threshold=75 ):
       outcome = 'OK' if value <= bad_threshold else '**FAIL**'
       print "%s | %s | %s | %4i | %4i | %4i | %4i" % ( key.ljust(8), outcome.ljust(8), str( '%.1f' % value ).rjust(6), genes[key]['GOOD'], genes[key]['PASS'], genes[key]['FAIL'], sum( [ genes[key][status] for status in genes[key] ] ) )
 
+def show_not_found( fh, title ):
+  print "# Requested Genes not found in %s" % title
+  found = False
+  for line in fh:
+    print "* %s" % line.strip()
+    found = True
+  if not found:
+    print "None"
+
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(description='Validate cpipe output') 
   parser.add_argument('--dir', default='./results', help='results directory')
   parser.add_argument('--gene_coverage', default=15, help='report genes with coverage below this')
   parser.add_argument('--mean_coverage', default=90, help='report batches with mean coverage below this')
   parser.add_argument('--gene_sample_fail', default=80, help='report genes that fail in more than this proportion of samples')
+  parser.add_argument('--missing_exons', required=False, help='file containing genes not in exons' )
+  parser.add_argument('--missing_annovar', required=False, help='file containing genes not in annovar' )
   args = parser.parse_args()
   check_sex( args.dir )
   check_gene_coverage( args.dir, bad_threshold=args.gene_coverage )
   check_observed_mean_coverage( args.dir, bad_threshold=args.mean_coverage )
   check_individual_genes( args.dir, bad_threshold=args.gene_sample_fail )
+  print ""
+  if args.missing_exons and os.path.isfile(args.missing_exons):
+    show_not_found( open( args.missing_exons, 'r' ), 'Reference' )
+  else:
+    print "* No missing gene information at exon level"
+  print ""
+  if args.missing_annovar and os.path.isfile(args.missing_annovar):
+    show_not_found( open( args.missing_annovar, 'r' ), 'Annovar' )
+  else:
+    print "* No missing gene information at annovar level"
