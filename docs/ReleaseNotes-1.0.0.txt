@@ -1,0 +1,17 @@
+==================================================
+
+Melbourne Genomics Demonstration Project Pipeline
+
+Version 1.0.0 Release Notes
+
+==================================================
+
+* updated gene lists
+* bed file generation from gene lists
+* use of UCSC ref seq for gene names and bed file geneation
+* automated batch validation
+* properly delete temp directories
+* mini-bam generation
+* allow spaces in sample specific gene lists
+* enable both simple and melbourne genomics flavoured sample metadata format
+* use a pipeline run ID for all runs, prefix result files with pipeline run ID
