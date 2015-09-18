@@ -113,7 +113,7 @@ if(opts.db) {
 }
 
 // Read the gene categories
-geneCategories = new File(opts.gc).readLines()*.split('\t').collect { [it[0],it[1]] }.collectEntries()
+geneCategories = new File(opts.gc).readLines().findAll( { it =~ /^[^#]/ } )*.split('\t').collect { [it[0],it[1]] }.collectEntries()
 
 // Order preferred if clinicians need to review output directly
 OUTPUT_FIELDS = ["Func", "Gene", "ExonicFunc", "AAChange", "Gene Category", "Priority Index", "Condel", "Conserved", "ESP5400_ALL", "1000g2010nov_ALL", "dbSNP138", "AVSIFT", "LJB_PhyloP", "LJB_PhyloP_Pred", "LJB_SIFT", "LJB_SIFT_Pred", "LJB_PolyPhen2", "LJB_PolyPhen2_Pred", "LJB_LRT", "LJB_LRT_Pred", "LJB_MutationTaster", "LJB_MutationTaster_Pred", "LJB_GERP++", "SegDup", "Chr", "Start", "End", "Ref", "Obs", "Otherinfo", "Qual", "Depth", "#Obs", "RefCount", "AltCount", "CADD"]

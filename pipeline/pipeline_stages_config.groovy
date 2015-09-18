@@ -997,7 +997,7 @@ create_sample_metadata = {
 
 validate_batch = {
     doc "Validates batch results"
-    produce("results/missing_from_exons.genes.txt", "results/batch_validation.md", "results/batch_validation.html") {
+    produce("results/missing_from_exons.genes.txt", "results/${run_id}_batch_validation.md", "results/${run_id}_batch_validation.html") {
       exec """
           cat ../design/*.genes.txt | python $SCRIPTS/find_missing_genes.py $BASE/designs/flagships/exons.bed > results/missing_from_exons.genes.txt
 
@@ -1005,9 +1005,9 @@ validate_batch = {
             cat ../design/*.genes.txt | python $SCRIPTS/find_missing_genes.py $BASE/designs/flagships/annovar.bed > results/missing_from_annovar.genes.txt;
           fi
 
-          python $SCRIPTS/validate_batch.py --missing_exons results/missing_from_exons.genes.txt --missing_annovar results/missing_from_annovar.genes.txt > results/batch_validation.md
+          python $SCRIPTS/validate_batch.py --missing_exons results/missing_from_exons.genes.txt --missing_annovar results/missing_from_annovar.genes.txt > results/${run_id}_batch_validation.md
 
-          python $SCRIPTS/markdown2.py --extras tables < results/batch_validation.md | python $SCRIPTS/prettify_markdown.py > results/batch_validation.html
+          python $SCRIPTS/markdown2.py --extras tables < results/${run_id}_batch_validation.md | python $SCRIPTS/prettify_markdown.py > results/${run_id}_batch_validation.html
       """, "validate_batch"
     }
 }
