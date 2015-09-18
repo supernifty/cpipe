@@ -1,0 +1,10 @@
+==================================================
+
+Melbourne Genomics Demonstration Project Pipeline
+
+Version 1.0.1 Release Notes
+
+==================================================
+
+* better genelist handling (ignore comments)
+* generate batch validation with run id as filename prefix
