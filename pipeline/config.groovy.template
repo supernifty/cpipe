@@ -150,6 +150,7 @@ CONDEL="$TOOLS/condel/24-1-2013"
 
 // Database of unique variants, updated for each sample
 VARIANT_DB="$BASE/variants.db"
+ID_FILE="$BASE/pipeline_id"
 
 // By default variant counts are annotated from the same database as the
 // one that they were added to in the first place
@@ -194,3 +195,11 @@ PYTHON="python"
 
 splice_region_window=2
 
+// interval padding to pass to the variant caller
+INTERVAL_PADDING_CALL=25
+
+// interval padding for SNVs in filter_variants
+INTERVAL_PADDING_SNV=10
+
+// interval padding for indels in filter_variants
+INTERVAL_PADDING_INDEL=25

@@ -44,12 +44,13 @@ requires EXOME_TARGET : """
 load 'pipeline_stages_config.groovy'
 // load 'haloplex.groovy'
 
-sample_metadata_file = args[0]
+sample_metadata_file = correct_sample_metadata_file( args[0] ) // fix syntax issues and update sample_metadata_file
+
 try {
-  sample_info = SampleInfo.parse_mg_sample_info(args[0])
+  sample_info = SampleInfo.parse_mg_sample_info(sample_metadata_file)
 }
 catch (RuntimeException e) {
-  sample_info = SampleInfo.parse_sample_info(args[0])
+  sample_info = SampleInfo.parse_sample_info(sample_metadata_file)
 }
 
 // We are specifying that each analysis takes place inside a fixed file structure
@@ -73,6 +74,8 @@ run {
     // variants in
     create_combined_target + 
 
+    generate_pipeline_id + // make a new pipeline run ID file if required
+
     // For each analysis profile we run the main pipeline in parallel
     ANALYSIS_PROFILES * [
 
@@ -95,7 +98,7 @@ run {
 				   cleanup_intermediate_bams +
                        [
                          call_variants_gatk + call_pgx + merge_pgx +
-                            filter_variants + 
+                            filter_variants + merge_variants +
                             annotate_vep + index_vcf +
                             annovar_table +
                             [ 
@@ -114,10 +117,16 @@ run {
    // The 3rd phase is to produce the output spreadsheet, 1 per analysis profile
    ANALYSIS_PROFILES * [ set_target_info +  [ vcf_to_excel, family_vcf ] ] +
 
+   // Produce a mini bam for each variant to help investigate individual variants
+   samples * [ variant_bams ] +
+
    // And then finally write the provenance report (1 per sample)
    samples * [ provenance_report /* , annovar_to_lovd */ ] +
    
    // And report on similarity between samples
-   sample_similarity_report
+   sample_similarity_report +
+
+   // update metadata and pipeline ID
+   create_sample_metadata
 }
 

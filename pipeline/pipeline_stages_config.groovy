@@ -40,6 +40,7 @@ call_variants_ug = {
                    -dcov 1600 
                    -l INFO 
                    -L $COMBINED_TARGET $splice_region_bed_flag
+                   --interval_padding $INTERVAL_PADDING_CALL
                    -A AlleleBalance -A FisherStrand 
                    -glm BOTH
                    -metrics $output.txt
@@ -462,7 +463,13 @@ merge_bams = {
         // If there is only 1 bam file, then there is no need to merge,
         // just alias the name 
         if(inputs.bam.size()==1)  {
-           alias(input.bam) to(output.bam)
+           // alias(input.bam) to(output.bam)
+            msg "Skipping merge of $inputs.bam because there is only one file"
+            // This use of symbolic links may be questionable
+            // However if the ordinary case involves only one
+            // bam file then there may be some significant savings
+            // from doing this.
+            exec "ln -sf ${file(input.bam).name} $output.bam; ln -sf ${file(input.bam).name}.bai ${output.bam}.bai;"
         }
         else {
             msg "Merging $inputs.bam size=${inputs.bam.size()}"
@@ -675,6 +682,7 @@ call_variants_hc = {
                    -dcov 1600 
                    -l INFO 
                    -L $COMBINED_TARGET $splice_region_bed_flag
+                   --interval_padding $INTERVAL_PADDING_CALL
                    -A AlleleBalance -A Coverage -A FisherStrand 
                    -o $output.vcf
             ""","gatk_call_variants"
@@ -707,6 +715,7 @@ call_pgx = {
                    -dcov 1600 
                    -l INFO 
                    -L ../design/${target_name}.pgx.vcf
+                   --interval_padding $INTERVAL_PADDING_CALL
                    -A AlleleBalance -A Coverage -A FisherStrand 
                    -glm BOTH
                    -metrics $output.metrics
@@ -724,16 +733,46 @@ filter_variants = {
         pgx_flag = "-L ../design/${target_name}.pgx.vcf"
     }
 
-    filter("filter") {
-        exec """
-            $JAVA -Xmx2g -jar $GATK/GenomeAnalysisTK.jar 
-                 -R $REF
-                 -T SelectVariants 
-                 --variant $input.vcf 
-                 -L $target_bed_file $splice_region_bed_flag $pgx_flag
-                 -o $output.vcf 
-        """
-    }
+    msg "Filtering variants - finding INDELs"
+    exec """
+        java -Xmx2g -jar $GATK/GenomeAnalysisTK.jar 
+             -R $REF
+             -T SelectVariants 
+             --variant $input.vcf 
+             -L $target_bed_file $pgx_flag
+             --interval_padding $INTERVAL_PADDING_SNV
+             --selectTypeToInclude SNP --selectTypeToInclude MIXED --selectTypeToInclude MNP --selectTypeToInclude SYMBOLIC --selectTypeToInclude NO_VARIATION
+             -o $output.snv
+    """
+
+    msg "Filtering variants - finding SNVs"
+    exec """
+        java -Xmx2g -jar $GATK/GenomeAnalysisTK.jar 
+             -R $REF
+             -T SelectVariants 
+             --variant $input.vcf 
+             -L $target_bed_file $pgx_flag
+             --interval_padding $INTERVAL_PADDING_INDEL
+             --selectTypeToInclude INDEL
+             -o $output.indel
+    """
+}
+
+merge_variants = {
+    doc "Merge SNVs and INDELs"
+    output.dir="variants"
+
+    msg "Merging SNVs and INDELs"
+    exec """
+            java -Xmx3g -jar $GATK/GenomeAnalysisTK.jar
+            -T CombineVariants
+            -R $REF
+            --variant:indel $input.indel
+            --variant:snv $input.snv
+            --out $output.vcf
+            --setKey set
+            --genotypemergeoption UNSORTED
+         """
 }
 
 @filter("vep")
@@ -844,7 +883,7 @@ check_karyotype = {
 
     doc "Compare the inferred sex of the sample to the inferred karyotype from the sequencing data"
 
-    def karyotype_file = "results/" + sample + '.summary.karyotype.tsv'
+    def karyotype_file = "results/" + run_id + '_' + sample + '.summary.karyotype.tsv'
     check {
         exec """
             [ `grep '^Sex' $karyotype_file | cut -f 2` == "UNKNOWN" ] || [ `grep '^Sex' $karyotype_file | cut -f 2` == `grep 'Inferred Sex' $karyotype_file | cut -f 2` ]
@@ -913,11 +952,12 @@ vcf_to_excel = {
     var exclude_variant_types : "synonymous SNV",
         out_of_cohort_filter_threshold : OUT_OF_COHORT_VARIANT_COUNT_FILTER
 
-    check {
-        exec "ls results/${target_name}.qc.xlsx > /dev/null 2>&1"
-    } otherwise { 
-        succeed "No samples succeeded for target $target_name" 
-    }
+    // disable this check - attempt to generate results regardless of qc check
+    // check {
+    //     exec "ls results/${target_name}.qc.xlsx > /dev/null 2>&1"
+    // } otherwise { 
+    //     succeed "No samples succeeded for target $target_name" 
+    // }
 
     def pgx_flag = ""
     if(file("../design/${target_name}.pgx.vcf").exists()) {
@@ -932,7 +972,7 @@ vcf_to_excel = {
 
     output.dir="results"
 
-    def all_outputs = [target_name + ".xlsx"] + target_samples.collect { it + ".annovarx.csv" }
+    def all_outputs = [target_name + ".xlsx"] + target_samples.collect { run_id + '_' + it + ".annovarx.csv" }
     from("*.hg19_multianno.*.csv", "*.vcf") produce(all_outputs) {
         exec """
             echo "Creating $outputs.csv"
@@ -950,6 +990,7 @@ vcf_to_excel = {
                 -gc $target_gene_file ${pgx_flag}
                 -annox $output.dir
                 -log ${target_name}_filtering.log
+                -prefix $run_id
                 ${inputs.bam.withFlag("-bam")}
         """, "vcf_to_excel"
     }
@@ -981,6 +1022,7 @@ vcf_to_family_excel = {
                     -db $ANNOTATION_VARIANT_DB
                     -ped $input.ped
                     -o $output.xlsx
+                    -p $run_id
                     $UNIQUE $input.vcf $inputs.csv 
             """, "vcf_to_family_excel"
         }
@@ -1077,6 +1119,7 @@ qc_excel_report = {
                     -w $LOW_COVERAGE_WIDTH
                     -low qc ${inputs.dedup.metrics.withFlag('-metrics')}
                     -o $output.xlsx
+                    -p $run_id
                     $inputs.sample_cumulative_coverage_proportions  
                     $inputs.sample_interval_statistics 
                     $inputs.gz
@@ -1119,7 +1162,7 @@ annovar_table = {
             --otherinfo   
             --csvout
             --outfile $output.csv.prefix.prefix
-            --argument '-exonicsplicing -splicing $splice_region_window',,,,,,,
+            --argument '-exonicsplicing -splicing $INTERVAL_PADDING_CALL',,,,,,,
 
             sed -i '/^Chr,/ s/\\.refGene//g' $output.csv
         """
@@ -1184,7 +1227,7 @@ summary_pdf = {
 
     output.dir="results"
 
-    produce("${sample}.summary.pdf","${sample}.summary.karyotype.tsv") {
+    produce("${run_id}_${sample}.summary.pdf","${run_id}_${sample}.summary.karyotype.tsv") {
 
         // -metrics $input.metrics
         exec """
@@ -1248,7 +1291,7 @@ sample_similarity_report = {
 provenance_report = {
     branch.sample = branch.name
     output.dir = "results"
-    produce(sample + ".provenance.pdf") {
+    produce(run_id + '_' + sample + ".provenance.pdf") {
        send report("scripts/provenance_report.groovy") to file: output.pdf
     }
 }
@@ -1256,10 +1299,61 @@ provenance_report = {
 annovar_to_lovd = {
     branch.sample = branch.name
     output.dir="results/lovd"
-    produce(sample +"_LOVD") {
+    produce(run_id + '_' + sample +"_LOVD") {
         exec """
             python $SCRIPTS/annovar2LOVD.py --csv $input.annovarx.csv --meta $sample_metadata_file --dir results/lovd
         """
+    }
+}
+
+// remove spaces from gene lists and point to a new sample metadata file
+// note that this isn't run through bpipe
+correct_sample_metadata_file = {
+    def target = new File( 'results' )
+    if( !target.exists() ) {
+        target.mkdirs()
+    }
+    [ "sh", "-c", "python $SCRIPTS/correct_sample_metadata_file.py < $it > results/samples.corrected" ].execute().waitFor()
+    return "results/samples.corrected"
+}
+
+generate_pipeline_id = {
+    doc "Generate a pipeline run ID for this batch"
+    output.dir="results"
+    produce("results/run_id") {
+      exec """
+        python $SCRIPTS/update_pipeline_run_id.py --id $ID_FILE --increment True > results/run_id
+      """
+      run_id = new File('results/run_id').text.trim()
+    }
+}
+
+create_sample_metadata = {
+    doc "Create a new samples.txt file that includes the pipeline ID"
+    requires sample_metadata_file : "File describing meta data for pipeline run (usually, samples.txt)"
+
+    output.dir="results"
+    produce("results/samples.meta") {
+      exec """
+          python $SCRIPTS/update_pipeline_run_id.py --id results/run_id --parse True < $sample_metadata_file > results/samples.meta
+      """
+    }
+}
+
+variant_bams = {
+
+    doc "Create a bam file for each variant containing only reads overlapping 100bp either side of that variant"
+
+    output.dir = "results/variant_bams"
+
+    from(branch.name+'*annovarx.csv', branch.name+'.*.recal.bam') {   
+        // Slight hack here. Produce a log file that bpipe can track to confirm that the bams were produced.
+        // Bpipe is not actually tracking the variant bams themselves. 
+        produce(branch.name + ".variant_bams_log.txt") {
+            exec """
+                python $SCRIPTS/variant_bams.py --bam $input.bam --csv $input.csv --outdir $output.dir --log $output.txt --samtoolsdir $SAMTOOLS
+            """
+        }
     }
 }
 
